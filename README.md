@@ -1,1 +1,0 @@
-# queries-rj-crm-registry
