@@ -1,102 +1,134 @@
-WITH tb AS (
-  SELECT * 
-  FROM `rj-crm-registry.airbyte_internal.sandbox_staging_raw__stream_chcpf_bcadastros_documents_incremental`
-  LIMIT 10
-),
+with
+    tb as (
+        select *
+        from
+            `rj-crm-registry.airbyte_internal.sandbox_staging_raw__stream_chcpf_bcadastros_documents_incremental`
+        limit 10
+    ),
 
-tb_parsed AS (
+    municipio_bd as (
+        SELECT
+            id_municipio_rf,
+            nome AS nome_municipio,
+        FROM `basedosdados.br_bd_diretorios_brasil.municipio`
+    ),
 
-SELECT
-  JSON_VALUE(_airbyte_data, '$.id') AS id,
-  JSON_VALUE(_airbyte_data, '$.key') AS key,
-  JSON_VALUE(_airbyte_data, '$.value.rev') AS revision,
-  CAST(JSON_VALUE(_airbyte_data, '$.doc.anoExerc') AS INT64) AS exercicio_ano,
-  JSON_VALUE(_airbyte_data, '$.doc.bairro') AS bairro,
-  JSON_VALUE(_airbyte_data, '$.doc.cep') AS cep,
-  JSON_VALUE(_airbyte_data, '$.doc.codMunDomic') AS codigo_municipio_domicilio,
-  JSON_VALUE(_airbyte_data, '$.doc.codMunNat') AS codigo_municipio_nascimento,
-  JSON_VALUE(_airbyte_data, '$.doc.codNatOcup') AS codigo_natureza_ocupacao,
-  JSON_VALUE(_airbyte_data, '$.doc.codOcup') AS codigo_ocupacao,
-  JSON_VALUE(_airbyte_data, '$.doc.codSexo') AS codigo_sexo,
-  JSON_VALUE(_airbyte_data, '$.doc.codSitCad') AS codigo_situacao_cadastral,
-  JSON_VALUE(_airbyte_data, '$.doc.codUA') AS codigo_ua,
-  JSON_VALUE(_airbyte_data, '$.doc.complemento') AS complemento,
-  JSON_VALUE(_airbyte_data, '$.doc.cpfId') AS cpf_id,
-  PARSE_DATE('%Y%m%d', JSON_VALUE(_airbyte_data, '$.doc.dtInscricao')) AS data_inscricao,
-  PARSE_DATE('%Y%m%d', JSON_VALUE(_airbyte_data, '$.doc.dtNasc')) AS data_nascimento,
-  PARSE_DATE('%Y%m%d', JSON_VALUE(_airbyte_data, '$.doc.dtUltAtualiz')) AS data_ultima_atualizacao,
-  JSON_VALUE(_airbyte_data, '$.doc.indEstrangeiro') AS indicativo_estrangeiro,
-  JSON_VALUE(_airbyte_data, '$.doc.indResExt') AS indicativo_residente_exterior,
-  JSON_VALUE(_airbyte_data, '$.doc.logradouro') AS logradouro,
-  JSON_VALUE(_airbyte_data, '$.doc.nomeContribuinte') AS nome_contribuinte,
-  JSON_VALUE(_airbyte_data, '$.doc.nomeMae') AS nome_mae,
-  JSON_VALUE(_airbyte_data, '$.doc.nroLogradouro') AS numero_logradouro,
-  JSON_VALUE(_airbyte_data, '$.doc.telefone') AS telefone,
-  JSON_VALUE(_airbyte_data, '$.doc.tipoLogradouro') AS tipo_logradouro,
-  JSON_VALUE(_airbyte_data, '$.doc.ufMunDomic') AS uf_municipio_domicilio,
-  JSON_VALUE(_airbyte_data, '$.doc.ufMunNat') AS uf_municipio_nascimento,
-  JSON_VALUE(_airbyte_data, '$.doc.version') AS version,
-  JSON_VALUE(_airbyte_data, '$.seq') AS seq,
-  JSON_VALUE(_airbyte_data, '$.last_seq') AS last_seq,
-  _airbyte_meta,
-  _airbyte_generation_id
-FROM tb
-)
+    tb_parsed as (
 
-SELECT
-  id,
-  key,
-  revision,
-  exercicio_ano,
-  bairro,
-  cep,
-  codigo_municipio_domicilio,
-  codigo_municipio_nascimento,
-  codigo_natureza_ocupacao,
-  codigo_ocupacao,
-  CASE codigo_sexo
-    WHEN '1' THEN 'Masculino'
-    WHEN '2' THEN 'Feminino'
-    WHEN '9' THEN 'Não informado'
-    ELSE codigo_sexo
-  END AS sexo,
-  CASE codigo_situacao_cadastral
-    WHEN '0' THEN 'Regular'
-    WHEN '2' THEN 'Suspensa'
-    WHEN '3' THEN 'Titular Falecido'
-    WHEN '4' THEN 'Pendente de Regularização'
-    WHEN '5' THEN 'Cancelada por Multiplicidade'
-    WHEN '8' THEN 'Nula'
-    WHEN '9' THEN 'Cancelada de Ofício'
-    ELSE codigo_situacao_cadastral
-  END AS situacao_cadastral,
-  codigo_ua,
-  complemento,
-  cpf_id,
-  data_inscricao,
-  data_nascimento,
-  data_ultima_atualizacao,
-  CASE indicativo_estrangeiro
-    WHEN 'N' THEN FALSE
-    WHEN 'S' THEN TRUE
-    ELSE NULL 
-  END AS estrangeiro,
-  CASE indicativo_residente_exterior
-    WHEN 'S' THEN TRUE
-    WHEN 'N' THEN FALSE
-    ELSE NULL
-  END AS residente_no_exterior,
-  logradouro,
-  nome_contribuinte,
-  nome_mae,
-  numero_logradouro,
-  telefone,
-  tipo_logradouro,
-  uf_municipio_domicilio,
-  uf_municipio_nascimento,
-  version,
-  seq,
-  last_seq,
-  _airbyte_meta,
-  _airbyte_generation_id
-FROM tb_parsed
+        select
+            json_value(_airbyte_data, '$.id') as id,
+            json_value(_airbyte_data, '$.key') as key,
+            json_value(_airbyte_data, '$.value.rev') as revision,
+            cast(json_value(_airbyte_data, '$.doc.anoExerc') as int64) as exercicio_ano,
+            json_value(_airbyte_data, '$.doc.bairro') as bairro,
+            json_value(_airbyte_data, '$.doc.cep') as cep,
+            json_value(_airbyte_data, '$.doc.codMunDomic') as id_municipio_domicilio,
+            json_value(_airbyte_data, '$.doc.codMunNat') as id_municipio_nascimento,
+            json_value(_airbyte_data, '$.doc.codNatOcup') as id_natureza_ocupacao,
+            json_value(_airbyte_data, '$.doc.codOcup') as id_ocupacao,
+            json_value(_airbyte_data, '$.doc.codSexo') as id_sexo,
+            json_value(_airbyte_data, '$.doc.codSitCad') as id_situacao_cadastral,
+            json_value(_airbyte_data, '$.doc.codUA') as id_ua,
+            json_value(_airbyte_data, '$.doc.complemento') as complemento,
+            json_value(_airbyte_data, '$.doc.cpfId') as cpf_id,
+            parse_date(
+                '%Y%m%d', json_value(_airbyte_data, '$.doc.dtInscricao')
+            ) as data_inscricao,
+            parse_date(
+                '%Y%m%d', json_value(_airbyte_data, '$.doc.dtNasc')
+            ) as data_nascimento,
+            parse_date(
+                '%Y%m%d', json_value(_airbyte_data, '$.doc.dtUltAtualiz')
+            ) as data_ultima_atualizacao,
+            json_value(_airbyte_data, '$.doc.indEstrangeiro') as indicativo_estrangeiro,
+            json_value(
+                _airbyte_data, '$.doc.indResExt'
+            ) as indicativo_residente_exterior,
+            json_value(_airbyte_data, '$.doc.logradouro') as logradouro,
+            json_value(_airbyte_data, '$.doc.nomeContribuinte') as nome_contribuinte,
+            json_value(_airbyte_data, '$.doc.nomeMae') as nome_mae,
+            json_value(_airbyte_data, '$.doc.nroLogradouro') as numero_logradouro,
+            json_value(_airbyte_data, '$.doc.telefone') as telefone,
+            json_value(_airbyte_data, '$.doc.tipoLogradouro') as tipo_logradouro,
+            json_value(_airbyte_data, '$.doc.ufMunDomic') as uf_municipio_domicilio,
+            json_value(_airbyte_data, '$.doc.ufMunNat') as uf_municipio_nascimento,
+            json_value(_airbyte_data, '$.doc.version') as version,
+            json_value(_airbyte_data, '$.seq') as seq,
+            json_value(_airbyte_data, '$.last_seq') as last_seq,
+            _airbyte_meta,
+            _airbyte_generation_id
+        from tb
+    )
+
+select
+    id,
+    key,
+    revision,
+    exercicio_ano,
+    bairro,
+    cep,
+    id_municipio_domicilio,
+    md.nome_municipio as nome_municipio_domicilio,
+    id_municipio_nascimento,
+    mn.nome_municipio as nome_municipio_nascimento,
+    id_natureza_ocupacao,
+    id_ocupacao,
+    case
+        id_sexo
+        when '1'
+        then 'Masculino'
+        when '2'
+        then 'Feminino'
+        when '9'
+        then 'Não informado'
+        else id_sexo
+    end as sexo,
+    case
+        id_situacao_cadastral
+        when '0'
+        then 'Regular'
+        when '2'
+        then 'Suspensa'
+        when '3'
+        then 'Titular Falecido'
+        when '4'
+        then 'Pendente de Regularização'
+        when '5'
+        then 'Cancelada por Multiplicidade'
+        when '8'
+        then 'Nula'
+        when '9'
+        then 'Cancelada de Ofício'
+        else id_situacao_cadastral
+    end as situacao_cadastral,
+    id_ua,
+    complemento,
+    cpf_id,
+    data_inscricao,
+    data_nascimento,
+    data_ultima_atualizacao,
+    case
+        indicativo_estrangeiro when 'N' then false when 'S' then true else null
+    end as estrangeiro,
+    case
+        indicativo_residente_exterior when 'S' then true when 'N' then false else null
+    end as residente_no_exterior,
+    logradouro,
+    nome_contribuinte,
+    nome_mae,
+    numero_logradouro,
+    telefone,
+    tipo_logradouro,
+    uf_municipio_domicilio,
+    uf_municipio_nascimento,
+    version,
+    seq,
+    last_seq,
+    _airbyte_meta,
+    _airbyte_generation_id
+from tb_parsed
+left join municipio_bd as md
+    on tb_parsed.id_municipio_domicilio = md.id_municipio_rf
+left join municipio_bd as mn
+    on tb_parsed.id_municipio_nascimento = mn.id_municipio_rf
+
