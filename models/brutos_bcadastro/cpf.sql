@@ -7,10 +7,8 @@ with
     ),
 
     municipio_bd as (
-        SELECT
-            id_municipio_rf,
-            nome AS nome_municipio,
-        FROM `basedosdados.br_bd_diretorios_brasil.municipio`
+        select id_municipio_rf, nome as nome_municipio,
+        from `basedosdados.br_bd_diretorios_brasil.municipio`
     ),
 
     tb_parsed as (
@@ -72,7 +70,8 @@ select
     id_municipio_nascimento,
     mn.nome_municipio as nome_municipio_nascimento,
     id_natureza_ocupacao,
-    id_ocupacao,
+    t.id_ocupacao,
+    o.descricao as descricao_ocupacao,
     case
         id_sexo
         when '1'
@@ -126,9 +125,9 @@ select
     last_seq,
     _airbyte_meta,
     _airbyte_generation_id
-from tb_parsed
-left join municipio_bd as md
-    on tb_parsed.id_municipio_domicilio = md.id_municipio_rf
-left join municipio_bd as mn
-    on tb_parsed.id_municipio_nascimento = mn.id_municipio_rf
-
+from tb_parsed t
+left join municipio_bd as md on t.id_municipio_domicilio = md.id_municipio_rf
+left join municipio_bd as mn on t.id_municipio_nascimento = mn.id_municipio_rf
+left join
+    `rj-crm-registry.sandbox_staging.ocupacao_receita_federal` o
+    on t.id_ocupacao = o.id_ocupacao
