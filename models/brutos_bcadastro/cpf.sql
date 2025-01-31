@@ -2,13 +2,15 @@ with
     tb as (
         select *
         from
-            `rj-crm-registry.airbyte_internal.sandbox_staging_raw__stream_chcpf_bcadastros_documents_incremental`
-        limit 10
+            `rj-crm-registry.airbyte_internal.brutos_bcadastro_raw__stream_chcpf_bcadastros`
+        limit 100
     ),
 
     municipio_bd as (
-        select id_municipio_rf, nome as nome_municipio,
-        from `basedosdados.br_bd_diretorios_brasil.municipio`
+        SELECT
+            id_municipio_rf,
+            nome AS nome_municipio,
+        FROM `basedosdados.br_bd_diretorios_brasil.municipio`
     ),
 
     tb_parsed as (
@@ -43,14 +45,14 @@ with
                 _airbyte_data, '$.doc.indResExt'
             ) as indicativo_residente_exterior,
             json_value(_airbyte_data, '$.doc.logradouro') as logradouro,
-            json_value(_airbyte_data, '$.doc.nomeContribuinte') as nome_contribuinte,
+            json_value(_airbyte_data, '$.doc.nomeContribuinte') as nome,
             json_value(_airbyte_data, '$.doc.nomeMae') as nome_mae,
             json_value(_airbyte_data, '$.doc.nroLogradouro') as numero_logradouro,
             json_value(_airbyte_data, '$.doc.telefone') as telefone,
             json_value(_airbyte_data, '$.doc.tipoLogradouro') as tipo_logradouro,
             json_value(_airbyte_data, '$.doc.ufMunDomic') as uf_municipio_domicilio,
             json_value(_airbyte_data, '$.doc.ufMunNat') as uf_municipio_nascimento,
-            json_value(_airbyte_data, '$.doc.version') as version,
+            json_value(REPLACE(_airbyte_data, '~',''), '$.doc.version') as version,
             json_value(_airbyte_data, '$.seq') as seq,
             json_value(_airbyte_data, '$.last_seq') as last_seq,
             _airbyte_meta,
@@ -111,9 +113,9 @@ select
     end as estrangeiro,
     case
         indicativo_residente_exterior when 'S' then true when 'N' then false else null
-    end as residente_no_exterior,
+    end as residente_exterior,
     logradouro,
-    nome_contribuinte,
+    nome,
     nome_mae,
     numero_logradouro,
     telefone,
@@ -126,8 +128,10 @@ select
     _airbyte_meta,
     _airbyte_generation_id
 from tb_parsed t
-left join municipio_bd as md on t.id_municipio_domicilio = md.id_municipio_rf
-left join municipio_bd as mn on t.id_municipio_nascimento = mn.id_municipio_rf
-left join
-    `rj-crm-registry.sandbox_staging.ocupacao_receita_federal` o
-    on t.id_ocupacao = o.id_ocupacao
+left join municipio_bd as md
+    on t.id_municipio_domicilio = md.id_municipio_rf
+left join municipio_bd as mn
+    on t.id_municipio_nascimento = mn.id_municipio_rf
+left join `rj-crm-registry.sandbox_staging.ocupacao_receita_federal` o
+  on t.id_ocupacao = o.id_ocupacao
+
