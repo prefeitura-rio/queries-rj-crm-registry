@@ -5,18 +5,16 @@ PARTITION BY
   AS
 
 (
-    with
+with
     tb as (
-        select *
-        from
-            `rj-crm-registry.airbyte_internal.brutos_bcadastro_staging_raw__stream_chcpf_bcadastros`
+        select * from `rj-crm-registry.brutos_bcadastro_staging.cpf_test`
+        {# select * from `rj-crm-registry.airbyte_internal.brutos_bcadastro_staging_raw__stream_chcpf_bcadastros` #}
+
     ),
 
     municipio_bd as (
-        SELECT
-            id_municipio_rf,
-            nome AS nome_municipio,
-        FROM `basedosdados.br_bd_diretorios_brasil.municipio`
+        select id_municipio_rf, nome as nome_municipio,
+        from `basedosdados.br_bd_diretorios_brasil.municipio`
     ),
 
     tb_parsed as (
@@ -56,91 +54,193 @@ PARTITION BY
             json_value(_airbyte_data, '$.doc.nroLogradouro') as numero_logradouro,
             json_value(_airbyte_data, '$.doc.telefone') as telefone,
             json_value(_airbyte_data, '$.doc.tipoLogradouro') as tipo_logradouro,
-            json_value(_airbyte_data, '$.doc.ufMunDomic') as uf_municipio_domicilio,
-            json_value(_airbyte_data, '$.doc.ufMunNat') as uf_municipio_nascimento,
-            json_value(REPLACE(_airbyte_data, '~',''), '$.doc.version') as version,
+            json_value(_airbyte_data, '$.doc.ufMunDomic') as uf_domicilio,
+            json_value(_airbyte_data, '$.doc.ufMunNat') as uf_nascimento,
+            json_value(replace(_airbyte_data, '~', ''), '$.doc.version') as version,
             json_value(_airbyte_data, '$.seq') as seq,
             json_value(_airbyte_data, '$.last_seq') as last_seq,
             _airbyte_meta,
             _airbyte_generation_id
         from tb
+    ),
+
+    tb_intermediate as (
+        select
+            id,
+            key,
+            revision,
+            exercicio_ano,
+            bairro,
+            cep,
+            id_municipio_domicilio,
+            md.nome_municipio as municipio_domicilio,
+            id_municipio_nascimento,
+            mn.nome_municipio as municipio_nascimento,
+            id_natureza_ocupacao,
+            t.id_ocupacao,
+            o.descricao as ocupacao,
+            case
+                id_sexo
+                when '1'
+                then 'Masculino'
+                when '2'
+                then 'Feminino'
+                when '9'
+                then 'Não informado'
+                else id_sexo
+            end as genero,
+            case
+                id_situacao_cadastral
+                when '0'
+                then 'Regular'
+                when '2'
+                then 'Suspensa'
+                when '3'
+                then 'Titular Falecido'
+                when '4'
+                then 'Pendente de Regularização'
+                when '5'
+                then 'Cancelada por Multiplicidade'
+                when '8'
+                then 'Nula'
+                when '9'
+                then 'Cancelada de Ofício'
+                else id_situacao_cadastral
+            end as situacao_cadastral,
+            id_ua,
+            complemento,
+            cpf_id,
+            data_inscricao,
+            data_nascimento,
+            data_ultima_atualizacao,
+            case
+                indicativo_estrangeiro when 'N' then false when 'S' then true else null
+            end as estrangeiro,
+            case
+                indicativo_residente_exterior
+                when 'S'
+                then true
+                when 'N'
+                then false
+                else null
+            end as residente_exterior,
+            logradouro,
+            nome,
+            nome_mae,
+            numero_logradouro,
+            telefone,
+            tipo_logradouro,
+            uf_domicilio,
+            uf_nascimento,
+            version,
+            seq,
+            last_seq,
+            _airbyte_meta,
+            _airbyte_generation_id,
+            cast(cpf_id as int64) as cpf_particao
+        from tb_parsed t
+        left join
+            municipio_bd as md
+            on cast(t.id_municipio_domicilio as int64)
+            = cast(md.id_municipio_rf as int64)
+        left join
+            municipio_bd as mn
+            on cast(t.id_municipio_domicilio as int64)
+            = cast(mn.id_municipio_rf as int64)
+        left join
+            `rj-crm-registry.brutos_bcadastro.ocupacao_receita_federal` o
+            on t.id_ocupacao = o.id_ocupacao
+    ),
+
+    tb_padronize as (
+        select
+            id,
+            key,
+            revision,
+            exercicio_ano as ano_exercicio,
+            data_inscricao,
+            cpf_id as cpf,
+
+            {{ proper_br("situacao_cadastral") }} as situacao_cadastral,
+            {{ proper_br("nome") }} as nome,
+            data_nascimento,
+            lower(genero) as genero,
+            {{ proper_br("nome_mae") }} as nome_mae,
+
+            telefone as telefone_original,
+            case
+                when regexp_contains(telefone, r'\+')
+                then regexp_extract(telefone, r'\+([^\s]+)')
+                else null
+            end as ddi,
+            case
+                when regexp_contains(telefone, r'\(')
+                then regexp_extract(telefone, r'\(([^\)]+)\)')
+                else null
+            end as ddd,
+            case
+                when telefone is not null
+                then
+                    -- Encontra a posição do último espaço
+                    -- Se não houver espaços, retorna a string inteira
+                    if(
+                        strpos(reverse(regexp_replace(telefone, r'-', '')), ' ') > 0,
+                        substr(
+                            regexp_replace(telefone, r'-', ''),
+                            length(telefone) - strpos(reverse(telefone), ' ') + 1
+                        ),
+                        regexp_replace(telefone, r'-', '')
+                    )
+                else null
+            end as telefone,
+
+            id_natureza_ocupacao,
+            id_ocupacao,
+            {{ proper_br("ocupacao") }} as ocupacao,
+            id_ua,
+
+            id_municipio_domicilio,
+            {{ proper_br("municipio_domicilio") }} as municipio_domicilio,
+            lower(uf_domicilio) as uf_domicilio,
+            id_municipio_nascimento,
+            {{ proper_br("municipio_nascimento") }} as municipio_nascimento,
+            lower(uf_nascimento) as uf_nascimento,
+
+            cep,
+            {{ proper_br("bairro") }} as bairro,
+            {{ proper_br("tipo_logradouro") }} as tipo_logradouro,
+            {{ proper_br("logradouro") }} as logradouro,
+            {{ proper_br("complemento") }} as complemento,
+            numero_logradouro,
+
+            estrangeiro,
+            residente_exterior,
+
+            data_ultima_atualizacao,
+
+            version,
+            seq,
+            last_seq,
+            _airbyte_meta,
+            _airbyte_generation_id,
+            cpf_particao
+        from tb_intermediate
     )
 
-select
-    id,
-    key,
-    revision,
-    exercicio_ano,
-    bairro,
-    cep,
-    id_municipio_domicilio,
-    md.nome_municipio as nome_municipio_domicilio,
-    id_municipio_nascimento,
-    mn.nome_municipio as nome_municipio_nascimento,
-    id_natureza_ocupacao,
-    t.id_ocupacao,
-    o.descricao as descricao_ocupacao,
-    case
-        id_sexo
-        when '1'
-        then 'Masculino'
-        when '2'
-        then 'Feminino'
-        when '9'
-        then 'Não informado'
-        else id_sexo
-    end as sexo,
-    case
-        id_situacao_cadastral
-        when '0'
-        then 'Regular'
-        when '2'
-        then 'Suspensa'
-        when '3'
-        then 'Titular Falecido'
-        when '4'
-        then 'Pendente de Regularização'
-        when '5'
-        then 'Cancelada por Multiplicidade'
-        when '8'
-        then 'Nula'
-        when '9'
-        then 'Cancelada de Ofício'
-        else id_situacao_cadastral
-    end as situacao_cadastral,
-    id_ua,
-    complemento,
-    cpf_id,
-    data_inscricao,
-    data_nascimento,
-    data_ultima_atualizacao,
-    case
-        indicativo_estrangeiro when 'N' then false when 'S' then true else null
-    end as estrangeiro,
-    case
-        indicativo_residente_exterior when 'S' then true when 'N' then false else null
-    end as residente_exterior,
-    logradouro,
-    nome,
-    nome_mae,
-    numero_logradouro,
-    telefone,
-    tipo_logradouro,
-    uf_municipio_domicilio,
-    uf_municipio_nascimento,
-    version,
-    seq,
-    last_seq,
-    _airbyte_meta,
-    _airbyte_generation_id,
-    cast( cpf_id as int64) as cpf_particao
-from tb_parsed t
-left join municipio_bd as md
-    on t.id_municipio_domicilio = md.id_municipio_rf
-left join municipio_bd as mn
-    on t.id_municipio_nascimento = mn.id_municipio_rf
-left join `rj-crm-registry.brutos_bcadastro.ocupacao_receita_federal` o
-  on t.id_ocupacao = o.id_ocupacao
 
+{# SELECT 
+    telefone_original,
+    ddi,
+    ddd,
+    telefone
+FROM
+    tb_padronize
+WHERE
+    LENGTH(telefone_original) = 19; #}
 
-)
+select *
+from
+    tb_padronize
+
+    )
+    

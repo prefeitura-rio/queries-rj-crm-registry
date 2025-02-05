@@ -1,6 +1,6 @@
-DECLARE cpf_filter1 INT64 DEFAULT 17752723703;
-DECLARE cpf_filter2 INT64 DEFAULT 20129248754;
-DECLARE cpf_filter3 INT64 DEFAULT 15706658773;
+DECLARE cpf_filter1 INT64 DEFAULT ;
+DECLARE cpf_filter2 INT64 DEFAULT ;
+DECLARE cpf_filter3 INT64 DEFAULT ;
 
 with
     sms as (
@@ -23,32 +23,35 @@ with
     sms_ep as (
         select
             cpf,
-            struct(
-                id_hci,
-                entry_datetime,
-                exit_datetime,
-                location,
-                type,
-                subtype,
-                exhibition_type,
-                procedures,
-                prescription,
-                cids_summarized,
-                clinical_motivation,
-                clinical_outcome,
-                deceased,
-                filter_tags,
-                provider,
-                clinical_exams,
-                measures,
-                medicines_administered,
-                cids,
-                responsible,
-                exibicao,
-                exibicao
+            array_agg(
+                struct(
+                    id_hci,
+                    entry_datetime,
+                    exit_datetime,
+                    location,
+                    type,
+                    subtype,
+                    exhibition_type,
+                    procedures,
+                    prescription,
+                    cids_summarized,
+                    clinical_motivation,
+                    clinical_outcome,
+                    deceased,
+                    filter_tags,
+                    provider,
+                    clinical_exams,
+                    measures,
+                    medicines_administered,
+                    cids,
+                    responsible,
+                    exibicao,
+                    exibicao
+                )
             ) as saude_episodio
         from `rj-sms.app_historico_clinico.episodio_assistencial`
         where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
+        group by cpf
     ),
 
     smas as (
@@ -160,29 +163,39 @@ with
 
     bcadastro as (
         select
-            cpf_id as cpf,
+            cpf,
             struct(
-                nome,
-                nome_mae,
-                nome_municipio_domicilio,
-                nome_municipio_nascimento,
-                descricao_ocupacao,
-                sexo,
-                situacao_cadastral,
-                complemento,
+                ano_exercicio,
                 data_inscricao,
+                cpf,
+                situacao_cadastral,
+                nome,
                 data_nascimento,
-                data_ultima_atualizacao,
-                estrangeiro,
-                residente_exterior,
+                genero,
+                nome_mae,
+                telefone_original,
+                ddi,
+                ddd,
+                telefone,
+                id_natureza_ocupacao,
+                id_ocupacao,
+                ocupacao,
+                id_ua,
+                id_municipio_domicilio,
+                municipio_domicilio,
+                uf_domicilio,
+                id_municipio_nascimento,
+                municipio_nascimento,
+                uf_nascimento,
                 cep,
                 bairro,
-                logradouro,
-                numero_logradouro,
-                telefone,
                 tipo_logradouro,
-                uf_municipio_domicilio,
-                uf_municipio_nascimento
+                logradouro,
+                complemento,
+                numero_logradouro,
+                estrangeiro,
+                residente_exterior,
+                data_ultima_atualizacao
             ) as dados
         from `rj-crm-registry.brutos_bcadastro.cpf`
         where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
@@ -208,7 +221,7 @@ with
             null as ocupacao,
             null as data_ultima_atualizacao,
             null as situacao_cadastral,
-            CAST(null AS BOOL) as estrangeiro,
+            cast(null as bool) as estrangeiro,
             null as rank,
             'saude' as source
         from sms
@@ -225,7 +238,7 @@ with
             null as ocupacao,
             null as data_ultima_atualizacao,
             null as situacao_cadastral,
-            CAST(null AS BOOL) as estrangeiro,
+            cast(null as bool) as estrangeiro,
             null as rank,
             'cadunico' as source
         from smas
@@ -235,11 +248,11 @@ with
             dados.nome as nome,
             null as nome_social,
             dados.data_nascimento as data_nascimento,
-            dados.sexo as genero,
+            dados.genero as genero,
             null as raca,
             null as nome_pai,
             dados.nome_mae as nome_mae,
-            dados.descricao_ocupacao as ocupacao,
+            dados.ocupacao as ocupacao,
             dados.data_ultima_atualizacao as data_ultima_atualizacao,
             dados.situacao_cadastral as situacao_cadastral,
             dados.estrangeiro as estrangeiro,
@@ -283,7 +296,7 @@ with
             endereco.bairro as bairro,
             endereco.cidade as cidade,
             endereco.estado as estado,
-            CAST(null AS BOOL) as residente_exterior,
+            cast(null as bool) as residente_exterior,
             endereco.sistema as sistema,
             endereco.rank as rank,
             'saude' as source
@@ -297,8 +310,8 @@ with
             dados.numero_logradouro as numero,
             dados.complemento as complemento,
             dados.bairro as bairro,
-            dados.nome_municipio_domicilio as cidade,
-            dados.uf_municipio_domicilio as estado,
+            dados.municipio_domicilio as cidade,
+            dados.uf_domicilio as estado,
             dados.residente_exterior as residente_exterior,
             null as sistema,
             null as rank,
@@ -332,6 +345,7 @@ with
     contato_geral_telefone as (
         select
             cpf,
+            null as ddi,
             telefone.ddd as ddd,
             telefone.valor as valor,
             telefone.sistema,
@@ -341,7 +355,8 @@ with
         union all
         select
             cpf,
-            null as ddd,
+            dados.ddi as ddi,
+            dados.ddd as ddd,
             dados.telefone as valor,
             null as sistema,
             null as rank,
@@ -349,7 +364,8 @@ with
         from bcadastro
     ),
     contato_telefone as (
-        select cpf, array_agg(struct(source, ddd, valor, sistema, rank)) as telefone
+        select
+            cpf, array_agg(struct(source, ddi, ddd, valor, sistema, rank)) as telefone
         from contato_geral_telefone
         group by cpf
     ),
@@ -359,10 +375,7 @@ with
             cpf,
             array_agg(
                 struct(
-                    'saude' as source,
-                    email.valor as valor,
-                    email.sistema,
-                    email.rank
+                    'saude' as source, email.valor as valor, email.sistema, email.rank
                 )
             ) as email
         from sms, unnest(contato.email) as email
@@ -383,8 +396,8 @@ select
     e.endereco,
     co.contato,
     s.saude,
-    c.cadunico,
     ep.saude_episodio,
+    c.cadunico,
     t.transporte,
     ch.chamados
 from all_cpfs a
@@ -396,4 +409,3 @@ left join sms_ep ep on a.cpf = ep.cpf
 left join smas c on a.cpf = c.cpf
 left join smtr t on a.cpf = t.cpf
 left join segovi ch on a.cpf = ch.cpf
-
