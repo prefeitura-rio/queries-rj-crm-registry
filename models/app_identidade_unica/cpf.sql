@@ -2,7 +2,12 @@ CREATE OR REPLACE TABLE `rj-crm-registry.app_identidade_unica.cpf` AS (
   with
     saude as (
         select distinct cpf, 'saude' as origem
-        from `rj-sms.app_historico_clinico.paciente`
+        from `rj-sms.saude_historico_clinico.paciente`
+    ),
+
+    saude_episodio as (
+        select distinct paciente_cpf as cpf, 'saude_episodio' as origem
+        from `rj-sms.app_historico_clinico.episodio_assistencial`
     ),
 
     cadunico as (
@@ -29,6 +34,9 @@ CREATE OR REPLACE TABLE `rj-crm-registry.app_identidade_unica.cpf` AS (
     all_cpfs as (
         select *
         from saude
+        union all
+        select *
+        from saude_episodio
         union all
         select *
         from cadunico

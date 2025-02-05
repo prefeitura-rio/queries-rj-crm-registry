@@ -1,9 +1,15 @@
-with
+CREATE OR REPLACE TABLE `rj-crm-registry.brutos_bcadastro.cpf` 
+PARTITION BY
+  RANGE_BUCKET(cpf_particao, GENERATE_ARRAY(0, 100000000000, 34722222))
+
+  AS
+
+(
+    with
     tb as (
         select *
         from
-            `rj-crm-registry.airbyte_internal.brutos_bcadastro_raw__stream_chcpf_bcadastros`
-        limit 100
+            `rj-crm-registry.airbyte_internal.brutos_bcadastro_staging_raw__stream_chcpf_bcadastros`
     ),
 
     municipio_bd as (
@@ -31,13 +37,13 @@ with
             json_value(_airbyte_data, '$.doc.codUA') as id_ua,
             json_value(_airbyte_data, '$.doc.complemento') as complemento,
             json_value(_airbyte_data, '$.doc.cpfId') as cpf_id,
-            parse_date(
+            safe.parse_date(
                 '%Y%m%d', json_value(_airbyte_data, '$.doc.dtInscricao')
             ) as data_inscricao,
-            parse_date(
+            safe.parse_date(
                 '%Y%m%d', json_value(_airbyte_data, '$.doc.dtNasc')
             ) as data_nascimento,
-            parse_date(
+            safe.parse_date(
                 '%Y%m%d', json_value(_airbyte_data, '$.doc.dtUltAtualiz')
             ) as data_ultima_atualizacao,
             json_value(_airbyte_data, '$.doc.indEstrangeiro') as indicativo_estrangeiro,
@@ -126,12 +132,15 @@ select
     seq,
     last_seq,
     _airbyte_meta,
-    _airbyte_generation_id
+    _airbyte_generation_id,
+    cast( cpf_id as int64) as cpf_particao
 from tb_parsed t
 left join municipio_bd as md
     on t.id_municipio_domicilio = md.id_municipio_rf
 left join municipio_bd as mn
     on t.id_municipio_nascimento = mn.id_municipio_rf
-left join `rj-crm-registry.sandbox_staging.ocupacao_receita_federal` o
+left join `rj-crm-registry.brutos_bcadastro.ocupacao_receita_federal` o
   on t.id_ocupacao = o.id_ocupacao
 
+
+)
