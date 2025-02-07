@@ -20,40 +20,6 @@ with
         where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
     ),
 
-    sms_ep as (
-        select
-            cpf,
-            array_agg(
-                struct(
-                    id_hci,
-                    entry_datetime,
-                    exit_datetime,
-                    location,
-                    type,
-                    subtype,
-                    exhibition_type,
-                    procedures,
-                    prescription,
-                    cids_summarized,
-                    clinical_motivation,
-                    clinical_outcome,
-                    deceased,
-                    filter_tags,
-                    provider,
-                    clinical_exams,
-                    measures,
-                    medicines_administered,
-                    cids,
-                    responsible,
-                    exibicao,
-                    exibicao
-                )
-            ) as saude_episodio
-        from `rj-sms.app_historico_clinico.episodio_assistencial`
-        where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
-        group by cpf
-    ),
-
     smas as (
         select
             cpf,
@@ -71,93 +37,6 @@ with
         from `rj-smas.app_identidade_unica.cadastros`
         left join unnest(dados) as dados
         where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
-
-    ),
-
-    segovi as (
-        select
-            cpf,
-            array_agg(
-                struct(
-                    origem_ocorrencia,
-                    id_chamado,
-                    id_origem_ocorrencia,
-                    data_inicio,
-                    data_fim,
-                    id_bairro,
-                    id_territorialidade,
-                    id_logradouro,
-                    numero_logradouro,
-                    id_unidade_organizacional,
-                    nome_unidade_organizacional,
-                    id_unidade_organizacional_mae,
-                    unidade_organizacional_ouvidoria,
-                    categoria,
-                    id_tipo,
-                    tipo,
-                    id_subtipo,
-                    subtipo,
-                    status,
-                    longitude,
-                    latitude,
-                    data_alvo_finalizacao,
-                    data_alvo_diagnostico,
-                    data_real_diagnostico,
-                    tempo_prazo,
-                    prazo_unidade,
-                    prazo_tipo,
-                    dentro_prazo,
-                    situacao,
-                    tipo_situacao,
-                    justificativa_status,
-                    reclamacoes,
-                    descricao,
-                    data_particao
-                )
-            ) as chamados
-        from `rj-segovi.app_identidade_unica.1746_chamado_cpf`
-        where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
-        group by cpf
-
-    ),
-
-    smtr as (
-        select
-            cpf_cliente as cpf,
-            array_agg(
-                struct(
-                    data,
-                    hora,
-                    datetime_transacao,
-                    datetime_processamento,
-                    datetime_captura,
-                    modo,
-                    id_consorcio,
-                    consorcio,
-                    id_operadora,
-                    operadora,
-                    id_servico_jae,
-                    servico_jae,
-                    descricao_servico_jae,
-                    sentido,
-                    id_veiculo,
-                    id_validador,
-                    id_transacao,
-                    tipo_pagamento,
-                    tipo_transacao,
-                    tipo_transacao_smtr,
-                    tipo_gratuidade,
-                    latitude,
-                    longitude,
-                    geo_point_transacao,
-                    valor_transacao,
-                    versao,
-                    datetime_ultima_atualizacao
-                )
-            ) as transporte
-        from `rj-smtr-dev.projeto_cadastro_unico.transacao_cpf`
-        where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
-        group by cpf_cliente
 
     ),
 
@@ -389,23 +268,10 @@ with
         left join contato_email e on a.cpf = e.cpf
     )
 
-select
-    a.cpf,
-    a.origens,
-    ca.dados,
-    e.endereco,
-    co.contato,
-    s.saude,
-    ep.saude_episodio,
-    c.cadunico,
-    t.transporte,
-    ch.chamados
+select a.cpf, a.origens, ca.dados, e.endereco, co.contato, s.saude, c.cadunico
 from all_cpfs a
 left join cadastro ca on a.cpf = ca.cpf
 left join endereco e on a.cpf = e.cpf
 left join contato co on a.cpf = co.cpf
 left join sms s on a.cpf = s.cpf
-left join sms_ep ep on a.cpf = ep.cpf
 left join smas c on a.cpf = c.cpf
-left join smtr t on a.cpf = t.cpf
-left join segovi ch on a.cpf = ch.cpf
