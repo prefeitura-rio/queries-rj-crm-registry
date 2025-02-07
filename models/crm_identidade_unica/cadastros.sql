@@ -1,13 +1,12 @@
-DECLARE cpf_filter1 INT64 DEFAULT ;
+{# DECLARE cpf_filter1 INT64 DEFAULT ;
 DECLARE cpf_filter2 INT64 DEFAULT ;
-DECLARE cpf_filter3 INT64 DEFAULT ;
-
-{# CREATE OR REPLACE TABLE `rj-crm-registry.crm_identidade_unica.cadastros` 
+DECLARE cpf_filter3 INT64 DEFAULT ; #}
+CREATE OR REPLACE TABLE `rj-crm-registry.crm_identidade_unica.cadastros` 
 PARTITION BY
   RANGE_BUCKET(cpf_particao, GENERATE_ARRAY(0, 100000000000, 34722222))
 
   AS
-( #}
+(
 with
 
     all_cpfs as (
@@ -15,7 +14,7 @@ with
         from `rj-crm-registry.crm_identidade_unica.cpf`
         where
             cpf_particao is not null
-            and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
+{# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
     ),
 
     bcadastro as (
@@ -57,7 +56,7 @@ with
         from `rj-crm-registry.brutos_bcadastro.cpf`
         where
             cpf_particao is not null
-            and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
+{# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
     ),
 
     sms as (
@@ -76,7 +75,7 @@ with
         from `rj-sms.saude_historico_clinico.paciente`
         where
             cpf_particao is not null
-            and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
+{# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
     ),
 
     smas as (
@@ -97,7 +96,7 @@ with
         left join unnest(dados) as dados
         where
             cpf_particao is not null
-            and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
+{# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
     ),
 
     cadastro_geral as (
@@ -297,5 +296,5 @@ left join contato co on a.cpf = co.cpf
 left join sms s on a.cpf = s.cpf
 left join
     smas c on a.cpf = c.cpf
-    {# ) #}
-    
+{# ) #}
+

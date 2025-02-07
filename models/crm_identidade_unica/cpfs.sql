@@ -64,7 +64,7 @@ PARTITION BY
     ),
 
     final_tb as (
-        select cpf, array_agg(origem order by origem) as origens, count(*) as count, cast(cpf as int64) as cpf_particao        from all_cpfs
+        select cpf, array_agg(origem order by origem) as origens, count(*) as count, cast(cpf as int64) as cpf_particao from all_cpfs
         group by cpf
     )
 
