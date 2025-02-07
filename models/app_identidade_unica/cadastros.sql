@@ -2,41 +2,20 @@ DECLARE cpf_filter1 INT64 DEFAULT ;
 DECLARE cpf_filter2 INT64 DEFAULT ;
 DECLARE cpf_filter3 INT64 DEFAULT ;
 
-with
-    sms as (
-        select
-            cpf,
-            dados,
-            endereco,
-            contato,
-            struct(
-                cadastros_conflitantes_indicador,
-                cns,
-                equipe_saude_familia,
-                prontuario,
-                metadados
-            ) as saude
-        from `rj-sms.saude_historico_clinico.paciente`
-        where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
-    ),
+{# CREATE OR REPLACE TABLE `rj-crm-registry.crm_identidade_unica.cadastros` 
+PARTITION BY
+  RANGE_BUCKET(cpf_particao, GENERATE_ARRAY(0, 100000000000, 34722222))
 
-    smas as (
-        select
-            cpf,
-            dados,
-            struct(
-                id_membro_familia,
-                id_familia,
-                data_particao,
-                deficiencia,
-                escolaridade,
-                renda,
-                domicilio,
-                membros
-            ) as assistencia_social
-        from `rj-smas.app_identidade_unica.cadastros`
-        left join unnest(dados) as dados
-        where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
+  AS
+( #}
+with
+
+    all_cpfs as (
+        select cpf, count as origens
+        from `rj-crm-registry.crm_identidade_unica.cpf`
+        where
+            cpf_particao is not null
+            and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
     ),
 
     bcadastro as (
@@ -76,14 +55,49 @@ with
                 data_ultima_atualizacao
             ) as dados
         from `rj-crm-registry.brutos_bcadastro.cpf`
-        where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
-
+        where
+            cpf_particao is not null
+            and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
     ),
 
-    all_cpfs as (
-        select cpf, count as origens
-        from `rj-crm-registry.app_identidade_unica.cpf`
-        where safe_cast(cpf as int64) in (cpf_filter1, cpf_filter2, cpf_filter3)
+    sms as (
+        select
+            cpf,
+            dados,
+            endereco,
+            contato,
+            struct(
+                cadastros_conflitantes_indicador,
+                cns,
+                equipe_saude_familia,
+                prontuario,
+                metadados
+            ) as saude
+        from `rj-sms.saude_historico_clinico.paciente`
+        where
+            cpf_particao is not null
+            and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
+    ),
+
+    smas as (
+        select
+            cpf,
+            dados,
+            struct(
+                id_membro_familia,
+                id_familia,
+                data_particao,
+                deficiencia,
+                escolaridade,
+                renda,
+                domicilio,
+                membros
+            ) as assistencia_social
+        from `rj-smas.app_identidade_unica.cadastros`
+        left join unnest(dados) as dados
+        where
+            cpf_particao is not null
+            and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
     ),
 
     cadastro_geral as (
@@ -267,10 +281,21 @@ with
         left join contato_email e on a.cpf = e.cpf
     )
 
-select a.cpf, a.origens, ca.dados, e.endereco, co.contato, s.saude, c.assistencia_social
+select
+    a.cpf,
+    a.origens,
+    ca.dados,
+    e.endereco,
+    co.contato,
+    s.saude,
+    c.assistencia_social,
+    cast(a.cpf as int64) as cpf_particao
 from all_cpfs a
 left join cadastro ca on a.cpf = ca.cpf
 left join endereco e on a.cpf = e.cpf
 left join contato co on a.cpf = co.cpf
 left join sms s on a.cpf = s.cpf
-left join smas c on a.cpf = c.cpf
+left join
+    smas c on a.cpf = c.cpf
+    {# ) #}
+    
