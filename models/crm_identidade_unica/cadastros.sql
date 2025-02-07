@@ -10,11 +10,12 @@ PARTITION BY
 with
 
     all_cpfs as (
-        select cpf, count as origens
+        select cpf, array_agg(struct(origens_count, origens)) as origens
         from `rj-crm-registry.crm_identidade_unica.cpf`
         where
             cpf_particao is not null
 {# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
+        group by cpf
     ),
 
     bcadastro as (
@@ -51,7 +52,8 @@ with
                 numero_logradouro,
                 estrangeiro,
                 residente_exterior,
-                data_ultima_atualizacao
+                data_ultima_atualizacao,
+                rank
             ) as dados
         from `rj-crm-registry.brutos_bcadastro.cpf`
         where
@@ -113,7 +115,7 @@ with
             null as data_ultima_atualizacao,
             null as situacao_cadastral,
             cast(null as bool) as estrangeiro,
-            null as rank,
+            1 as rank,
             'saude' as source
         from sms
         union all
@@ -130,7 +132,7 @@ with
             null as data_ultima_atualizacao,
             null as situacao_cadastral,
             cast(null as bool) as estrangeiro,
-            null as rank,
+            1 as rank,
             'cadunico' as source
         from smas
         union all
@@ -147,7 +149,7 @@ with
             dados.data_ultima_atualizacao as data_ultima_atualizacao,
             dados.situacao_cadastral as situacao_cadastral,
             dados.estrangeiro as estrangeiro,
-            null as rank,
+            dados.rank,
             'bcadastro' as source
         from bcadastro
     ),
@@ -158,6 +160,7 @@ with
             array_agg(
                 struct(
                     source,
+                    rank,
                     nome,
                     nome_social,
                     data_nascimento,
@@ -168,8 +171,7 @@ with
                     ocupacao,
                     data_ultima_atualizacao,
                     situacao_cadastral,
-                    estrangeiro,
-                    rank
+                    estrangeiro
                 )
             ) as dados
         from cadastro_geral
@@ -205,7 +207,7 @@ with
             dados.uf_domicilio as estado,
             dados.residente_exterior as residente_exterior,
             null as sistema,
-            null as rank,
+            dados.rank,
             'bcadastro' as source
         from bcadastro
     ),
@@ -216,6 +218,7 @@ with
             array_agg(
                 struct(
                     source,
+                    rank,
                     cep,
                     tipo_logradouro,
                     logradouro,
@@ -225,8 +228,7 @@ with
                     cidade,
                     estado,
                     residente_exterior,
-                    sistema,
-                    rank
+                    sistema
                 )
             ) as endereco
         from endereco_geral
@@ -250,13 +252,13 @@ with
             dados.ddd as ddd,
             dados.telefone as valor,
             null as sistema,
-            null as rank,
+            dados.rank,
             'bcadastro' as source
         from bcadastro
     ),
     contato_telefone as (
         select
-            cpf, array_agg(struct(source, ddi, ddd, valor, sistema, rank)) as telefone
+            cpf, array_agg(struct(source, rank, ddi, ddd, valor, sistema)) as telefone
         from contato_geral_telefone
         group by cpf
     ),
@@ -266,7 +268,7 @@ with
             cpf,
             array_agg(
                 struct(
-                    'saude' as source, email.valor as valor, email.sistema, email.rank
+                    'saude' as source, email.rank, email.valor as valor, email.sistema
                 )
             ) as email
         from sms, unnest(contato.email) as email
@@ -296,5 +298,4 @@ left join contato co on a.cpf = co.cpf
 left join sms s on a.cpf = s.cpf
 left join
     smas c on a.cpf = c.cpf
-{# ) #}
-
+)

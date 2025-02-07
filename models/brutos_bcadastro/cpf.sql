@@ -1,15 +1,14 @@
 CREATE OR REPLACE TABLE `rj-crm-registry.brutos_bcadastro.cpf` 
 PARTITION BY
   RANGE_BUCKET(cpf_particao, GENERATE_ARRAY(0, 100000000000, 34722222))
-
+  CLUSTER BY municipio_domicilio
   AS
 
 (
 with
     tb as (
-        select * from `rj-crm-registry.brutos_bcadastro_staging.cpf_test`
-        {# select * from `rj-crm-registry.airbyte_internal.brutos_bcadastro_staging_raw__stream_chcpf_bcadastros` #}
-
+{# select * from `rj-crm-registry.brutos_bcadastro_staging.cpf_test` #}
+        select * from `rj-crm-registry.airbyte_internal.brutos_bcadastro_staging_raw__stream_chcpf_bcadastros`
     ),
 
     municipio_bd as (
@@ -109,7 +108,7 @@ with
             end as situacao_cadastral,
             id_ua,
             complemento,
-            cpf_id,
+            cpf_id as cpf,
             data_inscricao,
             data_nascimento,
             data_ultima_atualizacao,
@@ -159,13 +158,13 @@ with
             revision,
             exercicio_ano as ano_exercicio,
             data_inscricao,
-            cpf_id as cpf,
+            cpf,
 
-            {{ proper_br("situacao_cadastral") }} as situacao_cadastral,
-            {{ proper_br("nome") }} as nome,
+{{ proper_br("situacao_cadastral") }} as situacao_cadastral,
+{{ proper_br("nome") }} as nome,
             data_nascimento,
             lower(genero) as genero,
-            {{ proper_br("nome_mae") }} as nome_mae,
+{{ proper_br("nome_mae") }} as nome_mae,
 
             telefone as telefone_original,
             case
@@ -181,8 +180,8 @@ with
             case
                 when telefone is not null
                 then
-                    -- Encontra a posição do último espaço
-                    -- Se não houver espaços, retorna a string inteira
+-- Encontra a posição do último espaço
+-- Se não houver espaços, retorna a string inteira
                     if(
                         strpos(reverse(regexp_replace(telefone, r'-', '')), ' ') > 0,
                         substr(
@@ -196,21 +195,21 @@ with
 
             id_natureza_ocupacao,
             id_ocupacao,
-            {{ proper_br("ocupacao") }} as ocupacao,
+{{ proper_br("ocupacao") }} as ocupacao,
             id_ua,
 
             id_municipio_domicilio,
-            {{ proper_br("municipio_domicilio") }} as municipio_domicilio,
+{{ proper_br("municipio_domicilio") }} as municipio_domicilio,
             lower(uf_domicilio) as uf_domicilio,
             id_municipio_nascimento,
-            {{ proper_br("municipio_nascimento") }} as municipio_nascimento,
+{{ proper_br("municipio_nascimento") }} as municipio_nascimento,
             lower(uf_nascimento) as uf_nascimento,
 
             cep,
-            {{ proper_br("bairro") }} as bairro,
-            {{ proper_br("tipo_logradouro") }} as tipo_logradouro,
-            {{ proper_br("logradouro") }} as logradouro,
-            {{ proper_br("complemento") }} as complemento,
+{{ proper_br("bairro") }} as bairro,
+{{ proper_br("tipo_logradouro") }} as tipo_logradouro,
+{{ proper_br("logradouro") }} as logradouro,
+{{ proper_br("complemento") }} as complemento,
             numero_logradouro,
 
             estrangeiro,
@@ -223,6 +222,7 @@ with
             last_seq,
             _airbyte_meta,
             _airbyte_generation_id,
+            row_number() over (partition by cpf order by data_ultima_atualizacao desc) as rank,
             cpf_particao
         from tb_intermediate
     )
@@ -237,10 +237,8 @@ FROM
     tb_padronize
 WHERE
     LENGTH(telefone_original) = 19; #}
-
 select *
 from
     tb_padronize
 
     )
-    

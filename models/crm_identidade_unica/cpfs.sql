@@ -1,6 +1,7 @@
 CREATE OR REPLACE TABLE `rj-crm-registry.crm_identidade_unica.cpf` 
 PARTITION BY
   RANGE_BUCKET(cpf_particao, GENERATE_ARRAY(0, 100000000000, 34722222))
+  
 
   AS
 
@@ -64,14 +65,14 @@ PARTITION BY
     ),
 
     final_tb as (
-        select cpf, array_agg(origem order by origem) as origens, count(*) as count, cast(cpf as int64) as cpf_particao from all_cpfs
+        select cpf, array_agg(origem order by origem) as origens, count(*) as origens_count, cast(cpf as int64) as cpf_particao from all_cpfs
         group by cpf
     )
 
 select 
     cpf,
     origens,
-    count,
+    origens_count,
     cpf_particao
 from final_tb
 )
