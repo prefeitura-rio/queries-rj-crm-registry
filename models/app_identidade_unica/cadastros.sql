@@ -33,11 +33,10 @@ with
                 renda,
                 domicilio,
                 membros
-            ) as cadunico
+            ) as assistencia_social
         from `rj-smas.app_identidade_unica.cadastros`
         left join unnest(dados) as dados
         where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3)
-
     ),
 
     bcadastro as (
@@ -268,7 +267,7 @@ with
         left join contato_email e on a.cpf = e.cpf
     )
 
-select a.cpf, a.origens, ca.dados, e.endereco, co.contato, s.saude, c.cadunico
+select a.cpf, a.origens, ca.dados, e.endereco, co.contato, s.saude, c.assistencia_social
 from all_cpfs a
 left join cadastro ca on a.cpf = ca.cpf
 left join endereco e on a.cpf = e.cpf
