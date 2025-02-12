@@ -7,8 +7,18 @@ PARTITION BY
 (
 with
     tb as (
-{# select * from `rj-crm-registry.brutos_bcadastro_staging.cpf_test` #}
-        select * from `rj-crm-registry.airbyte_internal.brutos_bcadastro_staging_raw__stream_chcpf_bcadastros`
+        select  
+            _airbyte_raw_id,
+            _airbyte_extracted_at,
+            _airbyte_meta,
+            _airbyte_generation_id,
+            id,
+            doc,
+            key,
+            seq,
+            value,
+            last_seq
+        from `rj-crm-registry.brutos_bcadastro_staging.chcpf_bcadastros` 
     ),
 
     municipio_bd as (
@@ -19,55 +29,69 @@ with
     tb_parsed as (
 
         select
-            json_value(_airbyte_data, '$.id') as id,
-            json_value(_airbyte_data, '$.key') as key,
-            json_value(_airbyte_data, '$.value.rev') as revision,
-            cast(json_value(_airbyte_data, '$.doc.anoExerc') as int64) as exercicio_ano,
-            json_value(_airbyte_data, '$.doc.bairro') as bairro,
-            json_value(_airbyte_data, '$.doc.cep') as cep,
-            json_value(_airbyte_data, '$.doc.codMunDomic') as id_municipio_domicilio,
-            json_value(_airbyte_data, '$.doc.codMunNat') as id_municipio_nascimento,
-            json_value(_airbyte_data, '$.doc.codNatOcup') as id_natureza_ocupacao,
-            json_value(_airbyte_data, '$.doc.codOcup') as id_ocupacao,
-            json_value(_airbyte_data, '$.doc.codSexo') as id_sexo,
-            json_value(_airbyte_data, '$.doc.codSitCad') as id_situacao_cadastral,
-            json_value(_airbyte_data, '$.doc.codUA') as id_ua,
-            json_value(_airbyte_data, '$.doc.complemento') as complemento,
-            json_value(_airbyte_data, '$.doc.cpfId') as cpf_id,
+
+            id,
+            key,
+            json_value(value, '$.rev') as rev,
+
+            json_value(doc, '$._id') as _id,
+            json_value(doc, '$._rev') as _rev,
+
+            cast(json_value(doc, '$.anoExerc') as int64) as exercicio_ano,
+            json_value(doc, '$.bairro') as bairro,
+            json_value(doc, '$.cep') as cep,
+            json_value(doc, '$.codMunDomic') as id_municipio_domicilio,
+            json_value(doc, '$.codMunNat') as id_municipio_nascimento,
+            json_value(doc, '$.codNatOcup') as id_natureza_ocupacao,
+            json_value(doc, '$.codOcup') as id_ocupacao,
+            json_value(doc, '$.codSexo') as id_sexo,
+            json_value(doc, '$.codSitCad') as id_situacao_cadastral,
+            json_value(doc, '$.codUA') as id_ua,
+            json_value(doc, '$.complemento') as complemento,
+            json_value(doc, '$.cpfId') as cpf_id,
             safe.parse_date(
-                '%Y%m%d', json_value(_airbyte_data, '$.doc.dtInscricao')
+                '%Y%m%d', json_value(doc, '$.dtInscricao')
             ) as data_inscricao,
             safe.parse_date(
-                '%Y%m%d', json_value(_airbyte_data, '$.doc.dtNasc')
+                '%Y%m%d', json_value(doc, '$.dtNasc')
             ) as data_nascimento,
             safe.parse_date(
-                '%Y%m%d', json_value(_airbyte_data, '$.doc.dtUltAtualiz')
+                '%Y%m%d', json_value(doc, '$.dtUltAtualiz')
             ) as data_ultima_atualizacao,
-            json_value(_airbyte_data, '$.doc.indEstrangeiro') as indicativo_estrangeiro,
+            json_value(doc, '$.indEstrangeiro') as indicativo_estrangeiro,
             json_value(
-                _airbyte_data, '$.doc.indResExt'
+                doc, '$.indResExt'
             ) as indicativo_residente_exterior,
-            json_value(_airbyte_data, '$.doc.logradouro') as logradouro,
-            json_value(_airbyte_data, '$.doc.nomeContribuinte') as nome,
-            json_value(_airbyte_data, '$.doc.nomeMae') as nome_mae,
-            json_value(_airbyte_data, '$.doc.nroLogradouro') as numero_logradouro,
-            json_value(_airbyte_data, '$.doc.telefone') as telefone,
-            json_value(_airbyte_data, '$.doc.tipoLogradouro') as tipo_logradouro,
-            json_value(_airbyte_data, '$.doc.ufMunDomic') as uf_domicilio,
-            json_value(_airbyte_data, '$.doc.ufMunNat') as uf_nascimento,
-            json_value(replace(_airbyte_data, '~', ''), '$.doc.version') as version,
-            json_value(_airbyte_data, '$.seq') as seq,
-            json_value(_airbyte_data, '$.last_seq') as last_seq,
-            _airbyte_meta,
-            _airbyte_generation_id
+            json_value(doc, '$.logradouro') as logradouro,
+            json_value(doc, '$.nomeContribuinte') as nome,
+            json_value(doc, '$.nomeMae') as nome_mae,
+            json_value(doc, '$.nroLogradouro') as numero_logradouro,
+            json_value(doc, '$.telefone') as telefone,
+            json_value(doc, '$.tipoLogradouro') as tipo_logradouro,
+            json_value(doc, '$.ufMunDomic') as uf_domicilio,
+            json_value(doc, '$.ufMunNat') as uf_nascimento,
+            json_value(REPLACE(to_json_string(doc),'~',''), '$.version') as version,
+
+            seq,
+            last_seq,
+
+            _airbyte_raw_id as airbyte_raw_id,
+            _airbyte_extracted_at as airbyte_extracted_at,
+            struct(
+              json_value(_airbyte_meta, '$.changes') as changes,
+              json_value(_airbyte_meta, '$.sync_id') as sync_id
+            ) as airbyte_meta,
+            _airbyte_generation_id as airbyte_generation_id,
         from tb
     ),
 
     tb_intermediate as (
         select
             id,
+            _id,
             key,
-            revision,
+            rev,
+            _rev,
             exercicio_ano,
             bairro,
             cep,
@@ -132,10 +156,15 @@ with
             uf_domicilio,
             uf_nascimento,
             version,
+
             seq,
             last_seq,
-            _airbyte_meta,
-            _airbyte_generation_id,
+
+            airbyte_raw_id,
+            airbyte_extracted_at,
+            airbyte_meta,
+            airbyte_generation_id,
+
             cast(cpf_id as int64) as cpf_particao
         from tb_parsed t
         left join
@@ -154,8 +183,10 @@ with
     tb_padronize as (
         select
             id,
+            _id,
             key,
-            revision,
+            rev,
+            _rev,
             exercicio_ano as ano_exercicio,
             data_inscricao,
             cpf,
@@ -211,34 +242,25 @@ with
 {{ proper_br("logradouro") }} as logradouro,
 {{ proper_br("complemento") }} as complemento,
             numero_logradouro,
-
             estrangeiro,
             residente_exterior,
-
             data_ultima_atualizacao,
-
             version,
+            row_number() over (partition by cpf order by data_ultima_atualizacao desc) as rank,
+
             seq,
             last_seq,
-            _airbyte_meta,
-            _airbyte_generation_id,
-            row_number() over (partition by cpf order by data_ultima_atualizacao desc) as rank,
+
+            airbyte_raw_id,
+            airbyte_extracted_at,
+            airbyte_meta,
+            airbyte_generation_id,
+
             cpf_particao
         from tb_intermediate
     )
 
-
-{# SELECT 
-    telefone_original,
-    ddi,
-    ddd,
-    telefone
-FROM
-    tb_padronize
-WHERE
-    LENGTH(telefone_original) = 19; #}
 select *
 from
     tb_padronize
-
     )

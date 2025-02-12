@@ -1,7 +1,4 @@
-{# DECLARE cpf_filter1 INT64 DEFAULT ;
-DECLARE cpf_filter2 INT64 DEFAULT ;
-DECLARE cpf_filter3 INT64 DEFAULT ; #}
-CREATE OR REPLACE TABLE `rj-crm-registry.crm_identidade_unica.cadastros` 
+CREATE OR REPLACE TABLE `rj-crm-registry.crm_identidade_unica_staging.pessoa_fisica` 
 PARTITION BY
   RANGE_BUCKET(cpf_particao, GENERATE_ARRAY(0, 100000000000, 34722222))
 
@@ -10,21 +7,21 @@ PARTITION BY
 with
 
     all_cpfs as (
-        select cpf, array_agg(struct(origens_count, origens)) as origens
-        from `rj-crm-registry.crm_identidade_unica.cpf`
+        select cpf, cpf_particao, array_agg(struct(origens_count, origens)) as origens
+        from `rj-crm-registry.crm_identidade_unica_staging.cpf`
         where
             cpf_particao is not null
 {# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
-        group by cpf
+        group by cpf, cpf_particao
     ),
 
     bcadastro as (
         select
-            cpf,
+            b.cpf,
             struct(
                 ano_exercicio,
                 data_inscricao,
-                cpf,
+                b.cpf,
                 situacao_cadastral,
                 nome,
                 data_nascimento,
@@ -55,50 +52,75 @@ with
                 data_ultima_atualizacao,
                 rank
             ) as dados
-        from `rj-crm-registry.brutos_bcadastro.cpf`
-        where
-            cpf_particao is not null
-{# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
+        from all_cpfs a
+        left join
+            `rj-crm-registry.brutos_bcadastro.cpf` b on a.cpf_particao = b.cpf_particao
     ),
 
     sms as (
         select
-            cpf,
-            dados,
-            endereco,
-            contato,
-            struct(
-                cadastros_conflitantes_indicador,
-                cns,
-                equipe_saude_familia,
-                prontuario,
-                metadados
-            ) as saude
-        from `rj-sms.saude_historico_clinico.paciente`
-        where
-            cpf_particao is not null
-{# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
+            b.cpf, dados, endereco, contato, struct(cns, equipe_saude_familia) as saude
+        from all_cpfs a
+        left join
+            `rj-sms.saude_historico_clinico.paciente` b
+            on a.cpf_particao = b.cpf_particao
     ),
 
     smas as (
         select
-            cpf,
+            b.cpf,
             dados,
+            endereco,
             struct(
-                id_membro_familia,
-                id_familia,
-                data_particao,
+                array(
+                    select as struct
+                        id_membro_familia,
+                        id_familia,
+                        data_particao,
+                        dados.estado_cadastral,
+                        dados.condicao_cadastral_familia,
+                        dados.estado_cadastral_familia,
+
+                        dados.data_cadastro,
+                        dados.data_ultima_atualizacao,
+                        dados.data_limite_cadastro_atual_familia,
+
+                        dados.condicao_rua,
+                        dados.trabalho_infantil,
+                        dados.numero_membros_familia,
+                        dados.parentesco_responsavel_familia
+                ) as cadastral,
                 deficiencia,
                 escolaridade,
                 renda,
                 domicilio,
                 membros
             ) as assistencia_social
-        from `rj-smas.app_identidade_unica.cadastros`
+        from all_cpfs a
+        left join
+            `rj-smas.app_identidade_unica.cadastros` b
+            on a.cpf_particao = b.cpf_particao
         left join unnest(dados) as dados
-        where
-            cpf_particao is not null
-{# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
+
+    ),
+
+    bcadastro_dados as (
+        select
+            cpf,
+            array_agg(
+                struct(
+                    dados.situacao_cadastral,
+                    dados.municipio_nascimento,
+                    dados.uf_nascimento,
+                    dados.id_natureza_ocupacao,
+                    dados.ocupacao,
+                    dados.id_ua,
+                    dados.data_ultima_atualizacao,
+                    dados.rank
+                )
+            ) as fazenda
+        from bcadastro
+        group by cpf
     ),
 
     cadastro_geral as (
@@ -107,13 +129,12 @@ with
             dados.nome as nome,
             dados.nome_social as nome_social,
             dados.data_nascimento as data_nascimento,
+            dados.obito_indicador,
             dados.genero as genero,
             dados.raca as raca,
             dados.mae_nome as nome_mae,
             dados.pai_nome as nome_pai,
-            null as ocupacao,
             null as data_ultima_atualizacao,
-            null as situacao_cadastral,
             cast(null as bool) as estrangeiro,
             1 as rank,
             'saude' as source
@@ -124,13 +145,12 @@ with
             dados.nome as nome,
             null as nome_social,
             dados.data_nascimento as data_nascimento,
+            null as obito_indicador,
             lower(dados.sexo) as genero,
             lower(dados.raca_cor) as raca,
             dados.nome_mae as nome_mae,
             dados.nome_pai as nome_pai,
-            null as ocupacao,
-            null as data_ultima_atualizacao,
-            null as situacao_cadastral,
+            dados.data_ultima_atualizacao as data_ultima_atualizacao,
             cast(null as bool) as estrangeiro,
             1 as rank,
             'cadunico' as source
@@ -141,14 +161,16 @@ with
             dados.nome as nome,
             null as nome_social,
             dados.data_nascimento as data_nascimento,
+            case
+                dados.situacao_cadastral when 'Titular Falecido' then true else false
+            end as obito_indicador,
             dados.genero as genero,
             null as raca,
-            null as nome_pai,
             dados.nome_mae as nome_mae,
-            dados.ocupacao as ocupacao,
+            null as nome_pai,
             dados.data_ultima_atualizacao as data_ultima_atualizacao,
-            dados.situacao_cadastral as situacao_cadastral,
             dados.estrangeiro as estrangeiro,
+
             dados.rank,
             'bcadastro' as source
         from bcadastro
@@ -164,13 +186,12 @@ with
                     nome,
                     nome_social,
                     data_nascimento,
+                    obito_indicador,
                     genero,
                     raca,
                     nome_mae,
                     nome_pai,
-                    ocupacao,
                     data_ultima_atualizacao,
-                    situacao_cadastral,
                     estrangeiro
                 )
             ) as dados
@@ -181,14 +202,16 @@ with
     endereco_geral as (
         select
             cpf,
+            endereco.estado as estado,
+            endereco.cidade as municipio,
+
             endereco.cep as cep,
             endereco.tipo_logradouro as tipo_logradouro,
             endereco.logradouro as logradouro,
             endereco.numero as numero,
             endereco.complemento as complemento,
             endereco.bairro as bairro,
-            endereco.cidade as cidade,
-            endereco.estado as estado,
+
             cast(null as bool) as residente_exterior,
             endereco.sistema as sistema,
             endereco.rank as rank,
@@ -196,20 +219,40 @@ with
         from sms, unnest(endereco) endereco
         union all
         select
+            cpf,
+            endereco.sigla_uf as estado,
+            endereco.nome_municipio as municipio,
+
+            endereco.cep as cep,
+            endereco.tipo_logradouro as tipo_logradouro,
+            endereco.logradouro as logradouro,
+            cast(endereco.numero_logradouro as string) as numero,
+            endereco.complemento as complemento,
+            endereco.localidade as bairro,
+            cast(null as bool) as residente_exterior,
+            null as sistema,
+            1 as rank,
+            'cadunico' as source
+        from smas, unnest(endereco) endereco
+        union all
+        select
             cpf as cpf,
+            dados.uf_domicilio as estado,
+            dados.municipio_domicilio as municipio,
+
             dados.cep as cep,
             dados.tipo_logradouro as tipo_logradouro,
             dados.logradouro as logradouro,
             dados.numero_logradouro as numero,
             dados.complemento as complemento,
             dados.bairro as bairro,
-            dados.municipio_domicilio as cidade,
-            dados.uf_domicilio as estado,
+
             dados.residente_exterior as residente_exterior,
             null as sistema,
             dados.rank,
             'bcadastro' as source
         from bcadastro
+
     ),
 
     endereco as (
@@ -219,14 +262,15 @@ with
                 struct(
                     source,
                     rank,
+                    estado,
+                    municipio,
                     cep,
-                    tipo_logradouro,
+                    lower(tipo_logradouro) as tipo_logradouro,
                     logradouro,
                     numero,
                     complemento,
                     bairro,
-                    cidade,
-                    estado,
+
                     residente_exterior,
                     sistema
                 )
@@ -290,12 +334,15 @@ select
     co.contato,
     s.saude,
     c.assistencia_social,
+    bd.fazenda,
     cast(a.cpf as int64) as cpf_particao
 from all_cpfs a
 left join cadastro ca on a.cpf = ca.cpf
 left join endereco e on a.cpf = e.cpf
 left join contato co on a.cpf = co.cpf
 left join sms s on a.cpf = s.cpf
+left join smas c on a.cpf = c.cpf
 left join
-    smas c on a.cpf = c.cpf
-)
+    bcadastro_dados bd on a.cpf = bd.cpf
+
+    )

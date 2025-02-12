@@ -1,4 +1,4 @@
-CREATE OR REPLACE TABLE `rj-crm-registry.crm_identidade_unica.cpf` 
+CREATE OR REPLACE TABLE `rj-crm-registry.crm_identidade_unica_staging.cpf` 
 PARTITION BY
   RANGE_BUCKET(cpf_particao, GENERATE_ARRAY(0, 100000000000, 34722222))
   
