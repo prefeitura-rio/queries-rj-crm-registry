@@ -7,12 +7,11 @@ PARTITION BY
 with
 
     all_cpfs as (
-        select cpf, cpf_particao, array_agg(struct(origens_count, origens)) as origens
+        select cpf, cpf_particao, struct(origens_count, origens) as origens
         from `rj-crm-registry.crm_identidade_unica_staging.cpf`
         where
             cpf_particao is not null
 {# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
-        group by cpf, cpf_particao
     ),
 
     bcadastro as (
@@ -55,6 +54,7 @@ with
         from all_cpfs a
         left join
             `rj-crm-registry.brutos_bcadastro.cpf` b on a.cpf_particao = b.cpf_particao
+        where rank = 1
     ),
 
     sms as (
@@ -107,20 +107,16 @@ with
     bcadastro_dados as (
         select
             cpf,
-            array_agg(
-                struct(
-                    dados.situacao_cadastral,
-                    dados.municipio_nascimento,
-                    dados.uf_nascimento,
-                    dados.id_natureza_ocupacao,
-                    dados.ocupacao,
-                    dados.id_ua,
-                    dados.data_ultima_atualizacao,
-                    dados.rank
-                )
+            struct(
+                dados.situacao_cadastral,
+                dados.municipio_nascimento,
+                dados.uf_nascimento,
+                dados.id_natureza_ocupacao,
+                dados.ocupacao,
+                dados.id_ua,
+                dados.data_ultima_atualizacao
             ) as fazenda
         from bcadastro
-        group by cpf
     ),
 
     cadastro_geral as (

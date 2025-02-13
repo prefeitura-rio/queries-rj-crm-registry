@@ -110,6 +110,9 @@ with
 -- nome_pai
             coalesce(saude.nome_pai, cadunico.nome_pai) as nome_pai,
 
+-- estrangeiro
+            coalesce(bcadastro.estrangeiro, saude.estrangeiro, cadunico.estrangeiro) as estrangeiro
+
         from all_cpf as cpfs
         left join dados_bcadastro as bcadastro on cpfs.cpf = bcadastro.cpf
         left join dados_saude as saude on cpfs.cpf = saude.cpf
@@ -122,10 +125,12 @@ select
     d.nome,
     d.has_nome_social,
     d.data_nascimento,
+    d.obito_indicador,
     d.genero,
     d.raca,
     d.nome_mae,
     d.nome_pai,
+    d.estrangeiro,
     c.endereco,
     c.contato,
     c.fazenda,
