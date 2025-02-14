@@ -72,6 +72,18 @@ with
             json_value(doc, '$.ufMunNat') as uf_nascimento,
             json_value(REPLACE(to_json_string(doc),'~',''), '$.version') as version,
 
+-- Novos campos adicionados
+            json_value(doc, '$.email') as email,
+            json_value(doc, '$.anoObito') as ano_obito,
+            json_value(doc, '$.codPaisNac') as id_pais_nascimento,
+            json_value(doc, '$.nomePaisNac') as nome_pais_nascimento,
+            json_value(doc, '$.codPaisRes') as id_pais_residencia,
+            json_value(doc, '$.nomePaisRes') as nome_pais_residencia,
+            json_value(doc, '$.nomeSocial') as nome_social,
+            json_value(doc, '$.tipo') as tipo,
+            json_value(doc, '$.timestamp') as timestamp,
+            json_value(doc, '$.id') as id_doc,
+
             seq,
             last_seq,
 
@@ -157,6 +169,18 @@ with
             uf_nascimento,
             version,
 
+-- Novos campos adicionados
+            email,
+            ano_obito,
+            id_pais_nascimento,
+            nome_pais_nascimento,
+            id_pais_residencia,
+            nome_pais_residencia,
+            nome_social,
+            tipo,
+            timestamp,
+            id_doc,
+
             seq,
             last_seq,
 
@@ -198,6 +222,8 @@ with
 {{ proper_br("nome_mae") }} as nome_mae,
 
             telefone as telefone_original,
+-- Encontra a posição do último espaço
+-- Se não houver espaços, retorna a string inteira
             case
                 when regexp_contains(telefone, r'\+')
                 then regexp_extract(telefone, r'\+([^\s]+)')
@@ -211,8 +237,6 @@ with
             case
                 when telefone is not null
                 then
--- Encontra a posição do último espaço
--- Se não houver espaços, retorna a string inteira
                     if(
                         strpos(reverse(regexp_replace(telefone, r'-', '')), ' ') > 0,
                         substr(
@@ -246,6 +270,19 @@ with
             residente_exterior,
             data_ultima_atualizacao,
             version,
+
+-- Novos campos adicionados
+            email,
+            ano_obito,
+            id_pais_nascimento,
+            nome_pais_nascimento,
+            id_pais_residencia,
+            nome_pais_residencia,
+            nome_social,
+            tipo,
+            timestamp,
+            id_doc,
+
             row_number() over (partition by cpf order by data_ultima_atualizacao desc) as rank,
 
             seq,
@@ -260,7 +297,62 @@ with
         from tb_intermediate
     )
 
-select *
+select
+    id,
+    _id,
+    key,
+    rev,
+    _rev,
+    ano_exercicio,
+    data_inscricao,
+    cpf,
+    situacao_cadastral,
+    nome,
+    data_nascimento,
+    genero,
+    nome_mae,
+    telefone_original,
+    ddi,
+    ddd,
+    telefone,
+    id_natureza_ocupacao,
+    id_ocupacao,
+    ocupacao,
+    id_ua,
+    id_municipio_domicilio,
+    municipio_domicilio,
+    uf_domicilio,
+    id_municipio_nascimento,
+    municipio_nascimento,
+    uf_nascimento,
+    cep,
+    bairro,
+    tipo_logradouro,
+    logradouro,
+    complemento,
+    numero_logradouro,
+    estrangeiro,
+    residente_exterior,
+    data_ultima_atualizacao,
+    version,
+    email,
+    ano_obito,
+    id_pais_nascimento,
+    nome_pais_nascimento,
+    id_pais_residencia,
+    nome_pais_residencia,
+    nome_social,
+    tipo,
+    timestamp,
+    id_doc,
+    rank,
+    seq,
+    last_seq,
+    airbyte_raw_id,
+    airbyte_extracted_at,
+    airbyte_meta,
+    airbyte_generation_id,
+    cpf_particao
 from
     tb_padronize
     )

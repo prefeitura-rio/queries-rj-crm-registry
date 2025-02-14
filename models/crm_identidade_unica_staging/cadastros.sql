@@ -9,8 +9,7 @@ with
     all_cpfs as (
         select cpf, cpf_particao, struct(origens_count, origens) as origens
         from `rj-crm-registry.crm_identidade_unica_staging.cpf`
-        where
-            cpf_particao is not null
+        where cpf_particao is not null
 {# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
     ),
 
@@ -49,6 +48,16 @@ with
                 estrangeiro,
                 residente_exterior,
                 data_ultima_atualizacao,
+
+                email,
+                ano_obito,
+                id_pais_nascimento,
+                nome_pais_nascimento,
+                id_pais_residencia,
+                nome_pais_residencia,
+                nome_social,
+                tipo,
+
                 rank
             ) as dados
         from all_cpfs a
@@ -155,10 +164,14 @@ with
         select
             cpf,
             dados.nome as nome,
-            null as nome_social,
+            dados.nome_social as nome_social,
             dados.data_nascimento as data_nascimento,
             case
-                dados.situacao_cadastral when 'Titular Falecido' then true else false
+                when
+                    (dados.situacao_cadastral = 'Titular Falecido')
+                    or (dados.ano_obito is not null)
+                then true
+                else false
             end as obito_indicador,
             dados.genero as genero,
             null as raca,
@@ -303,15 +316,22 @@ with
         group by cpf
     ),
 
-    contato_email as (
+    contato_geral_email as (
+        select cpf, email.valor as valor, email.sistema, email.rank, 'saude' as source
+        from sms, unnest(contato.email) as email
+        union all
         select
             cpf,
-            array_agg(
-                struct(
-                    'saude' as source, email.rank, email.valor as valor, email.sistema
-                )
-            ) as email
-        from sms, unnest(contato.email) as email
+            dados.email as valor,
+            null as sistema,
+            dados.rank,
+            'bcadastro' as source
+        from bcadastro
+    ),
+
+    contato_email as (
+        select cpf, array_agg(struct(source, rank, valor, sistema)) as email
+        from contato_geral_email
         group by cpf
     ),
 
