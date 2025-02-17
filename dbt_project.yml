@@ -2,11 +2,11 @@ name: 'queries'
 version: '1.0.0'
 config-version: 2
 
-profile: 'queries'
+profile: 'crm'
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
-test-paths: ["tests"]
+test-paths: ["data-tests"]
 seed-paths: ["seeds"]
 macro-paths: ["macros"]
 snapshot-paths: ["snapshots"]
@@ -21,6 +21,15 @@ models:
     relation: true
     columns: true
   queries:
-    example:
-      +materialized: view
-      +schema: example
+    raw:
+      +materialized: table
+      bcadastro:
+        +schema: brutos_bcadastro
+    intermediate:
+      +materialized: ephemeral
+    core:
+      +materialized: table
+      +schema: crm_dados_mestres
+
+seeds:
+  +schema: brutos_seeds

@@ -62,7 +62,7 @@ with
             ) as dados
         from all_cpfs a
         left join
-            `rj-crm-registry.brutos_bcadastro.cpf` b on a.cpf_particao = b.cpf_particao
+`rj-crm-registry.brutos_bcadastro.cpf` b on a.cpf_particao = b.cpf_particao
         where rank = 1
     ),
 
@@ -71,7 +71,7 @@ with
             b.cpf, dados, endereco, contato, struct(cns, equipe_saude_familia) as saude
         from all_cpfs a
         left join
-            `rj-sms.saude_historico_clinico.paciente` b
+`rj-sms.saude_historico_clinico.paciente` b
             on a.cpf_particao = b.cpf_particao
     ),
 
@@ -107,7 +107,7 @@ with
             ) as assistencia_social
         from all_cpfs a
         left join
-            `rj-smas.app_identidade_unica.cadastros` b
+`rj-smas.app_identidade_unica.cadastros` b
             on a.cpf_particao = b.cpf_particao
         left join unnest(dados) as dados
 
@@ -142,7 +142,7 @@ with
             null as data_ultima_atualizacao,
             cast(null as bool) as estrangeiro,
             1 as rank,
-            'saude' as source
+'saude' as source
         from sms
         union all
         select
@@ -158,7 +158,7 @@ with
             dados.data_ultima_atualizacao as data_ultima_atualizacao,
             cast(null as bool) as estrangeiro,
             1 as rank,
-            'cadunico' as source
+'cadunico' as source
         from smas
         union all
         select
@@ -181,7 +181,7 @@ with
             dados.estrangeiro as estrangeiro,
 
             dados.rank,
-            'bcadastro' as source
+'bcadastro' as source
         from bcadastro
     ),
 
@@ -224,7 +224,7 @@ with
             cast(null as bool) as residente_exterior,
             endereco.sistema as sistema,
             endereco.rank as rank,
-            'saude' as source
+'saude' as source
         from sms, unnest(endereco) endereco
         union all
         select
@@ -241,7 +241,7 @@ with
             cast(null as bool) as residente_exterior,
             null as sistema,
             1 as rank,
-            'cadunico' as source
+'cadunico' as source
         from smas, unnest(endereco) endereco
         union all
         select
@@ -259,7 +259,7 @@ with
             dados.residente_exterior as residente_exterior,
             null as sistema,
             dados.rank,
-            'bcadastro' as source
+'bcadastro' as source
         from bcadastro
 
     ),
@@ -296,7 +296,7 @@ with
             telefone.valor as valor,
             telefone.sistema,
             telefone.rank,
-            'saude' as source
+'saude' as source
         from sms, unnest(contato.telefone) as telefone
         union all
         select
@@ -306,7 +306,7 @@ with
             dados.telefone as valor,
             null as sistema,
             dados.rank,
-            'bcadastro' as source
+'bcadastro' as source
         from bcadastro
     ),
     contato_telefone as (
@@ -325,7 +325,7 @@ with
             dados.email as valor,
             null as sistema,
             dados.rank,
-            'bcadastro' as source
+'bcadastro' as source
         from bcadastro
     ),
 
