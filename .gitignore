@@ -11,3 +11,5 @@ target-base/
 /dbt_packages
 .state/
 .user.yml
+.venv/
+.qodo/
