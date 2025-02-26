@@ -7,7 +7,7 @@ PARTITION BY
 (
 with
     tb as (
-        select  
+        select
             _airbyte_raw_id,
             _airbyte_extracted_at,
             _airbyte_meta,
@@ -18,7 +18,8 @@ with
             seq,
             value,
             last_seq
-        from `rj-crm-registry.brutos_bcadastro_staging.chcpf_bcadastros` 
+        from `rj-crm-registry.brutos_bcadastro_staging.chcpf_bcadastros`
+{# where timestamp_trunc(_airbyte_extracted_at, day) = timestamp("2025-02-24") #}
     ),
 
     municipio_bd as (
@@ -26,63 +27,68 @@ with
         from `basedosdados.br_bd_diretorios_brasil.municipio`
     ),
 
+    dominio as (
+        select id, descricao, column
+        from `rj-crm-registry.dados_mestres.dominio_bcadastro`
+        where source = 'cpf'
+    ),
+
     tb_parsed as (
 
         select
-
             id,
             key,
-            json_value(value, '$.rev') as rev,
+            nullif(json_value(value, '$.rev'), "") as rev,
 
-            json_value(doc, '$._id') as _id,
-            json_value(doc, '$._rev') as _rev,
+            nullif(json_value(doc, '$._id'), "") as _id,
+            nullif(json_value(doc, '$._rev'), "") as _rev,
 
-            cast(json_value(doc, '$.anoExerc') as int64) as exercicio_ano,
-            json_value(doc, '$.bairro') as bairro,
-            json_value(doc, '$.cep') as cep,
-            json_value(doc, '$.codMunDomic') as id_municipio_domicilio,
-            json_value(doc, '$.codMunNat') as id_municipio_nascimento,
-            json_value(doc, '$.codNatOcup') as id_natureza_ocupacao,
-            json_value(doc, '$.codOcup') as id_ocupacao,
-            json_value(doc, '$.codSexo') as id_sexo,
-            json_value(doc, '$.codSitCad') as id_situacao_cadastral,
-            json_value(doc, '$.codUA') as id_ua,
-            json_value(doc, '$.complemento') as complemento,
-            json_value(doc, '$.cpfId') as cpf_id,
+            cast(nullif(json_value(doc, '$.anoExerc'), "") as int64) as exercicio_ano,
+            nullif(json_value(doc, '$.bairro'), "") as bairro,
+            nullif(json_value(doc, '$.cep'), "") as cep,
+            nullif(json_value(doc, '$.codMunDomic'), "") as id_municipio_domicilio,
+            nullif(json_value(doc, '$.codMunNat'), "") as id_municipio_nascimento,
+            nullif(json_value(doc, '$.codNatOcup'), "") as id_natureza_ocupacao,
+            nullif(json_value(doc, '$.codOcup'), "") as id_ocupacao,
+            nullif(json_value(doc, '$.codSexo'), "") as id_sexo,
+            nullif(json_value(doc, '$.codSitCad'), "") as id_situacao_cadastral,
+            nullif(json_value(doc, '$.codUA'), "") as id_ua,
+            nullif(json_value(doc, '$.complemento'), "") as complemento,
+            nullif(json_value(doc, '$.cpfId'), "") as cpf_id,
             safe.parse_date(
-                '%Y%m%d', json_value(doc, '$.dtInscricao')
+                '%Y%m%d', nullif(json_value(doc, '$.dtInscricao'), "")
             ) as data_inscricao,
             safe.parse_date(
-                '%Y%m%d', json_value(doc, '$.dtNasc')
+                '%Y%m%d', nullif(json_value(doc, '$.dtNasc'), "")
             ) as data_nascimento,
             safe.parse_date(
-                '%Y%m%d', json_value(doc, '$.dtUltAtualiz')
+                '%Y%m%d', nullif(json_value(doc, '$.dtUltAtualiz'), "")
             ) as data_ultima_atualizacao,
-            json_value(doc, '$.indEstrangeiro') as indicativo_estrangeiro,
-            json_value(
-                doc, '$.indResExt'
-            ) as indicativo_residente_exterior,
-            json_value(doc, '$.logradouro') as logradouro,
-            json_value(doc, '$.nomeContribuinte') as nome,
-            json_value(doc, '$.nomeMae') as nome_mae,
-            json_value(doc, '$.nroLogradouro') as numero_logradouro,
-            json_value(doc, '$.telefone') as telefone,
-            json_value(doc, '$.tipoLogradouro') as tipo_logradouro,
-            json_value(doc, '$.ufMunDomic') as uf_domicilio,
-            json_value(doc, '$.ufMunNat') as uf_nascimento,
-            json_value(REPLACE(to_json_string(doc),'~',''), '$.version') as version,
+            nullif(json_value(doc, '$.indEstrangeiro'), "") as indicativo_estrangeiro,
+            nullif(json_value(doc, '$.indResExt'), "") as indicativo_residente_exterior,
+            nullif(json_value(doc, '$.logradouro'), "") as logradouro,
+            nullif(json_value(doc, '$.nomeContribuinte'), "") as nome,
+            nullif(json_value(doc, '$.nomeMae'), "") as nome_mae,
+            nullif(json_value(doc, '$.nroLogradouro'), "") as numero_logradouro,
+            nullif(json_value(doc, '$.telefone'), "") as telefone,
+            nullif(json_value(doc, '$.tipoLogradouro'), "") as tipo_logradouro,
+            nullif(json_value(doc, '$.ufMunDomic'), "") as uf_domicilio,
+            nullif(json_value(doc, '$.ufMunNat'), "") as uf_nascimento,
+            nullif(
+                json_value(replace(to_json_string(doc), '~', ''), '$.version'), ""
+            ) as version,
 
 -- Novos campos adicionados
-            json_value(doc, '$.email') as email,
-            json_value(doc, '$.anoObito') as ano_obito,
-            json_value(doc, '$.codPaisNac') as id_pais_nascimento,
-            json_value(doc, '$.nomePaisNac') as nome_pais_nascimento,
-            json_value(doc, '$.codPaisRes') as id_pais_residencia,
-            json_value(doc, '$.nomePaisRes') as nome_pais_residencia,
-            json_value(doc, '$.nomeSocial') as nome_social,
-            json_value(doc, '$.tipo') as tipo,
-            json_value(doc, '$.timestamp') as timestamp,
-            json_value(doc, '$.id') as id_doc,
+            nullif(json_value(doc, '$.email'), "") as email,
+            nullif(json_value(doc, '$.anoObito'), "") as ano_obito,
+            nullif(json_value(doc, '$.codPaisNac'), "") as id_pais_nascimento,
+            nullif(json_value(doc, '$.nomePaisNac'), "") as nome_pais_nascimento,
+            nullif(json_value(doc, '$.codPaisRes'), "") as id_pais_residencia,
+            nullif(json_value(doc, '$.nomePaisRes'), "") as nome_pais_residencia,
+            nullif(json_value(doc, '$.nomeSocial'), "") as nome_social,
+            nullif(json_value(doc, '$.tipo'), "") as tipo,
+            nullif(json_value(doc, '$.timestamp'), "") as timestamp,
+            nullif(json_value(doc, '$.id'), "") as id_doc,
 
             seq,
             last_seq,
@@ -90,8 +96,8 @@ with
             _airbyte_raw_id as airbyte_raw_id,
             _airbyte_extracted_at as airbyte_extracted_at,
             struct(
-              json_value(_airbyte_meta, '$.changes') as changes,
-              json_value(_airbyte_meta, '$.sync_id') as sync_id
+                nullif(json_value(_airbyte_meta, '$.changes'), "") as changes,
+                nullif(json_value(_airbyte_meta, '$.sync_id'), "") as sync_id
             ) as airbyte_meta,
             _airbyte_generation_id as airbyte_generation_id,
         from tb
@@ -114,51 +120,16 @@ with
             id_natureza_ocupacao,
             t.id_ocupacao,
             o.descricao as ocupacao,
-            case
-                id_sexo
-                when '1'
-                then 'Masculino'
-                when '2'
-                then 'Feminino'
-                when '9'
-                then 'Não informado'
-                else id_sexo
-            end as genero,
-            case
-                id_situacao_cadastral
-                when '0'
-                then 'Regular'
-                when '2'
-                then 'Suspensa'
-                when '3'
-                then 'Titular Falecido'
-                when '4'
-                then 'Pendente de Regularização'
-                when '5'
-                then 'Cancelada por Multiplicidade'
-                when '8'
-                then 'Nula'
-                when '9'
-                then 'Cancelada de Ofício'
-                else id_situacao_cadastral
-            end as situacao_cadastral,
+            s.descricao as genero,
+            sc.descricao as situacao_cadastral,
             id_ua,
             complemento,
             cpf_id as cpf,
             data_inscricao,
             data_nascimento,
             data_ultima_atualizacao,
-            case
-                indicativo_estrangeiro when 'N' then false when 'S' then true else null
-            end as estrangeiro,
-            case
-                indicativo_residente_exterior
-                when 'S'
-                then true
-                when 'N'
-                then false
-                else null
-            end as residente_exterior,
+            ie.descricao as estrangeiro,
+            re.descricao as residente_exterior,
             logradouro,
             nome,
             nome_mae,
@@ -200,8 +171,45 @@ with
             on cast(t.id_municipio_domicilio as int64)
             = cast(mn.id_municipio_rf as int64)
         left join
-            `rj-crm-registry.brutos_bcadastro.ocupacao_receita_federal` o
+            (
+                select id as id_ocupacao, descricao
+                from dominio
+                where column = 'ocupacao'
+            ) o
             on t.id_ocupacao = o.id_ocupacao
+        left join
+            (select id as id_sexo, descricao from dominio where column = 'sexo') s
+            on t.id_sexo = s.id_sexo
+        left join
+            (
+                select id as id_situacao_cadastral, descricao
+                from dominio
+                where column = 'situacao_cadastral'
+            ) sc
+            on t.id_situacao_cadastral = sc.id_situacao_cadastral
+        left join
+            (
+                select
+                    id as indicativo_estrangeiro,
+                    case
+                        upper(id) when 'N' then false when 'S' then true else null
+                    end as descricao
+                from dominio
+                where column = 'indicativo_estrangeiro'
+            ) ie
+            on upper(t.indicativo_estrangeiro) = upper(ie.indicativo_estrangeiro)
+        left join
+            (
+                select
+                    id as indicativo_residente_exterior,
+                    case
+                        upper(id) when 'N' then false when 'S' then true else null
+                    end as descricao
+                from dominio
+                where column = 'indicativo_residente_exterior'
+            ) re
+            on upper(t.indicativo_residente_exterior)
+            = upper(re.indicativo_residente_exterior)
     ),
 
     tb_padronize as (
@@ -283,7 +291,9 @@ with
             timestamp,
             id_doc,
 
-            row_number() over (partition by cpf order by data_ultima_atualizacao desc) as rank,
+            row_number() over (
+                partition by cpf order by data_ultima_atualizacao desc
+            ) as rank,
 
             seq,
             last_seq,
@@ -355,4 +365,4 @@ select
     cpf_particao
 from
     tb_padronize
-    )
+)
