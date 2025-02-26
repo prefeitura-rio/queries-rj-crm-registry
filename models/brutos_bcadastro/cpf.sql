@@ -307,62 +307,75 @@ with
         from tb_intermediate
     )
 
-select
+SELECT
+-- Identificadores
     id,
     _id,
+    id_doc,
     key,
     rev,
     _rev,
-    ano_exercicio,
-    data_inscricao,
     cpf,
-    situacao_cadastral,
+    cpf_particao,
+
+-- Dados Pessoais
     nome,
+    nome_social,
+    nome_mae,
     data_nascimento,
     genero,
-    nome_mae,
-    telefone_original,
-    ddi,
-    ddd,
-    telefone,
-    id_natureza_ocupacao,
-    id_ocupacao,
-    ocupacao,
-    id_ua,
+    ano_obito,
+
+-- Localidade (Residência)
     id_municipio_domicilio,
     municipio_domicilio,
     uf_domicilio,
-    id_municipio_nascimento,
-    municipio_nascimento,
-    uf_nascimento,
     cep,
     bairro,
     tipo_logradouro,
     logradouro,
     complemento,
     numero_logradouro,
-    estrangeiro,
-    residente_exterior,
-    data_ultima_atualizacao,
-    version,
-    email,
-    ano_obito,
-    id_pais_nascimento,
-    nome_pais_nascimento,
     id_pais_residencia,
     nome_pais_residencia,
-    nome_social,
+    estrangeiro,               -- Indica se é estrangeiro (relacionado à residência)
+    residente_exterior,       -- Indica se é residente no exterior
+
+-- Localidade (Nascimento)
+    id_municipio_nascimento,
+    municipio_nascimento,
+    uf_nascimento,
+    id_pais_nascimento,
+    nome_pais_nascimento,
+
+-- Contato
+    telefone_original,
+    ddi,
+    ddd,
+    telefone,
+    email,
+
+-- Informações de Cadastro/Ocupação
+    ano_exercicio,
+    data_inscricao,
+    situacao_cadastral,
+    id_natureza_ocupacao,
+    id_ocupacao,
+    ocupacao,
+    id_ua,
+    data_ultima_atualizacao,
+
+-- Metadados
     tipo,
     timestamp,
-    id_doc,
+    version,
     rank,
     seq,
     last_seq,
     airbyte_raw_id,
     airbyte_extracted_at,
     airbyte_meta,
-    airbyte_generation_id,
-    cpf_particao
-from
+    airbyte_generation_id
+FROM
     tb_padronize
 )
