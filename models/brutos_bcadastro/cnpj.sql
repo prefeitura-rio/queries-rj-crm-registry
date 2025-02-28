@@ -76,13 +76,13 @@ with
                     nullif(json_value(doc, '$.indicadorMatriz'), "") as int64
                 ) as string
             ) as id_indicador_matriz,
-            nullif(json_value(doc, '$.tiposUnidade'), "") as tipos_unidade,
+            json_extract_array(doc, '$.tiposUnidade') as tipos_unidade,
             nullif(json_value(doc, '$.nomeCidadeExterior'), "") as nome_cidade_exterior,
             nullif(json_value(doc, '$.uf'), "") as uf,
             safe.parse_date(
                 '%Y%m%d', nullif(json_value(doc, '$.dataSituacaoEspecial'), "")
             ) as data_situacao_especial,
-            nullif(json_value(doc, '$.formasAtuacao'), "") as formas_atuacao,
+            json_extract_array(doc, '$.formasAtuacao') as formas_atuacao,
             nullif(json_value(doc, '$.nomeFantasia'), "") as nome_fantasia,
             nullif(json_value(doc, '$.tipoCrcContadorPJ'), "") as tipo_crc_contador_pj,
             safe.parse_date(
@@ -122,7 +122,7 @@ with
                     )
                 else upper(nullif(json_value(doc, '$.enteFederativo'), ''))
             end as id_ente_federativo,
-            nullif(json_value(doc, '$.socios'), "") as socios,
+            json_extract_array(doc, '$.socios') as socios,
             nullif(json_value(doc, '$.dddTelefone2'), "") as ddd_telefone_2,
             nullif(json_value(doc, '$.cnaeFiscal'), "") as cnae_fiscal,
             cast(
@@ -136,7 +136,7 @@ with
             nullif(json_value(doc, '$.nomeEmpresarial'), "") as nome_empresarial,
             nullif(json_value(doc, '$.nire'), "") as nire,
             nullif(json_value(doc, '$.id'), "") as id_doc,
-            nullif(json_value(doc, '$.sucessoes'), "") as sucessoes,
+            json_extract_array(doc, '$.sucessoes') as sucessoes,
             nullif(json_value(doc, '$.cnpjSucedida'), "") as cnpj_sucedida,
             nullif(json_value(doc, '$.tipo'), "") as tipo,
             nullif(json_value(doc, '$.timestamp'), "") as timestamp,
@@ -188,11 +188,9 @@ with
             t.email,
             t.id_indicador_matriz,
             im.descricao as indicador_matriz,
-            t.tipos_unidade,
             t.nome_cidade_exterior,
             t.uf,
             t.data_situacao_especial,
-            t.formas_atuacao,
             t.nome_fantasia,
             t.tipo_crc_contador_pj,
             t.data_inicio_atividade,
@@ -222,7 +220,6 @@ with
                 then 'Estado'
                 else null
             end as ente_federativo,
-            t.socios,
             t.ddd_telefone_2,
             t.cnae_fiscal,
             t.id_natureza_juridica,
@@ -232,7 +229,18 @@ with
             t.nome_empresarial,
             t.nire,
             t.id_doc,
-            t.sucessoes,
+            case
+                when array_length(t.formas_atuacao) = 0 then null else t.formas_atuacao
+            end as formas_atuacao,
+            case
+                when array_length(t.tipos_unidade) = 0 then null else t.tipos_unidade
+            end as tipos_unidade,
+
+            case when array_length(t.socios) = 0 then null else t.socios end as socios,
+            case
+                when array_length(t.sucessoes) = 0 then null else t.sucessoes
+            end as sucessoes,
+
             t.cnpj_sucedida,
             t.tipo,
             t.timestamp,
@@ -436,7 +444,7 @@ select
     data_situacao_especial,
     data_inicio_atividade,
 
-    -- Contato | TODO padronizar separando em ddi, ddd e telefone
+    -- Contato | TODO: padronizar separando em ddi, ddd e telefone
     ddd_telefone_1,
     telefone_1,
     ddd_telefone_2,
@@ -464,13 +472,12 @@ select
     -- Informações da Empresa
     id_indicador_matriz,
     indicador_matriz,
-    tipos_unidade,
-    formas_atuacao,
+
     nome_fantasia,
     capital_social,
     id_ente_federativo,
     ente_federativo,
-    socios,
+
     cnae_fiscal,
     cnae_secundarias,
     id_natureza_juridica,
@@ -480,6 +487,11 @@ select
     nome_empresarial,
     nire,
     cnpj_sucedida,
+
+    -- TODO: padronizar arrays
+    tipos_unidade,
+    formas_atuacao,
+    socios,
     sucessoes,
 
     -- Metadados
