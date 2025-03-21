@@ -229,6 +229,7 @@ with
             t.nome_empresarial,
             t.nire,
             t.id_doc,
+            -- array columns
             case
                 when array_length(t.formas_atuacao) = 0 then null else t.formas_atuacao
             end as formas_atuacao,

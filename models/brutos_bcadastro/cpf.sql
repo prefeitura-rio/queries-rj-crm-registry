@@ -349,10 +349,10 @@ SELECT
     nome_pais_nascimento,
 
 -- Contato
-    telefone_original,
-    ddi,
-    ddd,
-    telefone,
+    TRIM(telefone_original) as telefone_original,
+    TRIM(ddi) as ddi,
+    TRIM(ddd) as ddd,
+    TRIM(telefone) as telefone,
     email,
 
 -- Informações de Cadastro/Ocupação
