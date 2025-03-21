@@ -1,4 +1,4 @@
-queries:
+crm:
   target: dev
   outputs:
     dev:
