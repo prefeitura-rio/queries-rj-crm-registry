@@ -1,5 +1,6 @@
 **/test.*
 .vscode/
+.cursor/
 target/
 dbt_packages/
 logs/
@@ -11,3 +12,6 @@ target-base/
 /dbt_packages
 .state/
 .user.yml
+.venv/
+.qodo/
+.qodo

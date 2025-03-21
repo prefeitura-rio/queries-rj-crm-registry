@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: br_bd_diretorios_brasil
+    database: basedosdados
+    schema: br_bd_diretorios_brasil
+    tables:
+    - name: municipio
+
+
