@@ -268,19 +268,25 @@ with
             tipo,
             timestamp,
             id_doc,
-
-            row_number() over (partition by cpf order by atualizacao_data desc) as rank,
-
             seq,
             last_seq,
 
-            airbyte_raw_id,
-            airbyte_extracted_at,
-            airbyte_meta,
-            airbyte_generation_id,
+            struct(
+                airbyte_raw_id as raw_id,
+                airbyte_extracted_at as extracted_at,
+                airbyte_meta as meta,
+                airbyte_generation_id as generation_id
+            ) as airbyte,
 
             cpf_particao
         from fonte_intermediaria
+    ),
+
+    fonte_deduplicada as (
+        select *
+        from fonte_padronizada
+        qualify row_number() over (
+            partition by cpf order by atualizacao_data desc) = 1
     ),
 
     final as (
@@ -349,14 +355,11 @@ with
             -- Technical fields
             seq,
             last_seq,
-            airbyte_raw_id,
-            airbyte_extracted_at,
-            airbyte_meta,
-            airbyte_generation_id,
+            airbyte,
 
             -- Partition
             cpf_particao
-        from fonte_padronizada
+        from fonte_deduplicada
     )
 
 select *

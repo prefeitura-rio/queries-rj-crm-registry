@@ -1,18 +1,47 @@
-CREATE OR REPLACE TABLE `rj-crm-registry.crm_identidade_unica_staging.pessoa_fisica` 
-PARTITION BY
-  RANGE_BUCKET(cpf_particao, GENERATE_ARRAY(0, 100000000000, 34722222))
+-- - Consolidates CPF records from multiple Rio de Janeiro city systems (health,
+-- social assistance, citizen services, transportation, and BCadastro) into a unified
+-- view with source tracking and counting.
+-- This models add data from all sources to the cpf table.
 
-  AS
-(
+
+{{
+    config(
+        partition_by={
+            "field": "cpf_particao",
+            "data_type": "int64",
+            "range": {"start": 0, "end": 100000000000, "interval": 34722222},
+        },
+    )
+}}
+
+
 with
 
+    -- SOURCES
     all_cpfs as (
         select cpf, cpf_particao, struct(origens_count, origens) as origens
-        from `rj-crm-registry.crm_identidade_unica_staging.cpf`
-        where cpf_particao is not null
-{# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
+        from {{ ref("int_pessoa_fisica__all_cpf") }}
     ),
 
+    bcadastro_source as (
+        select *
+        from {{ ref("raw_bcadastro__cpf") }}
+        left join all_cpfs using (cpf_particao)
+    ),
+
+    sms_source as (
+        select *
+        from {{ source("rj-sms", "paciente") }}
+        left join all_cpfs using (cpf_particao)
+    ),
+
+    smas_source as (
+        select *
+        from {{ source("rj-smas", "cadastros") }}
+        left join all_cpfs using (cpf_particao)
+    ),
+
+    -- DATA
     bcadastro as (
         select
             b.cpf,
@@ -48,7 +77,6 @@ with
                 estrangeiro,
                 residente_exterior,
                 data_ultima_atualizacao,
-
                 email,
                 ano_obito,
                 id_pais_nascimento,
@@ -61,8 +89,7 @@ with
                 rank
             ) as dados
         from all_cpfs a
-        left join
-`rj-crm-registry.brutos_bcadastro.cpf` b on a.cpf_particao = b.cpf_particao
+        left join bcadastro_source b on a.cpf_particao = b.cpf_particao
         where rank = 1
     ),
 
@@ -70,9 +97,7 @@ with
         select
             b.cpf, dados, endereco, contato, struct(cns, equipe_saude_familia) as saude
         from all_cpfs a
-        left join
-`rj-sms.saude_historico_clinico.paciente` b
-            on a.cpf_particao = b.cpf_particao
+        left join sms_source b on a.cpf_particao = b.cpf_particao
     ),
 
     smas as (
@@ -106,9 +131,7 @@ with
                 membros
             ) as assistencia_social
         from all_cpfs a
-        left join
-`rj-smas.app_identidade_unica.cadastros` b
-            on a.cpf_particao = b.cpf_particao
+        left join smas_source b on a.cpf_particao = b.cpf_particao
         left join unnest(dados) as dados
 
     ),
@@ -142,7 +165,7 @@ with
             null as data_ultima_atualizacao,
             cast(null as bool) as estrangeiro,
             1 as rank,
-'saude' as source
+            'saude' as source
         from sms
         union all
         select
@@ -158,7 +181,7 @@ with
             dados.data_ultima_atualizacao as data_ultima_atualizacao,
             cast(null as bool) as estrangeiro,
             1 as rank,
-'cadunico' as source
+            'cadunico' as source
         from smas
         union all
         select
@@ -181,7 +204,7 @@ with
             dados.estrangeiro as estrangeiro,
 
             dados.rank,
-'bcadastro' as source
+            'bcadastro' as source
         from bcadastro
     ),
 
@@ -208,6 +231,7 @@ with
         group by cpf
     ),
 
+    -- ENDERECO
     endereco_geral as (
         select
             cpf,
@@ -224,7 +248,7 @@ with
             cast(null as bool) as residente_exterior,
             endereco.sistema as sistema,
             endereco.rank as rank,
-'saude' as source
+            'saude' as source
         from sms, unnest(endereco) endereco
         union all
         select
@@ -241,7 +265,7 @@ with
             cast(null as bool) as residente_exterior,
             null as sistema,
             1 as rank,
-'cadunico' as source
+            'cadunico' as source
         from smas, unnest(endereco) endereco
         union all
         select
@@ -259,7 +283,7 @@ with
             dados.residente_exterior as residente_exterior,
             null as sistema,
             dados.rank,
-'bcadastro' as source
+            'bcadastro' as source
         from bcadastro
 
     ),
@@ -288,6 +312,7 @@ with
         group by cpf
     ),
 
+    -- CONTATO - TELEFONE
     contato_geral_telefone as (
         select
             cpf,
@@ -296,7 +321,7 @@ with
             telefone.valor as valor,
             telefone.sistema,
             telefone.rank,
-'saude' as source
+            'saude' as source
         from sms, unnest(contato.telefone) as telefone
         union all
         select
@@ -306,7 +331,7 @@ with
             dados.telefone as valor,
             null as sistema,
             dados.rank,
-'bcadastro' as source
+            'bcadastro' as source
         from bcadastro
     ),
     contato_telefone as (
@@ -325,16 +350,18 @@ with
             dados.email as valor,
             null as sistema,
             dados.rank,
-'bcadastro' as source
+            'bcadastro' as source
         from bcadastro
     ),
 
+    -- CONTATO - EMAIL
     contato_email as (
         select cpf, array_agg(struct(source, rank, valor, sistema)) as email
         from contato_geral_email
         group by cpf
     ),
 
+    -- CONTATO - CONSOLIDADO
     contato as (
         select a.cpf, struct(t.telefone, e.email) contato
         from all_cpfs a
@@ -358,7 +385,4 @@ left join endereco e on a.cpf = e.cpf
 left join contato co on a.cpf = co.cpf
 left join sms s on a.cpf = s.cpf
 left join smas c on a.cpf = c.cpf
-left join
-    bcadastro_dados bd on a.cpf = bd.cpf
-
-    )
+left join bcadastro_dados bd on a.cpf = bd.cpf

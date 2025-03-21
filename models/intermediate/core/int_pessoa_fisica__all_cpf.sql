@@ -1,30 +1,32 @@
+-- - Consolidates CPF records from multiple Rio de Janeiro city systems (health,
+-- social assistance, citizen services, transportation, and BCadastro) into a unified
+-- view with source tracking and counting.
+
 with
     saude as (
-        select distinct cpf, 'saude' as origem
-        from {{ source('rj-sms', 'paciente') }}
+        select distinct cpf, 'saude' as origem from {{ source("rj-sms", "paciente") }}
     ),
-
 
     cadunico as (
         select distinct cpf, 'cadunico' as origem
-        from {{ source('rj-smas', 'cadastros') }}
+        from {{ source("rj-smas", "cadastros") }}
     ),
 
     chamados as (
         select distinct cpf, '1746' as origem
-        from {{ source('rj-segovi', '1746_chamado_cpf') }}
+        from {{ source("rj-segovi", "1746_chamado_cpf") }}
     ),
 
     transporte as (
         select distinct cpf_cliente as cpf, 'transporte' as origem
-        from {{ source('rj-smtr', 'transacao_cpf') }}
+        from {{ source("rj-smtr", "transacao_cpf") }}
         where cpf_particao is not null
     ),
 
     bcadastro as (
-        select distinct cpf, 'bcadastro' as origem
-        from {{ ref('raw_bcadastro__cpf') }}
-        where cpf_particao is not null and endereco_municipio = 'Rio de Janeiro'
+        select distinct b.cpf, 'bcadastro' as origem
+        from {{ ref("raw_bcadastro__cpf") }} as b
+        where b.endereco_municipio = 'Rio de Janeiro'
     ),
 
     all_cpfs as (

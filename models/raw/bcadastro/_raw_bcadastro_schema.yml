@@ -6,6 +6,11 @@ models:
         description: Esta coluna representa o CPF (Cadastro de Pessoas Físicas), que é um identificador único para cidadãos brasileiros. É armazenado como uma string e é crucial para identificar contribuintes individuais no Brasil.
         data_type: string
         quote: true
+        data_tests:
+          - not_null:
+              name: raw_bcadastro__cpf__not_null
+          - unique:
+              name: raw_bcadastro__cpf__unique
       - name: id_municipio_domicilio
         description: Este é o identificador único do município onde o indivíduo reside. É um valor string que é usado para vincular a outras tabelas para obter informações mais detalhadas sobre o município.
         data_type: string
@@ -170,24 +175,23 @@ models:
         description: Esta coluna representa o último número de sequência que foi processado. É usado para rastrear o progresso do processamento de dados e pode ser usado para retomar operações em caso de interrupções.
         data_type: string
         quote: true
-      - name: airbyte_raw_id
+      - name: airbyte
+        description: Esta coluna representa as informação relacionadas à integração dos dados pela ferramenta Airbyte.
+        data_type: record
+        quote: true
+      - name: airbyte.raw_id
         description: Esta coluna representa o identificador único atribuído a cada registro de dados pelo Airbyte, uma plataforma de integração de dados. Este ID é usado para rastrear o registro de dados em diferentes estágios do pipeline de dados e pode ser usado para linhagem de dados e fins de auditoria.
         data_type: string
-        data_tests:
-          - not_null:
-              name: raw_bcadastro__airbyte_raw_id__not_null
-          - unique:
-              name: raw_bcadastro__airbyte_raw_id__unique
         quote: true
-      - name: airbyte_extracted_at
+      - name: airbyte.extracted_at
         description: Esta coluna representa o momento em que os dados foram extraídos do sistema de origem. É útil para rastrear quando os dados foram atualizados pela última vez no sistema de origem.
         data_type: timestamp
         quote: true
-      - name: airbyte_meta
+      - name: airbyte.meta
         description: Esta coluna contém metadados sobre o processo de extração de dados. Inclui informações como alterações feitas durante o processo de extração e o ID de sincronização. Isso pode ser útil para solução de problemas e compreensão do contexto da extração de dados.
         data_type: record
         quote: true
-      - name: airbyte_generation_id
+      - name: airbyte.generation_id
         description: Esta coluna representa o ID de geração do processo de extração de dados. É um identificador único para cada processo de extração e pode ser usado para rastrear a linhagem dos dados.
         data_type: int64
         quote: true
