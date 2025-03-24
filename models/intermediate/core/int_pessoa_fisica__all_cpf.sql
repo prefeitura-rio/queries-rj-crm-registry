@@ -1,7 +1,6 @@
 -- - Consolidates CPF records from multiple Rio de Janeiro city systems (health,
 -- social assistance, citizen services, transportation, and BCadastro) into a unified
 -- view with source tracking and counting.
-
 with
     saude as (
         select distinct cpf, 'saude' as origem from {{ source("rj-sms", "paciente") }}
@@ -25,7 +24,7 @@ with
 
     bcadastro as (
         select distinct b.cpf, 'bcadastro' as origem
-        from {{ ref("raw_bcadastro__cpf") }} as b
+        from {{ source("rj-iplanrio", "cpf") }} as b
         where b.endereco_municipio = 'Rio de Janeiro'
     ),
 

@@ -2,19 +2,6 @@
 -- social assistance, citizen services, transportation, and BCadastro) into a unified
 -- view with source tracking and counting.
 -- This models add data from all sources to the cpf table.
-
-
-{{
-    config(
-        partition_by={
-            "field": "cpf_particao",
-            "data_type": "int64",
-            "range": {"start": 0, "end": 100000000000, "interval": 34722222},
-        },
-    )
-}}
-
-
 with
 
     -- SOURCES

@@ -29,7 +29,7 @@ models:
       +materialized: ephemeral
     core:
       +materialized: table
-      +schema: crm_dados_mestres
+      +schema: dados_mestres
 
 seeds:
   +schema: brutos_seeds
