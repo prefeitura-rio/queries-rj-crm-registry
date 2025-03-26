@@ -1,7 +1,7 @@
 version: 2
 
 sources:
-  - name: rj-iplanrio
+  - name: bcadastro
     database: rj-iplanrio
     schema: brutos_bcadastro
     tables:

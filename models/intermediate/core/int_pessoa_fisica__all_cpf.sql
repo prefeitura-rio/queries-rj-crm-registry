@@ -24,8 +24,7 @@ with
 
     bcadastro as (
         select distinct b.cpf, 'bcadastro' as origem
-        from {{ source("rj-iplanrio", "cpf") }} as b
-        where b.endereco_municipio = 'Rio de Janeiro'
+        from {{ source("bcadastro", "cpf") }} as b
     ),
 
     all_cpfs as (

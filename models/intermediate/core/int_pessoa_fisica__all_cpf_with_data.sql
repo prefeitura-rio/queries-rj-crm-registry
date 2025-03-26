@@ -12,7 +12,7 @@ with
 
     bcadastro_source as (
         select *
-        from {{ ref("raw_bcadastro__cpf") }}
+        from {{ source("bcadastro", "cpf") }}
         left join all_cpfs using (cpf_particao)
     ),
 

@@ -23,8 +23,6 @@ models:
   queries:
     raw:
       +materialized: table
-      bcadastro:
-        +schema: brutos_bcadastro
     intermediate:
       +materialized: ephemeral
     core:
