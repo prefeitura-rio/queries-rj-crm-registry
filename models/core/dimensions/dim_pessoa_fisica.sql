@@ -1,8 +1,29 @@
+{{
+    config(
+        alias="pessoa_fisica",
+        schema="crm_identidade_unica",
+        materialized="table",
+        partition_by={
+            "field": "cpf_particao",
+            "data_type": "int64",
+            "range": {"start": 0, "end": 100000000000, "interval": 34722222},
+        },
+    )
+}}
+
 with
     cadastros as (
         select
-            cpf, origens, dados, endereco, contato, saude, assistencia_social, fazenda
-        from `rj-crm-registry.crm_identidade_unica_staging.pessoa_fisica`
+            cpf,
+            origens,
+            dados,
+            cnpjs,
+            endereco,
+            contato,
+            saude,
+            assistencia_social,
+            fazenda
+        from {{ ref("int_pessoa_fisica__all_cpf_with_data") }}
         where cpf_particao is not null
     {# and cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
     ),
@@ -109,6 +130,7 @@ select
     d.estrangeiro,
     c.endereco,
     c.contato,
+    c.cnpjs,
     c.fazenda,
     c.saude,
     c.assistencia_social,

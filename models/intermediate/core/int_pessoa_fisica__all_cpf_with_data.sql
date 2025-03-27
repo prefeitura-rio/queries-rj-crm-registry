@@ -2,94 +2,129 @@
 -- social assistance, citizen services, transportation, and BCadastro) into a unified
 -- view with source tracking and counting.
 -- This models add data from all sources to the cpf table.
+{{
+    config(
+        alias="cpf_data",
+        schema="crm_identidade_unica_staging",
+        materialized="table",
+        partition_by={
+            "field": "cpf_particao",
+            "data_type": "int64",
+            "range": {"start": 0, "end": 100000000000, "interval": 34722222},
+        },
+    )
+}}
+
 with
 
     -- SOURCES
     all_cpfs as (
         select cpf, cpf_particao, struct(origens_count, origens) as origens
         from {{ ref("int_pessoa_fisica__all_cpf") }}
+    {# where cpf_particao in (cpf_filter1, cpf_filter2, cpf_filter3) #}
     ),
 
     bcadastro_source as (
-        select *
-        from {{ source("bcadastro", "cpf") }}
-        left join all_cpfs using (cpf_particao)
+        select b.*
+        from all_cpfs a
+        left join {{ source("bcadastro", "cpf") }} b using (cpf_particao)
     ),
 
     sms_source as (
-        select *
-        from {{ source("rj-sms", "paciente") }}
-        left join all_cpfs using (cpf_particao)
+        select b.*
+        from all_cpfs a
+        left join {{ source("rj-sms", "paciente") }} b using (cpf_particao)
     ),
 
     smas_source as (
-        select *
-        from {{ source("rj-smas", "cadastros") }}
-        left join all_cpfs using (cpf_particao)
+        select b.*
+        from all_cpfs a
+        left join {{ source("rj-smas", "cadastros") }} b using (cpf_particao)
+
     ),
 
     -- DATA
+    dados_cnpj as (
+        select cpf, array_agg(cnpj) as cnpjs
+        from
+            (
+                select
+                    a.cnpj,
+                    case
+                        when s.cpf_socio is null
+                        then s.cpf_representante_legal
+                        else s.cpf_socio
+                    end as cpf
+                from {{ ref("dim_pessoa_juridica") }} a, unnest(socios) s
+            )
+        group by cpf
+    ),
+
     bcadastro as (
         select
-            b.cpf,
+            cpf,
             struct(
                 ano_exercicio,
-                data_inscricao,
-                b.cpf,
-                situacao_cadastral,
+                inscricao_data,
+                cpf,
+                situacao_cadastral_tipo,
                 nome,
-                data_nascimento,
-                genero,
-                nome_mae,
-                telefone_original,
-                ddi,
-                ddd,
-                telefone,
+                nascimento_data,
+                sexo,
+                mae_nome,
+                telefone_ddi,
+                telefone_ddd,
+                telefone_numero,
                 id_natureza_ocupacao,
                 id_ocupacao,
-                ocupacao,
+                ocupacao_nome,
                 id_ua,
                 id_municipio_domicilio,
-                municipio_domicilio,
-                uf_domicilio,
-                id_municipio_nascimento,
-                municipio_nascimento,
-                uf_nascimento,
-                cep,
-                bairro,
-                tipo_logradouro,
-                logradouro,
-                complemento,
-                numero_logradouro,
-                estrangeiro,
-                residente_exterior,
-                data_ultima_atualizacao,
+                endereco_municipio,
+                endereco_uf,
+                id_nascimento_municipio,
+                nascimento_municipio,
+                nascimento_uf,
+                endereco_cep,
+                endereco_bairro,
+                endereco_tipo_logradouro,
+                endereco_logradouro,
+                endereco_complemento,
+                endereco_numero,
+                estrangeiro_indicador,
+                residente_exterior_indicador,
+                atualizacao_data,
                 email,
-                ano_obito,
+                obito_ano,
                 id_pais_nascimento,
-                nome_pais_nascimento,
+                nascimento_pais,
                 id_pais_residencia,
-                nome_pais_residencia,
+                residencia_pais,
                 nome_social,
-                tipo,
-
-                rank
+                tipo
+            -- Unused columns after first select:
+            -- telefone_original,  -- removed (split into components)
+            -- rank (used internally but not in final output)
+            -- telefone_original (replaced by components)
+            -- nome_pai (not in new schema)
+            -- raca (not in new schema)
+            -- obito_indicador (replaced by obito_ano)
+            -- sistema (internal)
+            -- version (internal)
+            -- timestamp (internal)
+            -- airbyte (internal)
             ) as dados
-        from all_cpfs a
-        left join bcadastro_source b on a.cpf_particao = b.cpf_particao
-        where rank = 1
+        from bcadastro_source
     ),
 
     sms as (
-        select
-            b.cpf, dados, endereco, contato, struct(cns, equipe_saude_familia) as saude
-        from all_cpfs a
-        left join sms_source b on a.cpf_particao = b.cpf_particao
+        select cpf, dados, endereco, contato, cns, struct(equipe_saude_familia) as saude
+        from sms_source
     ),
 
     smas as (
         select
-            b.cpf,
+            cpf,
             dados,
             endereco,
             struct(
@@ -117,8 +152,7 @@ with
                 domicilio,
                 membros
             ) as assistencia_social
-        from all_cpfs a
-        left join smas_source b on a.cpf_particao = b.cpf_particao
+        from smas_source
         left join unnest(dados) as dados
 
     ),
@@ -127,13 +161,13 @@ with
         select
             cpf,
             struct(
-                dados.situacao_cadastral,
-                dados.municipio_nascimento,
-                dados.uf_nascimento,
+                dados.situacao_cadastral_tipo,
+                dados.nascimento_municipio,
+                dados.nascimento_uf,
                 dados.id_natureza_ocupacao,
-                dados.ocupacao,
+                dados.ocupacao_nome,
                 dados.id_ua,
-                dados.data_ultima_atualizacao
+                dados.atualizacao_data
             ) as fazenda
         from bcadastro
     ),
@@ -175,22 +209,22 @@ with
             cpf,
             dados.nome as nome,
             dados.nome_social as nome_social,
-            dados.data_nascimento as data_nascimento,
+            dados.nascimento_data as data_nascimento,
             case
                 when
-                    (dados.situacao_cadastral = 'Titular Falecido')
-                    or (dados.ano_obito is not null)
+                    (dados.situacao_cadastral_tipo = 'Titular Falecido')
+                    or (dados.obito_ano is not null)
                 then true
                 else false
             end as obito_indicador,
-            dados.genero as genero,
+            dados.sexo as genero,
             null as raca,
-            dados.nome_mae as nome_mae,
+            dados.mae_nome as nome_mae,
             null as nome_pai,
-            dados.data_ultima_atualizacao as data_ultima_atualizacao,
-            dados.estrangeiro as estrangeiro,
+            dados.atualizacao_data as data_ultima_atualizacao,
+            dados.estrangeiro_indicador as estrangeiro,
 
-            dados.rank,
+            1 as rank,
             'bcadastro' as source
         from bcadastro
     ),
@@ -257,19 +291,19 @@ with
         union all
         select
             cpf as cpf,
-            dados.uf_domicilio as estado,
-            dados.municipio_domicilio as municipio,
+            dados.endereco_uf as estado,
+            dados.endereco_municipio as municipio,
 
-            dados.cep as cep,
-            dados.tipo_logradouro as tipo_logradouro,
-            dados.logradouro as logradouro,
-            dados.numero_logradouro as numero,
-            dados.complemento as complemento,
-            dados.bairro as bairro,
+            dados.endereco_cep as cep,
+            dados.endereco_tipo_logradouro as tipo_logradouro,
+            dados.endereco_logradouro as logradouro,
+            dados.endereco_numero as numero,
+            dados.endereco_complemento as complemento,
+            dados.endereco_bairro as bairro,
 
-            dados.residente_exterior as residente_exterior,
+            dados.residente_exterior_indicador as residente_exterior,
             null as sistema,
-            dados.rank,
+            1 as rank,
             'bcadastro' as source
         from bcadastro
 
@@ -313,11 +347,11 @@ with
         union all
         select
             cpf,
-            dados.ddi as ddi,
-            dados.ddd as ddd,
-            dados.telefone as valor,
+            dados.telefone_ddi as ddi,
+            dados.telefone_ddd as ddd,
+            dados.telefone_numero as valor,
             null as sistema,
-            dados.rank,
+            1 as rank,
             'bcadastro' as source
         from bcadastro
     ),
@@ -333,11 +367,7 @@ with
         from sms, unnest(contato.email) as email
         union all
         select
-            cpf,
-            dados.email as valor,
-            null as sistema,
-            dados.rank,
-            'bcadastro' as source
+            cpf, dados.email as valor, null as sistema, 1 as rank, 'bcadastro' as source
         from bcadastro
     ),
 
@@ -354,14 +384,19 @@ with
         from all_cpfs a
         left join contato_telefone t on a.cpf = t.cpf
         left join contato_email e on a.cpf = e.cpf
-    )
+    ),
 
+    documentos as (
+        select cpf, array_agg(struct(cns)) as documentos from sms group by cpf
+    )
 select
     a.cpf,
     a.origens,
     ca.dados,
+    doc.documentos,
     e.endereco,
     co.contato,
+    dc.cnpjs,
     s.saude,
     c.assistencia_social,
     bd.fazenda,
@@ -373,3 +408,5 @@ left join contato co on a.cpf = co.cpf
 left join sms s on a.cpf = s.cpf
 left join smas c on a.cpf = c.cpf
 left join bcadastro_dados bd on a.cpf = bd.cpf
+left join documentos doc on a.cpf = doc.cpf
+left join dados_cnpj dc on a.cpf = dc.cpf
