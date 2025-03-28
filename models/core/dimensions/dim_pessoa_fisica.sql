@@ -1,7 +1,7 @@
 {{
     config(
         alias="pessoa_fisica",
-        schema="crm_identidade_unica",
+        schema="crm_dados_mestres",
         materialized="table",
         partition_by={
             "field": "cpf_particao",

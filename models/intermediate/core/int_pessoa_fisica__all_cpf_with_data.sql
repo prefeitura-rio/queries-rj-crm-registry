@@ -5,8 +5,8 @@
 {{
     config(
         alias="cpf_data",
-        schema="crm_identidade_unica_staging",
-        materialized="table",
+        schema="intermediario_dados_mestres",
+        materialized=('table' if target.name == 'dev' else 'ephemeral'),
         partition_by={
             "field": "cpf_particao",
             "data_type": "int64",
