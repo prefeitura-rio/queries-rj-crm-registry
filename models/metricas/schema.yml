@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: disparos_atendimento
+    description: "Métricas diárias de envio, entrega e leitura de mensagens do fluxo de atendimento"
+    columns:
+      - name: data
+        description: "Data de envio das mensagens"
+        data_type: date
+        tests:
+          - not_null
+          - unique
+
+      - name: total_enviados
+        description: "Número total de mensagens enviadas no dia"
+        data_type: integer
+        tests:
+          - not_null
+          - positive_value
+
+      - name: total_entregues
+        description: "Número total de mensagens entregues no dia"
+        data_type: integer
+        tests:
+          - not_null
+          - positive_value
+          - less_than_or_equal_to:
+              field: total_enviados
+
+      - name: total_lidos
+        description: "Número total de mensagens lidas no dia"
+        data_type: integer
+        tests:
+          - not_null
+          - positive_value
+          - less_than_or_equal_to:
+              field: total_entregues
+
+      - name: taxa_entrega_percentual
+        description: "Percentual de mensagens entregues em relação às enviadas"
+        data_type: numeric(5,2)
+        tests:
+          - not_null
+          - positive_value
+          - max_value:
+              value: 100
+
+      - name: tempo_medio_entrega_segundos
+        description: "Tempo médio em segundos entre o envio e a entrega das mensagens"
+        data_type: numeric(10,2)
+        tests:
+          - not_null
+          - positive_value
+
+      - name: tempo_medio_leitura_segundos
+        description: "Tempo médio em segundos entre a entrega e a leitura das mensagens"
+        data_type: numeric(10,2)
+        tests:
+          - not_null
+
+      - name: taxa_leitura_percentual
+        description: "Percentual de mensagens lidas em relação às entregues"
+        data_type: numeric(5,2)
+        tests:
+          - not_null
+          - positive_value
+          - max_value:
+              value: 100
