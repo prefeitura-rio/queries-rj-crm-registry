@@ -1,5 +1,15 @@
 version: 2
 
+
+# TODO: Add freshness
+sources:
+  - name: disparos
+    database: rj-iplanrio #?
+    schema: disparos
+    tables:
+      - name: fluxo_atendimento
+        description: "Tabela com dados de envio, entrega e leitura de mensagens do fluxo de atendimento"
+
 models:
   - name: disparos_atendimento
     description: "Métricas diárias de envio, entrega e leitura de mensagens do fluxo de atendimento"

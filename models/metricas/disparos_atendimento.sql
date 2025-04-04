@@ -1,3 +1,16 @@
+{{
+    config(
+        alias="atendimento",
+        schema="", # TODO: Add schema
+        materialized=('table' if target.name == 'dev' else 'ephemeral'),
+        partition_by={
+            "field": "data_envio",
+            "data_type": "date",
+            "range": {"start": "2000-01-01", "end": "9999-12-31", "interval": "1 day"},
+        },
+    )
+}}
+
 WITH 
 dados_base AS (
     SELECT 
@@ -18,7 +31,7 @@ dados_base AS (
              THEN EXTRACT(EPOCH FROM (readDate - deliveryDate)) 
              ELSE NULL 
         END AS tempo_leitura
-    FROM `rj-crm-registry.disparos.fluxo_atendimento`
+    FROM {{ source('disparos', 'fluxo_atendimento') }}
     WHERE sendDate IS NOT NULL
 ),
 
