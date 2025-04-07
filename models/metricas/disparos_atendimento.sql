@@ -14,6 +14,7 @@
 WITH 
 dados_base AS (
     SELECT 
+        templateId,
         DATE(sendDate AT TIME ZONE 'UTC') AS data_envio,
         DATE(deliveryDate AT TIME ZONE 'UTC') AS data_entrega,
         DATE(readDate AT TIME ZONE 'UTC') AS data_leitura,
@@ -38,6 +39,7 @@ dados_base AS (
 metricas_por_dia AS (
     SELECT 
         data_envio,
+        templateId,
         SUM(foi_enviado) AS total_enviados,
         SUM(foi_entregue) AS total_entregues,
         SUM(foi_lido) AS total_lidos,
@@ -56,11 +58,12 @@ metricas_por_dia AS (
         ROUND(AVG(tempo_leitura), 2) AS tempo_medio_leitura_segundos
     FROM dados_base
     WHERE data_envio IS NOT NULL
-    GROUP BY data_envio
+    GROUP BY data_envio, templateId
 )
 
 SELECT 
     data_envio AS data,
+    templateId,
     total_enviados,
     total_entregues,
     total_lidos,
@@ -69,4 +72,4 @@ SELECT
     COALESCE(tempo_medio_leitura_segundos, 0) AS tempo_medio_leitura_segundos,
     taxa_leitura_percentual
 FROM metricas_por_dia
-ORDER BY data_envio DESC
+ORDER BY data_envio DESC, templateId

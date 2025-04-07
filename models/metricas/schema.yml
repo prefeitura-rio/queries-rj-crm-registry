@@ -19,7 +19,12 @@ models:
         data_type: date
         tests:
           - not_null
-          - unique
+
+      - name: templateId
+        description: "ID do template de disparo"
+        data_type: string
+        tests:
+          - not_null
 
       - name: total_enviados
         description: "Número total de mensagens enviadas no dia"
