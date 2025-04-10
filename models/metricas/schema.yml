@@ -9,6 +9,12 @@ sources:
     tables:
       - name: fluxo_atendimento
         description: "Tabela com dados de envio, entrega e leitura de mensagens do fluxo de atendimento"
+      - name: atendimento_iniciado
+        description: "Tabela com dados de atendimentos iniciados"
+      - name: atendimento_finalizado
+        description: "Tabela com dados de atendimentos finalizados"
+      - name: fluxos_ura
+        description: "Tabela com dados de URA"
 
 models:
   - name: disparos_atendimento

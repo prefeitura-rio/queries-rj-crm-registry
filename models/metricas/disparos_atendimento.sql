@@ -6,7 +6,7 @@
         partition_by={
             "field": "data_envio",
             "data_type": "date",
-            "range": {"start": "2000-01-01", "end": "9999-12-31", "interval": "1 day"},
+            "range": {"start": "2019-01-01", "end": "9999-12-31", "interval": "1 day"},
         },
     )
 }}
