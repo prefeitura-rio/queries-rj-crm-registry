@@ -20,25 +20,23 @@ fluxo_data AS (
         deliveryDate,
         readDate,
         replyDate,
-        replyId,    -- Key for joining to attendance_data
+        replyId, 
         account
     FROM {{ source('disparos', 'fluxo_atendimento') }}
 ),
 
 attendance_data AS (
-    -- Select only necessary columns from atendimento_iniciado
     SELECT
-        id,         -- Key for joining from fluxo_data (replyId)
-        protocol,   -- Key for joining to ura_data
+        id,
+        protocol,
         account
     FROM {{ source('atendimentos', 'atendimento_iniciado') }}
 ),
 
 ura_data AS (
-    -- Select only necessary columns from fluxos_ura
     SELECT
-        protocol,   -- Key for joining from attendance_data
-        endDate,    -- The end timestamp for duration calculation
+        protocol, 
+        endDate,
         account
     FROM {{ source('disparos', 'fluxos_ura') }}
 ),
