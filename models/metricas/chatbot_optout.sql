@@ -1,9 +1,15 @@
 {{
     config(
         materialized=('table' if target.name == 'dev' else 'ephemeral'),
-        schema=''
+        schema=''s
     )
 }}
+
+-- Esse modelo calcula a taxa de opt-out por templateId e data de envio
+-- Problemático e precisa de revisão
+-- Paty disse que o 35 indica que a conversa foi encerrada pelo cliente, nao que houve opt-out.
+
+
 
 WITH opt_out_base AS (
     SELECT
