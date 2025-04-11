@@ -13,19 +13,22 @@
 
 WITH opt_out_base AS (
     SELECT
-        templateId,
-        tabulation_id,
-        sendDate,
-        account,
-        DATE(sendDate AT TIME ZONE 'UTC') AS data_envio
-    FROM {{ source('disparos', 'fluxo_atendimento') }}
+        fa.templateId,
+        fa.sendDate,
+        fa.replyId,
+        fa.account,
+        DATE(fa.sendDate AT TIME ZONE 'UTC') AS data_envio
+    FROM {{ source('disparos', 'fluxo_atendimento') }} fa
 )
 
 SELECT
-    data_envio,
-    templateId,
+    ob.data_envio,
+    ob.templateId,
     COUNT(*) as total_mensagens,
-    COUNT(CASE WHEN tabulation_id = 35 THEN 1 END) as total_opt_outs,
-    ROUND(COUNT(CASE WHEN tabulation_id = 35 THEN 1 END) * 100.0 / COUNT(*), 2) as taxa_opt_out
-FROM opt_out_base
-GROUP BY data_envio, templateId 
+
+    COUNT(CASE WHEN SAFE_CAST(JSON_VALUE(fu.json_data, '$.tabulation.id') AS INT64) = 35 THEN 1 END) as total_opt_outs,
+    ROUND(COUNT(CASE WHEN SAFE_CAST(JSON_VALUE(fu.json_data, '$.tabulation.id') AS INT64) = 35 THEN 1 END) * 100.0 / COUNT(*), 2) as taxa_opt_out
+FROM opt_out_base ob
+LEFT JOIN {{ source('disparos_staging', 'fluxos_ura') }} fu 
+    ON ob.replyId = fu.id_reply
+GROUP BY ob.data_envio, ob.templateId 
