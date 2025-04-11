@@ -1,12 +1,12 @@
 {{
     config(
         alias="atendimento_status_finalizacao",
-        schema="", # TODO: Add schema
-        materialized='table'
-         partition_by={
-             "field": "data_inicio",
-             "data_type": "date",
-         },
+        schema="disparos",
+        materialized='table',
+        partition_by={
+            "field": "data_inicio",
+            "data_type": "date",
+        },
     )
 }}
 
@@ -16,7 +16,7 @@ WITH atendimento_finalizado_data AS (
         account,
         tabulation
       
-    FROM {{ source('atendimento', 'atendimento_finalizado') }}
+    FROM {{ source('disparos', 'atendimento_finalizado') }}
 ),
 
 atendimento_iniciado_data AS (
@@ -26,7 +26,7 @@ atendimento_iniciado_data AS (
         protocol,
         channel,
         beginDate AS data_inicio
-    FROM {{ source('atendimento', 'atendimento_iniciado') }}
+    FROM {{ source('disparos', 'atendimento_iniciado') }}
 )
 
 SELECT

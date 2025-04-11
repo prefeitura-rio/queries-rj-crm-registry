@@ -1,7 +1,7 @@
 {{
     config(
         alias="atendimento",
-        schema="", # TODO: Add schema
+        schema="disparos",
         materialized=('table' if target.name == 'dev' else 'ephemeral'),
         partition_by={
             "field": "data_envio",
@@ -30,7 +30,7 @@ attendance_data AS (
         id,
         protocol,
         account
-    FROM {{ source('atendimentos', 'atendimento_iniciado') }}
+    FROM {{ source('disparos', 'atendimento_iniciado') }}
 ),
 
 ura_data AS (
