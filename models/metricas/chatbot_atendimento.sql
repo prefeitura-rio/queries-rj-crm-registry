@@ -1,7 +1,7 @@
 {{
     config(
         alias="atendimento",
-        schema="", # TODO: Add schema
+        schema="disparos",
         materialized=('table' if target.name == 'dev' else 'ephemeral'),
         partition_by={
             "field": "data_envio",
@@ -13,7 +13,6 @@
 
 WITH
 fluxo_data AS (
-    -- Select only necessary columns from fluxo_atendimento
     SELECT
         templateId,
         sendDate,
@@ -30,14 +29,13 @@ attendance_data AS (
         id,
         protocol,
         account
-    FROM {{ source('atendimentos', 'atendimento_iniciado') }}
+    FROM {{ source('disparos', 'atendimento_iniciado') }}
 ),
 
 ura_data AS (
     SELECT
         protocol, 
-        endDate,
-        account
+        PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%z', end_date) as end_date,
     FROM {{ source('disparos', 'fluxos_ura') }}
 ),
 
@@ -50,23 +48,23 @@ dados_base AS (
         fd.replyDate,
         fd.replyId,
         fd.account,
-        DATE(fd.sendDate AT TIME ZONE 'UTC') AS data_envio,
-        DATE(fd.deliveryDate AT TIME ZONE 'UTC') AS data_entrega,
-        DATE(fd.readDate AT TIME ZONE 'UTC') AS data_leitura,
-        DATE(fd.replyDate AT TIME ZONE 'UTC') AS data_resposta,
+        DATE(fd.sendDate, 'UTC') AS data_envio,
+        DATE(fd.deliveryDate, 'UTC') AS data_entrega,
+        DATE(fd.readDate, 'UTC') AS data_leitura,
+        DATE(fd.replyDate, 'UTC') AS data_resposta,
 
         CASE WHEN fd.sendDate IS NOT NULL THEN 1 ELSE 0 END AS foi_enviado,
         CASE WHEN fd.deliveryDate IS NOT NULL THEN 1 ELSE 0 END AS foi_entregue,
         CASE WHEN fd.readDate IS NOT NULL THEN 1 ELSE 0 END AS foi_lido,
         CASE WHEN fd.replyDate IS NOT NULL THEN 1 ELSE 0 END AS foi_respondido,
 
-        EXTRACT(EPOCH FROM (fd.deliveryDate - fd.sendDate)) AS tempo_entrega,
-        EXTRACT(EPOCH FROM (fd.readDate - fd.deliveryDate)) AS tempo_leitura,
-        EXTRACT(EPOCH FROM (fd.replyDate - fd.deliveryDate)) AS tempo_resposta,
+        TIMESTAMP_DIFF(fd.deliveryDate, fd.sendDate, SECOND) AS tempo_entrega,
+        TIMESTAMP_DIFF(fd.readDate, fd.deliveryDate, SECOND) AS tempo_leitura,
+        TIMESTAMP_DIFF(fd.replyDate, fd.deliveryDate, SECOND) AS tempo_resposta,
 
         CASE
-            WHEN ud.endDate IS NOT NULL AND fd.sendDate IS NOT NULL AND ud.endDate > fd.sendDate
-            THEN EXTRACT(EPOCH FROM (ud.endDate - fd.sendDate))
+            WHEN ud.end_date IS NOT NULL AND fd.sendDate IS NOT NULL AND ud.end_date > fd.sendDate
+            THEN TIMESTAMP_DIFF(ud.end_date, fd.sendDate, SECOND)
             ELSE NULL
         END AS tempo_total_sessao_hsm_ura
 
@@ -74,7 +72,7 @@ dados_base AS (
     LEFT JOIN attendance_data AS ad
         ON fd.replyId = ad.id AND fd.account = ad.account
     LEFT JOIN ura_data AS ud
-        ON ad.protocol = ud.protocol AND ad.account = ud.account
+        ON ad.protocol = ud.protocol
 ),
 
 metricas_por_dia AS (
@@ -88,17 +86,17 @@ metricas_por_dia AS (
 
         CASE
             WHEN SUM(foi_enviado) = 0 THEN 0
-            ELSE ROUND((SUM(foi_entregue)::NUMERIC / SUM(foi_enviado)::NUMERIC) * 100, 2)
+            ELSE ROUND((CAST(SUM(foi_entregue) AS NUMERIC) / CAST(SUM(foi_enviado) AS NUMERIC)) * 100, 2)
         END AS taxa_entrega_percentual,
 
         CASE
             WHEN SUM(foi_entregue) = 0 THEN 0
-            ELSE ROUND((SUM(foi_lido)::NUMERIC / SUM(foi_entregue)::NUMERIC) * 100, 2)
+            ELSE ROUND((CAST(SUM(foi_lido) AS NUMERIC) / CAST(SUM(foi_entregue) AS NUMERIC)) * 100, 2)
         END AS taxa_leitura_percentual,
 
         CASE
             WHEN SUM(foi_entregue) = 0 THEN 0
-            ELSE ROUND((SUM(foi_respondido)::NUMERIC / SUM(foi_entregue)::NUMERIC) * 100, 2)
+            ELSE ROUND((CAST(SUM(foi_respondido) AS NUMERIC) / CAST(SUM(foi_entregue) AS NUMERIC)) * 100, 2)
         END AS taxa_resposta_percentual,
 
         ROUND(AVG(tempo_entrega), 2) AS tempo_medio_entrega_segundos,
