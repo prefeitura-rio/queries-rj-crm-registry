@@ -4,7 +4,7 @@ version: 2
 # TODO: Add freshness
 sources:
   - name: disparos
-    database: rj-iplanrio #?
+    database: rj-crm-registry
     schema: disparos
     tables:
       - name: fluxo_atendimento

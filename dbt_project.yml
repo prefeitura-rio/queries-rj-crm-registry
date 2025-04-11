@@ -24,3 +24,6 @@ models:
     example:
       +materialized: view
       +schema: example
+    metricas:
+      +materialized: table
+      +schema: metricas
