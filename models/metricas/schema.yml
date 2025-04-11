@@ -9,9 +9,15 @@ sources:
     tables:
       - name: fluxo_atendimento
         description: "Tabela com dados de envio, entrega e leitura de mensagens do fluxo de atendimento"
+      - name: atendimento_iniciado
+        description: "Tabela com dados de atendimentos iniciados"
+      - name: atendimento_finalizado
+        description: "Tabela com dados de atendimentos finalizados"
+      - name: fluxos_ura
+        description: "Tabela com dados de URA"
 
 models:
-  - name: disparos_atendimento
+  - name: chatbot_atendimento
     description: "Métricas diárias de envio, entrega e leitura de mensagens do fluxo de atendimento"
     columns:
       - name: data
@@ -51,7 +57,7 @@ models:
           - less_than_or_equal_to:
               field: total_entregues
 
-      - name: taxa_entrega_percentual
+      - name: taxa_entrega_percentual # 2
         description: "Percentual de mensagens entregues em relação às enviadas"
         data_type: numeric(5,2)
         tests:
@@ -81,3 +87,112 @@ models:
           - positive_value
           - max_value:
               value: 100
+
+  - name: chatbot_finalstatus
+    description: Análise de conclusão dos fluxos de atendimento por WhatsApp por etapa
+    columns:
+      - name: data_envio
+        description: Data de envio da mensagem
+        tests:
+          - not_null
+      - name: templateId
+        description: ID do template da mensagem
+        tests:
+          - not_null
+      - name: etapa_fluxo
+        description: Etapa do fluxo de atendimento
+      - name: total_mensagens
+        description: Total de mensagens enviadas na etapa
+        tests:
+          - not_null
+          - positive_value
+      - name: finalizado_cliente
+        description: Quantidade de fluxos finalizados pelo cliente (tabulation_id = 35) na etapa
+        tests:
+          - not_null
+          - positive_value
+      - name: finalizado_janela
+        description: Quantidade de fluxos finalizados por timeout (tabulation_id = 37) na etapa
+        tests:
+          - not_null
+          - positive_value
+      - name: total_finalizados
+        description: Total de fluxos finalizados (cliente + janela) na etapa
+        tests:
+          - not_null
+          - positive_value
+          - less_than_or_equal_to:
+              field: total_mensagens
+      - name: tempo_medio_resposta_segundos
+        description: Tempo médio de resposta em segundos na etapa
+        tests:
+          - positive_value
+
+  - name: chatbot_optout
+    description: Análise de opt-out (cancelamentos) nos fluxos de atendimento
+    columns:
+      - name: data_envio
+        description: Data de envio da mensagem
+        tests:
+          - not_null
+      - name: templateId
+        description: ID do template da mensagem
+        tests:
+          - not_null
+      - name: total_mensagens
+        description: Total de mensagens enviadas
+        tests:
+          - not_null
+          - positive_value
+      - name: total_opt_outs
+        description: Total de opt-outs (tabulation_id = 35)
+        tests:
+          - not_null
+          - positive_value
+      - name: taxa_opt_out
+        description: Taxa de opt-out em percentual
+        tests:
+          - not_null
+          - positive_value
+          - max_value:
+              value: 100
+
+  - name: chatbot_responsetime
+    description: Análise de tempos de resposta por etapa do fluxo
+    columns:
+      - name: data_envio
+        description: Data de envio da mensagem
+        tests:
+          - not_null
+      - name: templateId
+        description: ID do template da mensagem
+        tests:
+          - not_null
+      - name: etapa_fluxo
+        description: Etapa do fluxo de atendimento
+      - name: total_mensagens
+        description: Total de mensagens enviadas na etapa
+        tests:
+          - not_null
+          - positive_value
+      - name: tempo_medio_entrega
+        description: Tempo médio de entrega em segundos para a etapa
+        tests:
+          - positive_value
+      - name: tempo_medio_leitura
+        description: Tempo médio de leitura em segundos para a etapa
+        tests:
+          - positive_value
+      - name: tempo_medio_resposta
+        description: Tempo médio de resposta em segundos para a etapa
+        tests:
+          - positive_value
+      - name: respostas_por_etapa
+        description: Quantidade de respostas recebidas na etapa do fluxo
+        tests:
+          - not_null
+          - positive_value
+      - name: tempo_resistencia
+        description: Flag indicando se o tempo médio de resposta na etapa é maior que 1 hora (True/False)
+        data_type: boolean
+
