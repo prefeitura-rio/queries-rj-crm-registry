@@ -13,6 +13,7 @@ WITH tempo_base AS (
         deliveryDate,
         readDate,
         replyDate,
+        replyId,
         account,
         DATE(sendDate AT TIME ZONE 'UTC') AS data_envio
     FROM {{ source('disparos', 'fluxo_atendimento') }}
@@ -24,6 +25,10 @@ SELECT
     ROUND(AVG(TIMESTAMP_DIFF(deliveryDate, sendDate, SECOND)), 2) as tempo_medio_entrega,
     ROUND(AVG(TIMESTAMP_DIFF(readDate, deliveryDate, SECOND)), 2) as tempo_medio_leitura,
     ROUND(AVG(TIMESTAMP_DIFF(replyDate, readDate, SECOND)), 2) as tempo_medio_resposta,
-    (ROUND(AVG(TIMESTAMP_DIFF(replyDate, readDate, SECOND)), 2) > 3600) as tempo_resistencia
-FROM tempo_base
-GROUP BY data_envio, templateId
+    (ROUND(AVG(TIMESTAMP_DIFF(replyDate, readDate, SECOND)), 2) > 3600) as tempo_resistencia,
+    id_ura,
+    ura_name
+FROM tempo_base tb
+LEFT JOIN {{ source('disparos', 'fluxos_ura') }} fu
+    ON replyId = af.id
+GROUP BY data_envio, templateId, id_ura
