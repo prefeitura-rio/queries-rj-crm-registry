@@ -1,7 +1,7 @@
 {{
     config(
         materialized=('table' if target.name == 'dev' else 'ephemeral'),
-        schema=''s
+        schema='disparos'
     )
 }}
 

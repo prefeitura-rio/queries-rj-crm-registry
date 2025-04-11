@@ -1,7 +1,7 @@
 {{
     config(
         alias="atendimento_status_finalizacao",
-        schema="", # TODO: Add schema
+        schema="disparos",
         materialized='table'
          partition_by={
              "field": "data_inicio",
