@@ -16,7 +16,14 @@ with
 
     transformed as (
         select
-            * except (json_data, id_ura, ura_name),
+            id_reply,
+            protocol,
+            channel,
+            begin_date,
+            end_date,
+            ano_particao,
+            mes_particao,
+            data_particao,
             struct(id_ura as id, ura_name as nome) as ura,
             json_value(json_data, '$.observation') as observation,
             json_value(json_data, '$.origin') as origin,
