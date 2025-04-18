@@ -1,11 +1,9 @@
-{{ config(alias="fluxos_ura") }}
+{{ config(alias="fluxos_ura", materialized="view") }}
 
--- Model para extrair e transformar dados dos fluxos de URA do sistema Wetalkie
 with
-
     source as (select * from {{ source("rj-crm-registry", "fluxos_ura") }}),
 
-    -- Corrige valores no formato JSON para compatibilidade com BigQuery
+    -- Corrigindo formato do JSON para compatibilidade com BigQuery
     fix_json as (
         select
             * except (json_data),
@@ -17,54 +15,56 @@ with
         from source
     ),
 
-    -- Transformação dos dados extraídos do JSON
+    -- Transformação principal dos dados extraindo informações do JSON
     transformed as (
         select
-            -- Informações básicas do fluxo
             id_reply as id_resposta,
             protocol as protocolo,
             channel as canal,
-
-            -- Datas de início e fim do fluxo
             date(
-                parse_timestamp(
-                    '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.beginDate')
+                timestamp_sub(
+                    parse_timestamp(
+                        '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.beginDate')
+                    ),
+                    interval 3 hour  -- Ajuste de fuso horário para -3
                 )
             ) as inicio_data,
             datetime(
-                parse_timestamp(
-                    '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.beginDate')
+                timestamp_sub(
+                    parse_timestamp(
+                        '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.beginDate')
+                    ),
+                    interval 3 hour  -- Ajuste de fuso horário para -3
                 )
             ) as inicio_datahora,
             datetime(
-                parse_timestamp(
-                    '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.endDate')
+                timestamp_sub(
+                    parse_timestamp(
+                        '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.endDate')
+                    ),
+                    interval 3 hour  -- Ajuste de fuso horário para -3
                 )
             ) as fim_datahora,
-
-            -- Identificadores do fluxo
             json_value(json_data, '$.id') as id,
+
+            -- Informações da URA
             struct(id_ura as id, ura_name as nome) as ura,
 
-            -- Metadados descritivos
+            -- Dados gerais do atendimento
             json_value(json_data, '$.observation') as observacao,
             json_value(json_data, '$.origin') as origem,
             json_value(json_data, '$.description') as descricao,
-
-            -- Informações de operadores e usuários
             json_value(json_data, '$.operator') as operador,
             json_value(json_data, '$.finalizationUser') as usuario_finalizacao,
 
-            -- Datas de enfileiramento e processamento
+            -- Dados de temporalidade e fluxo
             json_value(json_data, '$.firstQueuingDate') as data_primeiro_enfileiramento,
             json_value(json_data, '$.sendToOperatorDate') as data_envio_operador,
             json_value(json_data, '$.lastQueuingDate') as data_ultimo_enfileiramento,
-
-            -- Informações de fila e classificação
             json_value(json_data, '$.queue') as fila,
-            json_extract(json_data, '$.tags') as tags,
 
-            -- Estrutura de tabulação
+            -- Metadados e categorizações
+            json_extract(json_data, '$.tags') as tags,
             struct(
                 json_extract_scalar(
                     json_extract(json_data, '$.tabulation'), '$.name'
@@ -85,15 +85,18 @@ with
                 json_extract_scalar(json_extract(json_data, '$.contact'), '$.id') as id
             ) as contato,
 
-            -- Processamento das mensagens do fluxo
+            -- Histórico de mensagens trocadas durante o atendimento
             (
                 select
                     array_agg(
                         struct(
                             -- Dados temporais da mensagem
-                            parse_timestamp(
-                                '%Y-%m-%dT%H:%M:%E*S%Ez',
-                                json_extract_scalar(json_str, '$.date')
+                            timestamp_add(
+                                parse_timestamp(
+                                    '%Y-%m-%dT%H:%M:%E*S%Ez',
+                                    json_extract_scalar(json_str, '$.date')
+                                ),
+                                interval -3 hour
                             ) as data,
 
                             -- Conteúdo e metadados da mensagem
@@ -140,13 +143,13 @@ with
                 from unnest(json_extract_array(json_data, '$.messages')) as json_str
             ) as mensagens,
 
-            -- Campos de particionamento
+            -- Dados de particionamento
             ano_particao,
             mes_particao,
             cast(data_particao as date) as data_particao
         from fix_json
     )
 
--- Seleção final dos dados transformados
+-- Resultado final
 select *
 from transformed
