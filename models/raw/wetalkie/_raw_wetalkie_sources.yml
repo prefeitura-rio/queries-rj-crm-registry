@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: rj-crm-registry
+    database: rj-crm-registry
+    schema: disparos_staging
+    freshness: # default freshness
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 48, period: hour}
+    loaded_at_field: data_particao
+    tables:
+    - name: disparos_efetuados
+    - name: fluxos_ura
+
+

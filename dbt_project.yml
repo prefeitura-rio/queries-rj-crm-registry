@@ -23,6 +23,8 @@ models:
   queries:
     raw:
       +materialized: table
+      wetalkie:
+        +schema: brutos_wetalkie
     intermediate:
       +materialized: ephemeral
     core:
