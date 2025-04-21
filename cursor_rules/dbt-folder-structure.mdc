@@ -12,7 +12,6 @@ project_root/
 ├── macros/
 ├── models/
 │   ├── raw/
-│   ├── staging/
 │   ├── intermediate/
 │   └── marts/
 ├── seeds/
@@ -40,9 +39,6 @@ models/
 ├── raw/
 │   ├── raw_crm_customers.sql
 │   └── raw_crm_customers.yml
-├── staging/
-│   ├── stg_crm_customers.sql
-│   └── stg_crm_customers.yml
 ├── intermediate/
 │   ├── int_crm_customers_cleaned.sql
 │   └── int_crm_customers_cleaned.yml
@@ -126,12 +122,10 @@ macros/
 ## Best Practices
 1. Keep related models together in the same directory
 2. Use subdirectories in marts/ to organize by business domain
-3. Create individual YAML files for each model with underscore prefix
-4. Place tests close to the models they test
-5. Use consistent naming across all project files
-6. Document all models, columns, and tests in their respective YAML files
-7. Keep macros organized by their function (utils, transformations, etc.)
-8. Use seeds only for static reference data
-9. Place analysis SQL files in the analyses/ directory
-10. Keep YAML files next to their corresponding SQL files for better maintainability
-11. Always prefix YAML configuration files with underscore for better file organization 
+3. Place tests close to the models they test
+4. Use consistent naming across all project files
+5. Document all models, columns, and tests in their respective YAML files
+6. Keep macros organized by their function (utils, transformations, etc.)
+7. Use seeds only for static reference data
+8. Place analysis SQL files in the analyses/ directory
+9. Keep YAML files next to their corresponding SQL files for better maintainability
