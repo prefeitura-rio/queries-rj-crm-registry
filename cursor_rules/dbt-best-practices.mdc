@@ -15,17 +15,6 @@ alwaysApply: false
   - `alias`
   - `schema`
 
-## Naming Conventions
-- Use snake_case for all object names (models, sources, macros)
-- Use Iplan taxonomy for naming columns
-- Prefix model names based on their layer:
-  - `raw_` for raw models
-  - `stg_` for staging models
-  - `int_` for intermediate models
-  - `fct_` for fact tables
-  - `dim_` for dimension tables
-  - `mart_` for mart tables
-
 ## SQL Style
 - Write modular code using CTEs
 - Name CTEs using clear, descriptive names
