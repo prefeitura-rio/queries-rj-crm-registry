@@ -24,7 +24,7 @@ project_root/
 
 ## Model File Naming Convention
 SQL files should follow the pattern: `{layer}_{dataset}_{table}.sql`
-YAML files should follow the pattern: `_{layer}_{dataset}_{table}.yml`
+YAML files should follow the pattern: `{layer}_{dataset}_{table}.yml`
 
 ### Layer Prefixes
 - `raw_` - Raw data models
@@ -38,23 +38,23 @@ YAML files should follow the pattern: `_{layer}_{dataset}_{table}.yml`
 ```
 models/
 ├── raw/
-│   ├── _raw_crm_customers.yml
-│   └── raw_crm_customers.sql
+│   ├── raw_crm_customers.sql
+│   └── raw_crm_customers.yml
 ├── staging/
-│   ├── _stg_crm_customers.yml
-│   └── stg_crm_customers.sql
+│   ├── stg_crm_customers.sql
+│   └── stg_crm_customers.yml
 ├── intermediate/
-│   ├── _int_crm_customers_cleaned.yml
-│   └── int_crm_customers_cleaned.sql
+│   ├── int_crm_customers_cleaned.sql
+│   └── int_crm_customers_cleaned.yml
 └── marts/
     ├── core/
-    │   ├── _dim_customers.yml
     │   ├── dim_customers.sql
-    │   ├── _fct_orders.yml
-    │   └── fct_orders.sql
+    │   ├── dim_customers.yml
+    │   ├── fct_orders.sql
+    │   └── fct_orders.yml
     └── marketing/
-        ├── _mart_customer_behavior.yml
-        └── mart_customer_behavior.sql
+        ├── mart_customer_behavior.sql
+        └── mart_customer_behavior.yml
 ```
 
 ## Test File Naming Convention
