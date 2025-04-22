@@ -18,7 +18,7 @@ with
     -- Transformação principal dos dados extraindo informações do JSON
     transformed as (
         select
-            id_reply as id_resposta,
+            id_reply as id_sessao,
             protocol as protocolo,
             channel as canal,
             date(

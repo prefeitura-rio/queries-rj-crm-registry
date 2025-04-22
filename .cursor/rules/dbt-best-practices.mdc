@@ -27,8 +27,11 @@ alwaysApply: false
 - Use consistent indentation (2 or 4 spaces)
 
 ## Source Usage
-- Only use `ref()` macro to reference models
-- Only use `source()` macro to reference raw tables
+- Only use `{{ ref() }}` to reference models
+- Only suggest as input for  `{{ ref() }}` the name of .sql files of the project
+- Only use ``{{ source() }}` macro to reference raw tables
+- Never use `ref()`
+- Never use `source()`
 - Define all sources in `sources.yml` files
 - Include tests and documentation in yml files
 

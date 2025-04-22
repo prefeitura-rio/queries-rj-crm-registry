@@ -68,7 +68,7 @@ tests/
 
 ## YAML Configuration Files
 Each model should have its own YAML file with an underscore prefix:
-- Pattern: `_{layer}_{dataset}_{table}.yml`
+- Pattern: `{layer}_{dataset}_{table}.yml`
 - Place the YAML file next to its corresponding SQL file
 - One YAML file per model for better maintainability and version control
 - The underscore prefix helps group configuration files together in directory listings
