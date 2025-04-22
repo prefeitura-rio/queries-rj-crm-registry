@@ -43,8 +43,8 @@ logs/
 *.swp
 *.swo
 *~
-.cursor/
-.qodo/
+.cursor/**/*.json
+.qodo/**
 
 # OS generated files
 .DS_Store
@@ -67,3 +67,4 @@ credentials/
 *.sqlite
 *.db
 test.*
+.qodo
