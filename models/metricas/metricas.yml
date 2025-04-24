@@ -1,0 +1,40 @@
+version: 2
+
+sources:
+  - name: disparo_staging
+    database: rj-crm-registry
+    schema: brutos_wetalkie
+    tables:
+      - name: fluxos_ura
+        description: "Tabela contendo dados de interação dos fluxos da URA"
+
+models:
+  - name: feedback_iplan
+    description: "Modelo para feedback do IPLAN originado dos fluxos da URA, contendo perguntas e respostas extraídas das mensagens."
+    columns:
+      - name: id_ura
+        description: "Identificador único da URA"
+        tests:
+          - not_null
+      - name: id_reply
+        description: "Identificador da resposta"
+      - name: ura_name
+        description: "Nome da URA"
+      - name: protocol
+        description: "Protocolo da interação"
+        tests:
+          - not_null
+      - name: channel
+        description: "Canal de comunicação"
+      - name: begin_date
+        description: "Data de início da interação"
+      - name: end_date
+        description: "Data de fim da interação"
+      - name: feedback_pergunta
+        description: "Pergunta extraída do campo text das mensagens da URA"
+        tests:
+          - not_null
+      - name: feedback_resposta
+        description: "Resposta do usuário extraída do campo text das mensagens do CUSTOMER"
+        tests:
+          - not_null
