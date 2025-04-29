@@ -1,0 +1,150 @@
+version: 2
+
+sources:
+  - name: brutos_wetalkie
+    database: rj-crm-registry
+    schema: brutos_wetalkie
+    tables:
+      - name: fluxos_ura
+        description: "Tabela com dados brutos de interações via URA, incluindo mensagens, passos e tabulações"
+
+models:
+  - name: fct_whatsapp_atendimento
+    description: Tabela agregada diária com métricas de atendimento do chatbot.
+    schema: disparos
+    columns:
+      - name: data
+        description: Data da sessão.
+        data_type: date
+      - name: total_sessoes
+        description: Número total de sessões no dia.
+        data_type: integer
+      - name: total_mensagens_cliente
+        description: Número total de mensagens enviadas pelos clientes no dia.
+        data_type: integer
+      - name: total_mensagens_ura
+        description: Número total de mensagens enviadas pela URA no dia.
+        data_type: integer
+      - name: total_mensagens_texto
+        description: Número total de mensagens de texto no dia.
+        data_type: integer
+      - name: total_mensagens_audio
+        description: Número total de mensagens de áudio no dia.
+        data_type: integer
+      - name: tempo_medio_efetivo_segundos
+        description: Tempo médio efetivo das sessões em segundos (do início à última mensagem do cliente).
+        data_type: numeric
+      - name: mediana_duracao_segundos
+        description: Mediana da duração efetiva das sessões em segundos.
+        data_type: numeric
+      - name: tempo_medio_resposta_segundos
+        description: Tempo médio de resposta da URA às mensagens do cliente em segundos.
+        data_type: numeric
+      - name: media_mensagens_cliente
+        description: Média de mensagens por cliente por sessão.
+        data_type: numeric
+      - name: percentual_uso_audio
+        description: Percentual de uso de mensagens de áudio pelos clientes.
+        data_type: numeric
+      - name: media_passos_por_sessao
+        description: Média de passos únicos percorridos por sessão.
+        data_type: numeric
+
+  - name: fct_whatsapp_etapafluxo
+    description: Tabela agregada diária com métricas de fluxo e status das sessões do chatbot.
+    schema: metricas
+    columns:
+      - name: data_sessao
+        description: Data da sessão.
+        data_type: date
+      - name: canal
+        description: Canal de atendimento.
+        data_type: string
+      - name: total_sessoes
+        description: Número total de sessões no dia para o canal.
+        data_type: integer
+      - name: sessoes_encerradas_cliente
+        description: Número de sessões encerradas pelo cliente.
+        data_type: integer
+      - name: sessoes_encerradas_janela
+        description: Número de sessões encerradas pela janela de atendimento.
+        data_type: integer
+      - name: sessoes_outro_tipo
+        description: Número de sessões com outro tipo de tabulação.
+        data_type: integer
+      - name: sessoes_sem_tabulacao
+        description: Número de sessões sem tabulação.
+        data_type: integer
+      - name: total_fluxos_travados
+        description: Número total de fluxos que travaram.
+        data_type: integer
+      - name: taxa_opt_out_porcentagem
+        description: Taxa percentual de opt-out.
+        data_type: numeric
+      - name: duracao_media_segundos
+        description: Duração média das sessões em segundos.
+        data_type: numeric
+
+  - name: fct_whatsapp_hsm_entrega_resposta
+    description: Tabela agregada diária com métricas de entrega e resposta de mensagens da URA.
+    schema: metricas
+    columns:
+      - name: data_sessao
+        description: Data da sessão.
+        data_type: date
+      - name: canal
+        description: Canal de atendimento.
+        data_type: string
+      - name: total_mensagens_enviadas
+        description: Número total de mensagens enviadas pela URA.
+        data_type: integer
+      - name: total_mensagens_respondidas
+        description: Número total de mensagens da URA que receberam resposta do cliente.
+        data_type: integer
+      - name: taxa_resposta_porcentagem
+        description: Taxa percentual de mensagens da URA que foram respondidas.
+        data_type: numeric
+      - name: tempo_medio_resposta_segundos
+        description: Tempo médio para o cliente responder a uma mensagem da URA em segundos.
+        data_type: numeric
+      - name: mediana_tempo_resposta_segundos
+        description: Mediana do tempo para o cliente responder a uma mensagem da URA em segundos.
+        data_type: numeric
+      - name: p90_tempo_resposta_segundos
+        description: Percentil 90 do tempo para o cliente responder a uma mensagem da URA em segundos.
+        data_type: numeric
+      - name: total_mensagens_texto
+        description: Número total de mensagens de texto enviadas pela URA.
+        data_type: integer
+      - name: total_mensagens_audio
+        description: Número total de mensagens de áudio enviadas pela URA.
+        data_type: integer
+      - name: mensagens_texto_respondidas
+        description: Número de mensagens de texto da URA que foram respondidas pelo cliente.
+        data_type: integer
+      - name: mensagens_audio_respondidas
+        description: Número de mensagens de áudio da URA que foram respondidas pelo cliente.
+        data_type: integer
+      - name: taxa_resposta_texto_porcentagem
+        description: Taxa percentual de mensagens de texto da URA que foram respondidas.
+        data_type: numeric
+
+  - name: fct_whatsapp_performance_etapa
+    description: Tabela agregada diária com métricas de performance do chatbot por etapa.
+    schema: metricas
+    columns:
+      - name: data_sessao
+        description: Data da sessão.
+        data_type: date
+      - name: id_passo_ura
+        description: ID do passo da URA.
+        data_type: string
+      - name: nome_passo_ura
+        description: Nome do passo da URA.
+        data_type: string
+      - name: hsm_respondidos_por_etapa
+        description: Número de mensagens da URA nesta etapa que foram seguidas por uma resposta do cliente.
+        data_type: integer
+      - name: tempo_medio_ura_para_resposta_segundos
+        description: Tempo médio em segundos entre a mensagem da URA nesta etapa e a resposta do cliente.
+        data_type: numeric

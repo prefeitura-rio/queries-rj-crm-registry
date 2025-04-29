@@ -42,7 +42,6 @@ SELECT
   COUNTIF(tabulation_id NOT IN ('35', '37') AND tabulation_id IS NOT NULL) AS sessoes_outro_tipo,
   COUNTIF(tabulation_id IS NULL) AS sessoes_sem_tabulacao,  
   COUNTIF(fluxo_travado) AS total_fluxos_travados,
-  COUNTIF(tabulation_id = '35') AS total_opt_out,
   ROUND(COUNTIF(tabulation_id = '35') / NULLIF(COUNT(id_sessao), 0) * 100, 2) AS taxa_opt_out_porcentagem,
   AVG(duracao_sessao_segundos) AS duracao_media_segundos
   
