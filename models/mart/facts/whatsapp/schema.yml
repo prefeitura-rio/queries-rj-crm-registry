@@ -148,3 +148,20 @@ models:
       - name: tempo_medio_ura_para_resposta_segundos
         description: Tempo médio em segundos entre a mensagem da URA nesta etapa e a resposta do cliente.
         data_type: numeric
+
+  - name: fct_whatsapp_daily_optout
+    description: Tabela agregada diária que calcula a taxa de opt-out para sessões com tabulação 35 onde a última mensagem do cliente foi "sair".
+    schema: metricas
+    columns:
+      - name: data_sessao
+        description: Data da sessão.
+        data_type: date
+      - name: total_sessoes
+        description: Número total de sessões no dia.
+        data_type: integer
+      - name: opt_out_sessoes_sair_last_message
+        description: Número de sessões no dia com tabulação 35 onde a última mensagem do cliente foi "sair".
+        data_type: integer
+      - name: taxa_opt_out_sair_last_message_percentual
+        description: Taxa percentual diária de sessões com tabulação 35 onde a última mensagem do cliente foi "sair" (em relação ao total de sessões).
+        data_type: numeric
