@@ -1,10 +1,9 @@
 version: 2
 
-
 # TODO: Add freshness
 sources:
   - name: disparos
-    database: rj-iplanrio #?
+    database: rj-iplanrio
     schema: disparos
     tables:
       - name: fluxo_atendimento
@@ -13,12 +12,17 @@ sources:
         description: "Tabela com dados de atendimentos iniciados"
       - name: atendimento_finalizado
         description: "Tabela com dados de atendimentos finalizados"
+  
+  - name: brutos_wetalkie
+    database: rj-crm-registry
+    schema: brutos_wetalkie
+    tables:
       - name: fluxos_ura
-        description: "Tabela com dados de URA"
+        description: "Tabela com dados brutos de interações via URA, incluindo mensagens, passos e tabulações"
 
 models:
   - name: chatbot_atendimento
-    description: "Métricas diárias de envio, entrega e leitura de mensagens do fluxo de atendimento"
+    description: "Métricas diárias de envio, entrega e leitura de mensagens do fluxo de atendimento via templates"
     columns:
       - name: data
         description: "Data de envio das mensagens"
@@ -56,7 +60,7 @@ models:
         tests:
           - not_null
 
-      - name: taxa_entrega_percentual # 2
+      - name: taxa_entrega_percentual
         description: "Percentual de mensagens entregues em relação às enviadas"
         data_type: numeric(5,2)
         tests:
@@ -99,85 +103,207 @@ models:
           - not_null
 
   - name: chatbot_finalstatus
-    description: Análise de conclusão dos fluxos de atendimento por WhatsApp por etapa
+    description: "Análise de conclusão dos fluxos de atendimento por WhatsApp por status de finalização"
     columns:
       - name: atendimento_id
-        description: ID do atendimento
-        tests:
-          - not_null
-      - name: account
-        description: Conta associada ao atendimento
-        tests:
-          - not_null
-      - name: protocol
-        description: Protocolo do atendimento
-      - name: channel
-        description: Canal do atendimento
-      - name: data_inicio
-        description: Data de início do atendimento
-        tests:
-          - not_null
-      - name: tabulation
-        description: ID da tabulação final
-      - name: status_finalizacao
-        description: Status descritivo da finalização do atendimento
+        description: "ID único da sessão de atendimento"
+        data_type: string
         tests:
           - not_null
 
+      - name: account
+        description: "ID do contato associado ao atendimento"
+        data_type: string
+        tests:
+          - not_null
+
+      - name: protocol
+        description: "Número de protocolo do atendimento"
+        data_type: string
+        tests:
+          - not_null
+
+      - name: channel
+        description: "Canal utilizado para o atendimento (WhatsApp, etc.)"
+        data_type: string
+        tests:
+          - not_null
+
+      - name: data_inicio
+        description: "Data de início do atendimento"
+        data_type: date
+        tests:
+          - not_null
+
+      - name: tabulation
+        description: "ID da tabulação de finalização"
+        data_type: string
+
+      - name: status_finalizacao
+        description: "Status descritivo da finalização do atendimento (Em Andamento, Timeout, Opt-out, etc.)"
+        data_type: string
+        tests:
+          - not_null
+
+      - name: duracao_sessao_segundos
+        description: "Duração total da sessão em segundos, do início ao fim"
+        data_type: integer
+
   - name: chatbot_optout
-    description: Análise de opt-out (cancelamentos) nos fluxos de atendimento
+    description: "Análise de opt-out (cancelamentos) nos fluxos de atendimento"
     columns:
       - name: data_envio
-        description: Data de envio da mensagem
+        description: "Data de envio da mensagem"
+        data_type: date
         tests:
           - not_null
+
       - name: templateId
-        description: ID do template da mensagem
+        description: "ID do template da mensagem"
+        data_type: string
         tests:
           - not_null
+
       - name: total_mensagens
-        description: Total de mensagens enviadas
+        description: "Total de mensagens enviadas"
+        data_type: integer
         tests:
           - not_null
+
       - name: total_opt_outs
-        description: Total de opt-outs (tabulation_id = 35)
+        description: "Total de opt-outs (tabulação 35)"
+        data_type: integer
         tests:
           - not_null
+
       - name: taxa_opt_out
-        description: Taxa de opt-out em percentual
+        description: "Percentual de opt-out em relação ao total de mensagens"
+        data_type: numeric(5,2)
         tests:
           - not_null
 
   - name: chatbot_responsetime
-    description: Análise de tempos de resposta por etapa do fluxo
+    description: "Análise de tempos de resposta por etapa do fluxo"
     columns:
       - name: data_envio
-        description: Data de envio da mensagem
+        description: "Data de envio da mensagem"
+        data_type: date
         tests:
           - not_null
-      - name: templateId
-        description: ID do template da mensagem
-        tests:
-          - not_null
-      - name: total_mensagens
-        description: Total de mensagens enviadas na etapa
-        tests:
-          - not_null
-      - name: tempo_medio_entrega
-        description: Tempo médio de entrega em segundos para a etapa
-      - name: tempo_medio_leitura
-        description: Tempo médio de leitura em segundos para a etapa
-      - name: tempo_medio_resposta
-        description: Tempo médio de resposta em segundos para a etapa
-      - name: respostas_por_etapa
-        description: Quantidade de respostas recebidas na etapa do fluxo
-        tests:
-          - not_null
-      - name: tempo_resistencia
-        description: Flag indicando se o tempo médio de resposta na etapa é maior que 1 hora (True/False)
-        data_type: boolean
-      - name: id_ura
-        description: ID da URA associada à resposta
-      - name: ura_name
-        description: Nome da URA associada à resposta
 
+      - name: templateId
+        description: "ID do template da mensagem"
+        data_type: string
+        tests:
+          - not_null
+
+      - name: total_mensagens
+        description: "Total de mensagens enviadas na etapa"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: tempo_medio_entrega
+        description: "Tempo médio de entrega em segundos para a etapa"
+        data_type: numeric(10,2)
+
+      - name: tempo_medio_leitura
+        description: "Tempo médio de leitura em segundos para a etapa"
+        data_type: numeric(10,2)
+
+      - name: tempo_medio_resposta
+        description: "Tempo médio de resposta em segundos para a etapa"
+        data_type: numeric(10,2)
+
+      - name: respostas_por_etapa
+        description: "Quantidade de respostas recebidas na etapa do fluxo"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: tempo_resistencia
+        description: "Flag indicando se o tempo médio de resposta na etapa é maior que 1 hora"
+        data_type: boolean
+
+      - name: id_ura
+        description: "ID da URA associada à resposta"
+        data_type: string
+
+      - name: ura_name
+        description: "Nome da URA associada à resposta"
+        data_type: string
+
+  - name: chatbot_ura_atendimento
+    description: "Métricas diárias de interações conversacionais com a URA via WhatsApp"
+    columns:
+      - name: data
+        description: "Data da sessão de atendimento"
+        data_type: date
+        tests:
+          - not_null
+
+      - name: total_sessoes
+        description: "Número total de sessões de URA no dia"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: total_mensagens_cliente
+        description: "Número total de mensagens enviadas pelos clientes no dia"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: total_mensagens_ura
+        description: "Número total de mensagens enviadas pela URA no dia"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: total_mensagens_texto
+        description: "Número total de mensagens de texto trocadas no dia"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: total_mensagens_audio
+        description: "Número total de mensagens de áudio enviadas pelos clientes no dia"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: tempo_medio_efetivo_segundos
+        description: "Tempo médio efetivo da sessão em segundos, medido do início até a última mensagem do cliente"
+        data_type: numeric(10,2)
+        tests:
+          - not_null
+
+      - name: mediana_duracao_segundos
+        description: "Mediana da duração efetiva das sessões em segundos, menos suscetível a valores extremos"
+        data_type: numeric(10,2)
+        tests:
+          - not_null
+
+      - name: tempo_medio_resposta_segundos
+        description: "Tempo médio entre uma mensagem do cliente e a resposta subsequente da URA em segundos"
+        data_type: numeric(10,2)
+        tests:
+          - not_null
+
+      - name: media_mensagens_cliente
+        description: "Média de mensagens enviadas por cliente em cada sessão"
+        data_type: numeric(5,2)
+        tests:
+          - not_null
+
+      - name: percentual_uso_audio
+        description: "Percentual de mensagens de áudio em relação ao total de mensagens do cliente"
+        data_type: numeric(5,2)
+        tests:
+          - not_null
+
+      - name: media_passos_por_sessao
+        description: "Média de passos únicos de URA percorridos por sessão"
+        data_type: numeric(5,2)
+        tests:
+          - not_null
