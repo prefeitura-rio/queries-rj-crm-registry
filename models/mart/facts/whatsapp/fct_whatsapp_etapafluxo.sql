@@ -1,7 +1,7 @@
 {{
     config(
         materialized='table',
-        schema='metricas',
+        schema='disparos',
         partition_by={
             "field": "data_sessao",
             "data_type": "date",
