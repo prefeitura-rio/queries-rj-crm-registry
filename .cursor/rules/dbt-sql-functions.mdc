@@ -1,0 +1,39 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# dbt SQL Functions Usage Rule
+
+## Allowed Functions in dbt Models
+
+- Only use functions that are:
+  1. **Built-in Google BigQuery SQL functions** ([BigQuery Standard SQL Reference](mdc:https:/cloud.google.com/bigquery/docs/reference/standard-sql/functions-and-operators))
+  2. **Macros defined in the project's `macros/` directory**
+
+## Prohibited Usage
+- Do **not** use user-defined SQL functions (UDFs) directly in dbt model SQL files.
+- Any custom logic must be implemented as a Jinja macro in the `macros/` directory and referenced via `{{ macro_name() }}`.
+- Do **not** use functions from other SQL dialects (e.g., PostgreSQL, MySQL, etc.).
+
+## Implementation Guidance
+- If a transformation requires a function not available in BigQuery, implement it as a macro in `macros/`.
+- Always prefer built-in BigQuery functions for performance and maintainability.
+- When referencing a macro, use the Jinja syntax: `{{ macro_name(args) }}`.
+
+## Example
+```sql
+-- Allowed (BigQuery built-in):
+SELECT ARRAY_LENGTH(my_array)
+
+-- Allowed (macro):
+SELECT {{ clean_name_string('column_name') }}
+
+-- Not allowed (UDF in SQL):
+CREATE TEMP FUNCTION my_custom_func(x STRING) AS (...)
+SELECT my_custom_func(column)
+```
+
+## References
+- [BigQuery Standard SQL Functions and Operators](mdc:https:/cloud.google.com/bigquery/docs/reference/standard-sql/functions-and-operators)
+- [BigQuery SQL Language Reference](mdc:https:/cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax)

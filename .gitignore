@@ -68,3 +68,4 @@ credentials/
 *.db
 test.*
 .qodo
+dbt_internal_packages/

@@ -6,11 +6,6 @@
         alias="all_cpfs",
         schema="intermediario_dados_mestres",
         materialized=('table' if target.name == 'dev' else 'ephemeral'),
-        partition_by={
-            "field": "cpf_particao",
-            "data_type": "int64",
-            "range": {"start": 0, "end": 100000000000, "interval": 34722222},
-        },
     )
 }}
 
@@ -38,7 +33,7 @@ with
     bcadastro as (
         select distinct b.cpf, 'bcadastro' as origem
         from {{ source("bcadastro", "cpf") }} as b
-        where b.endereco_municipio = 'Rio de Janeiro'
+        where b.endereco.municipio = 'Rio de Janeiro'
     ),
 
     all_cpfs as (
@@ -70,3 +65,4 @@ with
 
 select cpf, origens, origens_count, cpf_particao
 from final_tb
+{% if target.name == "dev" %} limit 1000 {% endif %}
