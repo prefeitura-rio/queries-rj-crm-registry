@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: rj-crm-registry
     database: rj-crm-registry
-    schema: disparos_staging
+    schema: brutos_wetalkie_staging
     freshness: # default freshness
       warn_after: {count: 24, period: hour}
       error_after: {count: 48, period: hour}
