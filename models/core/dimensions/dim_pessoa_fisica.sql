@@ -84,6 +84,9 @@ with
 
     -- - Orgaos
     dim_assistencia_social as (select * from {{ ref("int_pessoa_fisica_dim_assistencia_social") }}),
+
+    dim_educacao as (select * from {{ ref("int_pessoa_fisica_dim_educacao") }}),
+
     dim_saude as (select * from {{ ref("int_pessoa_fisica_dim_saude") }}),
 
     -- FINAL TABLE
@@ -134,6 +137,7 @@ with
 
             -- Órgão da prefeitura
             dim_assistencia_social.assistencia_social,
+            dim_educacao.educacao,
             dim_saude.saude,
 
             -- Sócio-econômicos
@@ -146,6 +150,7 @@ with
         inner join source_bcadastro as bcadastro using (cpf)
         left join dim_assistencia_social using (cpf)
         left join dim_documentos using (cpf)
+        left join dim_educacao using (cpf)
         left join dim_email using (cpf)
         left join dim_endereco using (cpf)
         left join dim_mae using (cpf)
