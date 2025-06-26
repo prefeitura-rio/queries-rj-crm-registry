@@ -21,7 +21,7 @@ with
             cpf,
             "boa" as aluno_conceito,
             0.9 as aluno_frequencia,
-            "escola_nome" as escola_nome,
+            "EM Almirante Tamandaré" as escola_nome,
             "8:00 às 17:00" as escola_horario_funcionamento,
             "1234567890" as escola_telefone,
             "escola@email.com" as escola_email,

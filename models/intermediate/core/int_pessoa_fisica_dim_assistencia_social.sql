@@ -29,7 +29,7 @@ with
             dados.data_ultima_atualizacao,
             dados.data_limite_cadastro_atual_familia as data_limite_cadastro_atual,
             dados.estado_cadastral as status_cadastral,
-            "CRAS" as nome,  -- # TODO: obter nome do CRAS
+            "CRAS Germinal Rodrigues" as nome,  -- # TODO: obter nome do CRAS
             "Rua das Flores, 123" as endereco,  -- # TODO: obter endereço do CRAS
             "1234567890" as telefone  -- # TODO: obter telefone do CRAS
 
