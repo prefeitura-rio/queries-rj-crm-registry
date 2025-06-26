@@ -11,7 +11,7 @@
 
 with
     saude as (
-        select distinct cpf, 'saude' as origem from {{ source("rj-sms", "paciente") }}
+        select distinct cpf, 'saude' as origem from {{ source("rj-sms-historico-clinico", "paciente") }}
     ),
 
     cadunico as (

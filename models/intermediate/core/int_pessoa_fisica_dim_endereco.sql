@@ -28,7 +28,7 @@ with
     source_sms as (
         select b.*
         from all_prefeitura a
-        inner join {{ source("rj-sms", "paciente") }} b using (cpf_particao)
+        inner join {{ source("rj-sms-historico-clinico", "paciente") }} b using (cpf_particao)
     ),
 
     source_cadunico as (

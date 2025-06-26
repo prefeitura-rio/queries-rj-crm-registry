@@ -20,7 +20,7 @@ with
 
     source_saude as (
         select *
-        from {{ source("rj-sms", "paciente") }}
+        from {{ source("rj-sms-historico-clinico", "paciente") }}
         inner join all_prefeitura using (cpf)
     ),
 

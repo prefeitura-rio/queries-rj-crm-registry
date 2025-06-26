@@ -32,8 +32,19 @@
                         )
                     then lower(word)
                     when
-                        lower(word)
-                        in ('i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x')
+                        lower(word) in (
+                            'i',
+                            'ii',
+                            'iii',
+                            'iv',
+                            'v',
+                            'vi',
+                            'vii',
+                            'viii',
+                            'ix',
+                            'x',
+                            's/n'
+                        )
                     then upper(word)
                     else concat(upper(substr(word, 1, 1)), lower(substr(word, 2)))
                 end,

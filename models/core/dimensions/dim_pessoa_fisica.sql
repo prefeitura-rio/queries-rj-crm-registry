@@ -24,7 +24,7 @@ with
 
     source_saude as (
         select *
-        from {{ source("rj-sms", "paciente") }}
+        from {{ source("rj-sms-historico-clinico", "paciente") }}
         inner join all_prefeitura using (cpf)
     ),
 
@@ -83,31 +83,7 @@ with
     dim_telefone as (select * from {{ ref("int_pessoa_fisica_dim_telefone") }}),
 
     -- - Orgaos
-    dim_saude as (
-        select
-            all_prefeitura.cpf,
-            struct(
-                if(equipe_saude_familia is not null, true, false) as indicador,
-                equipe_saude_familia.clinica_familia.id_cnes,
-                equipe_saude_familia.clinica_familia.nome,
-                equipe_saude_familia.clinica_familia.telefone
-            ) as clinica_familia,
-            struct(
-                if(equipe_saude_familia is not null, true, false) as indicador,
-                equipe_saude_familia.id_ine,
-                equipe_saude_familia.nome,
-                equipe_saude_familia.telefone,
-                equipe_saude_familia.medicos,
-                equipe_saude_familia.enfermeiros
-            ) as equipe_saude_familia,
-        from all_prefeitura
-        left join
-            (
-                select cpf, equipe_saude_familia[offset(0)] as equipe_saude_familia
-                from source_saude
-                where array_length(equipe_saude_familia) > 0
-            ) using (cpf)
-    ),
+    dim_saude as (select * from {{ ref("int_pessoa_fisica_dim_saude") }}),
 
     -- FINAL TABLE
     final as (

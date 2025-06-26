@@ -22,7 +22,7 @@ with
     source_sms as (
         select b.*
         from all_cpf a
-        inner join {{ source("rj-sms", "paciente") }} b using (cpf_particao)
+        inner join {{ source("rj-sms-historico-clinico", "paciente") }} b using (cpf_particao)
     ),
 
     -- CONTATO - EMAIL
