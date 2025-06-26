@@ -31,12 +31,10 @@ with
     ),
 
     -- DIMENSIONS
-    --- Informações básicas
     dim_documentos as (
         select all_prefeitura.cpf, struct(source_saude.cns) as documentos,
         from all_prefeitura
         left join source_saude using (cpf)
-
     ),
     
     dim_nascimento as (
@@ -57,7 +55,6 @@ with
                     {{ proper_br("nascimento_local.pais") }},
                     'Brasil'
                 ) as pais
-
             ) as nascimento
         from source_bcadastro
     ),
@@ -67,7 +64,6 @@ with
         from source_bcadastro
     ),
 
-    --- Pontos de contato
     dim_endereco as (
         select * from {{ ref("int_pessoa_fisica_dim_endereco") }}
     ),
@@ -80,31 +76,16 @@ with
         select * from {{ ref("int_pessoa_fisica_dim_telefone") }}
     ),
 
-    --- Orgaos
+    dim_assistencia_social as (
+        select * from {{ ref("int_pessoa_fisica_dim_assistencia_social") }}
+    ),
+
+    dim_educacao as (
+        select * from {{ ref("int_pessoa_fisica_dim_educacao") }}
+    ),
+
     dim_saude as (
-        select
-            all_prefeitura.cpf,
-            struct(
-                if(equipe_saude_familia is not null, true, false) as indicador,
-                equipe_saude_familia.clinica_familia.id_cnes,
-                equipe_saude_familia.clinica_familia.nome,
-                equipe_saude_familia.clinica_familia.telefone
-            ) as clinica_familia,
-            struct(
-                if(equipe_saude_familia is not null, true, false) as indicador,
-                    equipe_saude_familia.id_ine,
-                    equipe_saude_familia.nome,
-                    equipe_saude_familia.telefone,
-                    equipe_saude_familia.medicos,
-                    equipe_saude_familia.enfermeiros
-            ) as equipe_saude_familia,
-        from all_prefeitura
-        left join
-            (
-                select cpf, equipe_saude_familia[offset(0)] as equipe_saude_familia
-                from source_saude
-                where array_length(equipe_saude_familia) > 0
-            ) using (cpf)
+        select * from {{ ref("int_pessoa_fisica_dim_saude") }}
     ),
 
     cpf_base as (
@@ -192,33 +173,16 @@ with
                 '105' as pais_id,
                 'Brasil' as pais
             ) as nascimento,
-
             -- Parentesco
             struct(concat('MAE_', abs(farm_fingerprint(cast(cpf as string)))) as nome, cast(null as string) as cpf) as mae,
-
             -- Outras características
             (date_diff(current_date(), date_add(date '1950-01-01', interval mod(abs(farm_fingerprint(cast(cpf as string))), 22280) day), year) < 18) as menor_idade,
-
-            coalesce(
-                saude.dados.raca, 'RACA_' || mod(abs(farm_fingerprint(cast(cpf as string))), 10)
-            ) as raca,
-
+            'RACA_' || mod(abs(farm_fingerprint(cast(cpf as string))), 10) as raca,
             struct(
-                coalesce(
-                    saude.dados.obito_indicador,
-                    if(bcadastro.obito_ano is not null, true, false),
-                    false
-                ) as indicador,
-                coalesce(
-                    extract(year from saude.dados.obito_data),
-                    cast(bcadastro.obito_ano as int64)
-                ) as ano
+                false as indicador,
+                null as ano
             ) as obito,
-
-            -- Documentos
             struct([concat('CNS', abs(farm_fingerprint(cast(cpf as string))))] as cns) as documentos,
-
-            -- Endereço
             struct(
                 true as indicador,
                 struct(
@@ -235,8 +199,6 @@ with
                 ) as principal,
                 [] as alternativo
             ) as endereco,
-
-            -- Contato
             struct(
                 true as indicador,
                 struct('FAKE_ORIGEM' as origem, 'FAKE_SISTEMA' as sistema, concat('user_', abs(farm_fingerprint(cast(cpf as string))), '@example.com') as valor) as principal,
@@ -247,18 +209,16 @@ with
                 struct('FAKE_ORIGEM' as origem, 'FAKE_SISTEMA' as sistema, '55' as ddi, '21' as ddd, lpad(cast(mod(abs(farm_fingerprint(cast(cpf as string))), 100000000) as string), 8, '0') as valor) as principal,
                 [] as alternativo
             ) as telefone,
-            
             -- Órgão da prefeitura
-            struct(dim_saude.clinica_familia, dim_saude.equipe_saude_familia) as saude,
-
-            -- Sócio-econômicos
-            -- Participação societária
-            -- Metadados e partição
+            dim_assistencia_social.assistencia_social,
+            dim_educacao.educacao,
+            dim_saude.saude,
             struct(current_timestamp() as last_updated) as datalake,
-            cast(cpf as int64) as cpf_particao,
-
+            cast(cpf as int64) as cpf_particao
         from all_prefeitura
         inner join source_bcadastro as bcadastro using (cpf)
+        left join dim_assistencia_social using (cpf)
+        left join dim_educacao using (cpf)
         left join dim_documentos using (cpf)
         left join dim_email using (cpf)
         left join dim_endereco using (cpf)
@@ -269,7 +229,6 @@ with
         left join source_saude as saude using (cpf)
         left join source_cadunico as cadunico using (cpf)
         left join cpf_ready using (cpf)
-
     ),
 
     deduplicated as (
