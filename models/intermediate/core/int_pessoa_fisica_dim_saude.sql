@@ -58,7 +58,8 @@ with
         select
             all_cpf.cpf,
             struct(
-                if(equipe_saude_familia is not null, true, false) as indicador,
+            struct(
+                if(clinica_familia_struct.id_cnes is not null, true, false) as indicador,
                 clinica_familia_struct.id_cnes,
                 clinica_familia_struct.nome,
                 clinica_familia_struct.telefone,
@@ -74,6 +75,7 @@ with
                 equipe_saude_familia.medicos,
                 equipe_saude_familia.enfermeiros
             ) as equipe_saude_familia
+            ) as saude
         from all_cpf
         left join equipe_saude_familia_struct using (cpf)
         left join clinica_familia_struct using (cpf)

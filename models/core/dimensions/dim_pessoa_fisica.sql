@@ -83,6 +83,7 @@ with
     dim_telefone as (select * from {{ ref("int_pessoa_fisica_dim_telefone") }}),
 
     -- - Orgaos
+    dim_assistencia_social as (select * from {{ ref("int_pessoa_fisica_dim_assistencia_social") }}),
     dim_saude as (select * from {{ ref("int_pessoa_fisica_dim_saude") }}),
 
     -- FINAL TABLE
@@ -132,7 +133,8 @@ with
             dim_telefone.telefone,
 
             -- Órgão da prefeitura
-            struct(dim_saude.clinica_familia, dim_saude.equipe_saude_familia) as saude,
+            dim_assistencia_social.assistencia_social,
+            dim_saude.saude,
 
             -- Sócio-econômicos
             -- Participação societária
@@ -142,6 +144,7 @@ with
 
         from all_prefeitura
         inner join source_bcadastro as bcadastro using (cpf)
+        left join dim_assistencia_social using (cpf)
         left join dim_documentos using (cpf)
         left join dim_email using (cpf)
         left join dim_endereco using (cpf)
