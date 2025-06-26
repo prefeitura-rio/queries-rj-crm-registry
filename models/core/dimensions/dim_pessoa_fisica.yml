@@ -315,6 +315,18 @@ models:
         description: Telefone da clínica da família
         data_type: string
         quote: true
+      - name: saude.clinica_familia.email
+        description: E-mail da clínica da família
+        data_type: string
+        quote: true
+      - name: saude.clinica_familia.endereco
+        description: Endereço da clínica da família
+        data_type: string
+        quote: true
+      - name: saude.clinica_familia.horario_atendimento
+        description: Horário de atendimento da clínica da família
+        data_type: string
+        quote: true
       - name: saude.equipe_saude_familia
         description: Estrutura com informações da equipe de saúde da família vinculada
         data_type: record
@@ -371,4 +383,96 @@ models:
         description: Partição do CPF para distribuição de dados
         data_type: integer
         quote: false
+      - name: assistencia_social
+        description: Estrutura com informações de assistência social do indivíduo
+        data_type: record
+        quote: true
+      - name: assistencia_social.cadunico
+        description: Informações do CadÚnico (Cadastro Único) relacionadas à assistência social
+        data_type: record
+        quote: true
+      - name: assistencia_social.cadunico.indicador
+        description: Indicador se o indivíduo possui cadastro no CadÚnico
+        data_type: boolean
+        quote: false
+      - name: assistencia_social.cadunico.data_cadastro
+        description: Data de cadastro no CadÚnico
+        data_type: date
+        quote: false
+      - name: assistencia_social.cadunico.data_ultima_atualizacao
+        description: Data da última atualização do cadastro no CadÚnico
+        data_type: date
+        quote: false
+      - name: assistencia_social.cadunico.data_limite_cadastro_atual
+        description: Data limite para atualização do cadastro no CadÚnico
+        data_type: date
+        quote: false
+      - name: assistencia_social.cadunico.status_cadastral
+        description: Status cadastral do indivíduo no CadÚnico
+        data_type: string
+        quote: true
+      - name: assistencia_social.cras
+        description: Informações do CRAS vinculado ao indivíduo
+        data_type: record
+        quote: true
+      - name: assistencia_social.cras.nome
+        description: Nome do CRAS
+        data_type: string
+        quote: true
+      - name: assistencia_social.cras.endereco
+        description: Endereço do CRAS
+        data_type: string
+        quote: true
+      - name: assistencia_social.cras.telefone
+        description: Telefone do CRAS
+        data_type: string
+        quote: true
+      - name: educacao
+        description: Estrutura com informações de educação do indivíduo
+        data_type: record
+        quote: true
+      - name: educacao.aluno
+        description: Informações do aluno relacionadas à educação
+        data_type: record
+        quote: true
+      - name: educacao.aluno.indicador
+        description: Indicador se o indivíduo possui vínculo escolar com a rede municipal de ensino
+        data_type: boolean
+        quote: false
+      - name: educacao.aluno.conceito
+        description: "Conceito do aluno (muito bom, bom, regular, insuficiente)"
+        data_type: string
+        quote: true
+      - name: educacao.aluno.frequencia
+        description: Frequência do aluno na escola. Total de aulas frequentadas / total de aulas realizadas. O valor deve ser entre 0 e 1.
+        data_type: float
+        quote: false
+      - name: educacao.escola
+        description: Informações da escola vinculada ao aluno
+        data_type: record
+        quote: true
+      - name: educacao.escola.nome
+        description: Nome da escola
+        data_type: string
+        quote: true
+      - name: educacao.escola.horario_funcionamento
+        description: Horário de funcionamento da escola
+        data_type: string
+        quote: true
+      - name: educacao.escola.telefone
+        description: Telefone da escola
+        data_type: string
+        quote: true
+      - name: educacao.escola.email
+        description: E-mail da escola
+        data_type: string
+        quote: true
+      - name: educacao.escola.whatsapp
+        description: WhatsApp da escola
+        data_type: string
+        quote: true
+      - name: educacao.escola.endereco
+        description: Endereço da escola
+        data_type: string
+        quote: true
 
