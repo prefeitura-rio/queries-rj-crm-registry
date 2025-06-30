@@ -7,6 +7,56 @@ with
         where inicio_datahora >= '2025-04-18 12:00:00'
     ),
 
+    fluxo_atendimento AS (
+    SELECT
+        triggerId AS id_disparo, 
+        replyId AS id_sessao,
+        targetId AS id_contato,
+        CAST(EXTRACT(YEAR FROM
+                timestamp_sub(
+                   sendDate,
+                    interval 3 hour  -- Ajuste de fuso horário para -3
+                )
+            ) AS STRING) as ano_particao_hsm,
+        CAST(EXTRACT(MONTH FROM
+                timestamp_sub(
+                   sendDate,
+                    interval 3 hour  -- Ajuste de fuso horário para -3
+                )
+            ) AS STRING) as mes_particao_hsm,
+        DATE(DATE_TRUNC(
+                timestamp_sub(
+                   sendDate,
+                    interval 3 hour  -- Ajuste de fuso horário para -3
+                ),
+              day
+            )) as data_particao_hsm,
+        struct(
+          templateId AS id_hsm,
+          createDate AS criacao_envio_datahora,
+          sendDate AS envio_datahora,
+          deliveryDate AS entrega_datahora,
+          readDate AS leitura_datahora,
+          failedDate AS falha_datahora,
+          replyDate AS resposta_datahora,
+          faultDescription AS descricao_falha
+            ) as hsm,
+        lower(status) AS status_disparo
+    FROM {{ source("rj-crm-registry", "fluxo_atendimento_*") }}
+    QUALIFY row_number() OVER (PARTITION BY replyId ORDER BY datarelay_timestamp DESC) = 1
+),
+
+    source_com_hsm AS (
+        select COALESCE(source_.id_sessao, fluxo_atendimento.id_sessao) as id_sessao,
+        source_.* EXCEPT(id_sessao), fluxo_atendimento.id_disparo, fluxo_atendimento.hsm, fluxo_atendimento.status_disparo,
+        fluxo_atendimento.id_contato,
+        fluxo_atendimento.ano_particao_hsm,
+        fluxo_atendimento.mes_particao_hsm,
+        fluxo_atendimento.data_particao_hsm,
+        from source as source_
+        full outer join fluxo_atendimento using (id_sessao)
+    ),
+
     mensagens as (
         select
             DISTINCT
@@ -26,11 +76,13 @@ with
             mensagem.passo_ura.nome as passo_ura_nome,
             mensagem.texto,
             lower({{ clean_name_string("texto") }}) as texto_limpo,
+            source_com_hsm.hsm,
+            source_com_hsm.status_disparo
 
-        from source, unnest(mensagens) as mensagem
+        from source_com_hsm, unnest(mensagens) as mensagem
     ),
 
-    -- necessário pois as vezes o json repete a mesma mensagem Ex: protocolo "2506001000000990"
+    -- necessário o distinct anterior pois as vezes o json repete a mesma mensagem Ex: protocolo "2506001000000990"
     sequencia_mensagens AS (
         select *,
             row_number() over (partition by id_sessao order by data) as sequencia
@@ -102,7 +154,7 @@ with
     -- chatbot retornou que a opção selecionada é inválida:
     erro_opcao_invalida as (
         select distinct id_sessao, 'opcao_invalida' as tipo_erro
-        from mensagens
+        from sequencia_mensagens
         where fonte = 'URA' and texto_limpo like '%opcao invalida%'
     ),
 
@@ -169,35 +221,81 @@ with
         left join feedback_busca as f using (id_sessao)
     ),
 
+    -- CALCULOS DE TEMPO
+    session_timestamps AS (
+      SELECT
+        id_sessao,
+        MIN(data) as primeira_mensagem,
+        MAX(CASE WHEN fonte = 'CUSTOMER' THEN data ELSE NULL END) as ultima_mensagem_cliente
+      FROM sequencia_mensagens
+      GROUP BY id_sessao
+    ),
+
+    message_response_times AS (
+      SELECT
+        id_sessao,
+        id_mensagem,
+        fonte,
+        data,
+        CASE 
+          WHEN fonte = 'CUSTOMER' AND 
+            LAG(fonte) OVER (PARTITION BY id_sessao ORDER BY data) = 'URA'
+          THEN TIMESTAMP_DIFF(
+              data,
+              LAG(data) OVER (PARTITION BY id_sessao ORDER BY data), 
+              MILLISECOND)/1000
+          ELSE NULL
+        END as tempo_resposta_cliente_seg
+      FROM sequencia_mensagens
+    ),
+
     -- ESTATISTICAS:
     estatisticas as (
         select
-            id_sessao,
+            sm.id_sessao,
             struct(
-                count(distinct id_mensagem) as total_mensagens,
+                count(distinct sm.id_mensagem) as total_mensagens,
                 count(
-                    distinct case when fonte = 'CUSTOMER' then id_mensagem end
+                    distinct case when sm.fonte = 'CUSTOMER' then sm.id_mensagem end
                 ) as total_mensagens_contato,
                 count(
-                    distinct case when lower(texto) not like 'oi%como%posso%ajudar%' and fonte = 'URA' and passo_ura_nome ='@VLR_RESPOSTA_BUSCA' then id_mensagem end
-                ) as total_mensagens_busca
+                    distinct case when lower(texto) not like 'oi%como%posso%ajudar%' and sm.fonte = 'URA' and sm.passo_ura_nome ='@VLR_RESPOSTA_BUSCA' then sm.id_mensagem end
+                ) as total_mensagens_busca,
+                -- ?? Deixar a ultima mensagem do cliente ou filtrar a ultima mensagem que não for finalizacao automarica?
+                -- Tempo efetivo de sessão (do início/hsm até a última mensagem do cliente) 
+                MAX(TIMESTAMP_DIFF(TIMESTAMP(st.ultima_mensagem_cliente), COALESCE(TIMESTAMP(hsm.leitura_datahora), TIMESTAMP(sessao_inicio_datahora)), MILLISECOND))/1000 as duracao_sessao_seg,
+                -- Tempo efetivo de interação do cliente sessão (do início da interação até a última mensagem do cliente)
+                MAX(TIMESTAMP_DIFF(TIMESTAMP(st.ultima_mensagem_cliente), TIMESTAMP(st.primeira_mensagem), MILLISECOND))/1000 as duracao_interacao_seg,
+                -- Tempo efetivo de sessão (do início da URA até a última mensagem do cliente)
+                MAX(TIMESTAMP_DIFF(TIMESTAMP(st.ultima_mensagem_cliente), TIMESTAMP(sm.sessao_inicio_datahora), MILLISECOND))/1000 as duracao_ura_seg,
+                AVG(mrt.tempo_resposta_cliente_seg) as tempo_medio_resposta_cliente_seg
             ) as estatisticas
-        from sequencia_mensagens
+        from sequencia_mensagens sm
+        LEFT JOIN session_timestamps st ON sm.id_sessao = st.id_sessao
+        LEFT JOIN message_response_times mrt ON 
+          sm.id_sessao = mrt.id_sessao AND 
+          sm.id_mensagem = mrt.id_mensagem
         group by 1
     ),
 
     -- - tabela final:
     final as (
         select
-            m.*,
+            m.* EXCEPT(ano_particao, mes_particao, data_particao, ano_particao_hsm, mes_particao_hsm, data_particao_hsm, id_contato, contato),
+            struct(
+              if(contato.id is null, CAST(id_contato AS STRING), contato.id) as id, contato.nome 
+            ) AS contato,
             struct(
                 if(b.id_sessao is not null, true, false) as indicador, b.feedback
             ) as busca,
             struct(
                 if(err.id_sessao is not null, true, false) as indicador, err.tipo_erro
             ) as erro_fluxo,
-            stat.estatisticas
-        from source as m
+            stat.estatisticas,
+            COALESCE(ano_particao, ano_particao_hsm) as ano_particao,
+            COALESCE(mes_particao, mes_particao_hsm) as mes_particao,
+            COALESCE(data_particao, data_particao_hsm) as data_particao
+        from source_com_hsm as m
         left join erros_consolidados as err using (id_sessao)
         left join sessoes_com_busca_e_feedback as b using (id_sessao)
         left join estatisticas as stat using (id_sessao)

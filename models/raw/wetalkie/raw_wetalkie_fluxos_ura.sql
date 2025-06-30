@@ -145,7 +145,7 @@ with
 
             -- Dados de particionamento
             ano_particao,
-            mes_particao,
+            cast(cast(mes_particao as int64) as string) as mes_particao,
             cast(data_particao as date) as data_particao
         from fix_json
     )
