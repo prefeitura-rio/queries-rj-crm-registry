@@ -11,5 +11,6 @@ sources:
     tables:
     - name: disparos_efetuados
     - name: fluxos_ura
+    - name: fluxo_atendimento_*
 
 
