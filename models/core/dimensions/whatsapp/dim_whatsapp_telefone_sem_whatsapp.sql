@@ -1,14 +1,21 @@
-{{ config(alias="telefone_sem_whatsapp", schema="crm_whatsapp", materialized="table", tags=["daily"]) }}
+{{
+    config(
+        alias="telefone_sem_whatsapp",
+        schema="crm_whatsapp",
+        materialized="table",
+        tags=["daily"],
+    )
+}}
 
-WITH 
-  celulares_sem_whatsapp AS (
-    SELECT
-        CAST(flatTarget AS STRING) as telefone,
-        MAX(DATE(DATE_TRUNC(sendDate, DAy))) as data_atualizacao
-    FROM {{ source("rj-crm-registry", "fluxo_atendimento_*") }}
-    WHERE failedDate IS NOT NULL AND faultDescription LIKE "%131026%"
-    GROUP BY telefone
-  )
+with
+    celulares_sem_whatsapp as (
+        select
+            cast(flattarget as string) as telefone,
+            max(date(date_trunc(senddate, day))) as data_atualizacao
+        from {{ source("rj-crm-registry", "fluxo_atendimento_*") }}
+        where faileddate is not null and faultdescription like "%131026%"
+        group by telefone
+    )
 
-SELECT * FROM celulares_sem_whatsapp
-
+select *
+from celulares_sem_whatsapp
