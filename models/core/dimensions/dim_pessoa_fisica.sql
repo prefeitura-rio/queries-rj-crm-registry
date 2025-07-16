@@ -83,6 +83,8 @@ with
 
     dim_telefone as (select * from {{ ref("int_pessoa_fisica_dim_telefone") }}),
 
+    dim_ocupacao as (select * from {{ ref("int_pessoa_fisica_dim_ocupacao") }}),
+
     -- - Orgaos
     dim_assistencia_social as (select * from {{ ref("int_pessoa_fisica_dim_assistencia_social") }}),
 
@@ -142,6 +144,8 @@ with
             dim_assistencia_social.assistencia_social,
             dim_educacao.educacao,
             dim_saude.saude,
+            -- struct(dim_saude.clinica_familia, dim_saude.equipe_saude_familia) as saude,
+
             dim_ocupacao.ocupacao,
 
             -- Sócio-econômicos
