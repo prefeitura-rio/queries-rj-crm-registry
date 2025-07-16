@@ -3,11 +3,11 @@
 WITH 
   celulares_sem_whatsapp AS (
     SELECT
-        CAST(flatTarget AS STRING) as telefone,
+        CAST(flatTarget AS STRING) as contato_telefone,
         MAX(DATE(DATE_TRUNC(sendDate, DAy))) as data_atualizacao
-    FROM {{ source("rj-crm-registry", "fluxo_atendimento_*") }}
+    FROM {{ source("brutos_wetalkie_staging", "fluxo_atendimento_*") }}
     WHERE failedDate IS NOT NULL AND faultDescription LIKE "%131026%"
-    GROUP BY telefone
+    GROUP BY contato_telefone
   )
 
 SELECT * FROM celulares_sem_whatsapp

@@ -1,7 +1,7 @@
 {{ config(alias="fluxos_ura", materialized="view") }}
 
 with
-    source as (select * from {{ source("rj-crm-registry", "fluxos_ura") }}),
+    source as (select * from {{ source("brutos_wetalkie_staging", "fluxos_ura") }}),
 
     -- Corrigindo formato do JSON para compatibilidade com BigQuery
     fix_json as (

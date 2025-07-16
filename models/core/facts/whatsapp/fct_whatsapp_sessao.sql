@@ -43,7 +43,7 @@ with
           faultDescription AS descricao_falha
             ) as hsm,
         lower(status) AS status_disparo
-    FROM {{ source("rj-crm-registry", "fluxo_atendimento_*") }}
+    FROM {{ source("brutos_wetalkie_staging", "fluxo_atendimento_*") }}
     QUALIFY row_number() OVER (PARTITION BY replyId ORDER BY datarelay_timestamp DESC) = 1
 ),
 

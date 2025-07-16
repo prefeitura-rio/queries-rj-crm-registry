@@ -40,13 +40,13 @@ with
 
     source_georreferenciamento as (
         select
-            DISTINCT logradouro_tratado,
+            logradouro_tratado,
             numero_porta,
             bairro,
             latitude,
             longitude,
             pluscode
-        from `rj-crm-registry.intermediario_dados_mestres_staging.enderecos_geolocalizados`
+        from  {{ ref("dim_endereco_geolocalizado") }}
     ),
 
     -- ENDEREÇOS
@@ -142,9 +142,9 @@ with
     tratar_endereco_corrigido as (
         select
             *,
-            LOWER(REGEXP_REPLACE(logradouro, r'[^a-zA-Z0-9 ]', '')) AS logradouro_geo,
+            LOWER(REGEXP_REPLACE({{ proper_br("logradouro") }}, r'[^a-zA-Z0-9 ]', '')) AS logradouro_geo,
             LOWER(REGEXP_REPLACE(numero, r'[^a-zA-Z0-9 ]', '')) AS numero_porta_geo,
-            LOWER(REGEXP_REPLACE(bairro, r'[^a-zA-Z0-9 ]', '')) AS bairro_geo
+            LOWER(REGEXP_REPLACE({{ proper_br("bairro") }}, r'[^a-zA-Z0-9 ]', '')) AS bairro_geo
         from endereco_corrigido
 
     ),
