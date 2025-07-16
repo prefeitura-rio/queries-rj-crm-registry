@@ -16,7 +16,7 @@ with
     source_cep as (select * from {{ source("br_bd_diretorios_brasil", "cep") }}),
 
     all_prefeitura as (
-        select cpf, cpf_particao from {{ ref("int_pessoa_fisica_all_cpf") }}
+         select cpf, cpf_particao from {{ ref("int_pessoa_fisica_all_cpf") }}
     ),
 
     source_bcadastro as (
@@ -35,6 +35,18 @@ with
         select b.*
         from all_prefeitura a
         inner join {{ source("rj-smas", "cadastros") }} b using (cpf_particao)
+    ),
+
+
+    source_georreferenciamento as (
+        select
+            logradouro_tratado,
+            numero_porta,
+            bairro,
+            latitude,
+            longitude,
+            pluscode
+        from  {{ ref("dim_endereco_geolocalizado") }}
     ),
 
     -- ENDEREÇOS
@@ -126,6 +138,43 @@ with
         left join source_cep as cep on endereco.cep = cep.cep
     ),
 
+    -- tratar endereço para georreferenciamento
+    tratar_endereco_corrigido as (
+        select
+            *,
+            LOWER(REGEXP_REPLACE({{ proper_br("logradouro") }}, r'[^a-zA-Z0-9 ]', '')) AS logradouro_geo,
+            LOWER(REGEXP_REPLACE(numero, r'[^a-zA-Z0-9 ]', '')) AS numero_porta_geo,
+            LOWER(REGEXP_REPLACE({{ proper_br("bairro") }}, r'[^a-zA-Z0-9 ]', '')) AS bairro_geo
+        from endereco_corrigido
+
+    ),
+
+    -- integrar com georreferenciamento
+    geo_endereco_corrigido as (
+        select
+            endereco.cpf,
+            endereco.cep,
+            endereco.estado,
+            endereco.municipio,
+            endereco.tipo_logradouro,
+            endereco.logradouro,
+            endereco.numero,
+            endereco.complemento,
+            endereco.bairro,
+            endereco.sistema,
+            endereco.rank,
+            endereco.source,
+            geo.latitude,
+            geo.longitude,
+            geo.pluscode
+        from tratar_endereco_corrigido endereco
+        left join source_georreferenciamento geo
+            on endereco.logradouro_geo = geo.logradouro_tratado
+            and endereco.numero_porta_geo = geo.numero_porta
+            and endereco.bairro_geo = geo.bairro
+
+    ),
+
     -- Ordena os endereços por rank
     endereco_ranqueado as (
         select
@@ -139,8 +188,7 @@ with
                 then 3
                 else 4
             end as rank_source
-        from endereco_corrigido
-
+        from geo_endereco_corrigido
     ),
 
     endereco_ordernado_agrupado as (
@@ -150,7 +198,6 @@ with
                 struct(
                     source as origem,
                     lower(sistema) as sistema,
-                    -- rank,
                     cep,
                     lower(estado) as estado,
                     {{ proper_br("municipio") }} as municipio,
@@ -158,7 +205,10 @@ with
                     {{ proper_br("logradouro") }} as logradouro,
                     numero,
                     {{ proper_br("complemento") }} as complemento,
-                    {{ proper_br("bairro") }} as bairro
+                    {{ proper_br("bairro") }} as bairro,
+                    latitude,
+                    longitude,
+                    pluscode
                 )
                 order by rank_source asc, rank asc
             ) as endereco
@@ -173,8 +223,7 @@ with
             array(
                 select as struct * except (pos)
                 from unnest(endereco)
-                with
-                offset pos
+                with offset pos
                 where pos > 0
             ) as alternativo
         from endereco_ordernado_agrupado
