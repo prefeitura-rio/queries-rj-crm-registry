@@ -82,6 +82,8 @@ with
 
     dim_telefone as (select * from {{ ref("int_pessoa_fisica_dim_telefone") }}),
 
+    dim_ocupacao as (select * from {{ ref("int_pessoa_fisica_dim_ocupacao") }}),
+
     -- - Orgaos
     dim_saude as (
         select
@@ -157,6 +159,7 @@ with
 
             -- Órgão da prefeitura
             struct(dim_saude.clinica_familia, dim_saude.equipe_saude_familia) as saude,
+            dim_ocupacao.ocupacao,
 
             -- Sócio-econômicos
             -- Participação societária
@@ -173,6 +176,7 @@ with
         left join dim_nascimento using (cpf)
         left join dim_saude using (cpf)
         left join dim_telefone using (cpf)
+        left join dim_ocupacao using (cpf)
         left join source_saude as saude using (cpf)
         left join source_cadunico as cadunico using (cpf)
 
