@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: rj-crm-registy-intermediario-dados-mestres-staging
+    database: rj-crm-registry
+    schema: intermediario_dados_mestres_staging
+    tables:
+    - name: enderecos_geolocalizados
