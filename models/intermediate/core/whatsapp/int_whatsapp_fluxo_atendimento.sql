@@ -8,8 +8,7 @@
     partition_by={
         "field": "data_particao",
         "data_type": "date"
-    },
-    cluster_by=["ano_particao", "mes_particao"] 
+    }
   )
 }}
 -- TODO: converter datas pta UTC?
@@ -22,10 +21,10 @@ WITH
             SELECT MAX(criacao_envio_datahora) 
             FROM {{ this }}
           )
-          OR createDate >= TIMESTAMP_SUB(
-            CURRENT_TIMESTAMP(),
-            INTERVAL 2 DAY
-          ) -- Safety net para garantir captura
+          -- OR createDate >= TIMESTAMP_SUB(
+          --   CURRENT_TIMESTAMP(),
+          --   INTERVAL 2 DAY
+          -- ) -- Safety net para garantir captura
         {% else %}
           -- Carga inicial completa
           WHERE createDate >= '2025-04-18 12:00:00'
