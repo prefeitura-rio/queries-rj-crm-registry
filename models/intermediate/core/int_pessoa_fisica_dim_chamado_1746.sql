@@ -42,7 +42,8 @@ WITH
             DISTINCT
             CASE
             WHEN cpf = "01075971799" THEN "07304210907"
-            WHEN cpf = "01077893701" THEN "02801159204"
+            -- WHEN cpf = "01077893701" THEN "02801159204"
+            WHEN cpf = "01077893701" THEN "47562396507"
             WHEN cpf = "01149879718" THEN "04913579231"
             WHEN cpf = "01181001730" THEN "00576201219"
             WHEN cpf = "02105846700" THEN "00852909128"

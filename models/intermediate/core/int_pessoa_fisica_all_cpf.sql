@@ -65,4 +65,4 @@ with
 
 select cpf, origens, origens_count, cpf_particao
 from final_tb
-{% if target.name == "dev" %} limit 1000 {% endif %}
+-- {% if target.name == "dev" %} limit 1000 {% endif %}

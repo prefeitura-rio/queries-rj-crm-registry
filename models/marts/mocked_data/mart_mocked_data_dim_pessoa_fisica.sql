@@ -159,7 +159,11 @@ with
     -- FINAL TABLE
     final as (
         select
-            cpf_ready.cpf_random as cpf,
+            -- cpf_ready.cpf_random as cpf,
+            CASE
+            WHEN cpf = "01077893701" THEN "47562396507"
+            ELSE cpf
+            END AS cpf,
             -- Identificação
             concat('NOME_', abs(farm_fingerprint(cast(cpf as string)))) as nome,
             concat('NOME_SOCIAL_', abs(farm_fingerprint(cast(cpf as string)))) as nome_social,
@@ -245,4 +249,3 @@ where cpf not in (
   '00000000000', '11111111111', '22222222222', '33333333333', '44444444444',
   '55555555555', '66666666666', '77777777777', '88888888888', '99999999999'
 ) 
-limit 10000
