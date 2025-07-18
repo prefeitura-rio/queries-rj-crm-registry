@@ -3,7 +3,7 @@ crm:
   outputs:
     dev:
       dataset: dbt
-      job_execution_timeout_seconds: 300
+      job_execution_timeout_seconds: 600
       job_retries: 1
       keyfile: /tmp/credentials.json
       location: US
@@ -14,7 +14,7 @@ crm:
       type: bigquery
     staging:
       dataset: dbt
-      job_execution_timeout_seconds: 300
+      job_execution_timeout_seconds: 600
       job_retries: 1
       keyfile: /tmp/credentials.json
       location: US
@@ -25,7 +25,7 @@ crm:
       type: bigquery
     prod:
       dataset: dbt
-      job_execution_timeout_seconds: 300
+      job_execution_timeout_seconds: 600
       job_retries: 1
       keyfile: /tmp/credentials.json
       location: US

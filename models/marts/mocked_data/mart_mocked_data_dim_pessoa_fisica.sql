@@ -1,5 +1,6 @@
 {{
     config(
+        enabled=false,
         alias="pessoa_fisica_mock_data",
         schema="crm_dados_mestres",
         materialized=("table" if target.name == "dev" or target.name == "staging" else "ephemeral")

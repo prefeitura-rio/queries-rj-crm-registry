@@ -1,6 +1,5 @@
 ---
-description: 
-globs: 
+globs: *.sql
 alwaysApply: false
 ---
 # dbt SQL Functions Usage Rule
