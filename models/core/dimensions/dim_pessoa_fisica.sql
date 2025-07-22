@@ -83,7 +83,6 @@ with
 
     dim_telefone as (select * from {{ ref("int_pessoa_fisica_dim_telefone") }}),
 
-    dim_ocupacao as (select * from {{ ref("int_pessoa_fisica_dim_ocupacao") }}),
 
     -- - Orgaos
     dim_assistencia_social as (select * from {{ ref("int_pessoa_fisica_dim_assistencia_social") }}),

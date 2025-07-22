@@ -6,6 +6,12 @@
         alias="dim_saude",
         schema="intermediario_dados_mestres",
         materialized=("table" if target.name == "dev" else "ephemeral"),
+        tags=["daily"],
+        partition_by={
+            "field": "cpf_particao",
+            "data_type": "int64",
+            "range": {"start": 0, "end": 100000000000, "interval": 34722222},
+        },
     )
 }}
 
@@ -21,6 +27,10 @@ with
 
     dim_clinica_familia as (
         select * from {{ source("rj-sms-dados-mestres", "estabelecimento") }}
+    ),
+
+    dim_unidades as (
+        select * from {{ source("brutos_plataforma_subpav", "unidades")}}
     ),
 
     -- Equipe de saúde familiar
@@ -45,12 +55,14 @@ with
                 ', ',
                 dcf.endereco_bairro
             )") }} as endereco,
-            "8:00 às 17:00" as horario_atendimento -- # TODO: obter horário de atendimento da clínica
+            CONCAT(funcionamento_dia_util_inicio, ":00 às ",funcionamento_dia_util_fim, ":00") as horario_atendimento_dia_util,
+            CONCAT(funcionamento_sabado_inicio, ":00 às ",funcionamento_sabado_fim, ":00") as horario_atendimento_sabado
         from equipe_saude_familia_struct as eqp
         left join
             dim_clinica_familia as dcf
             on eqp.equipe_saude_familia.clinica_familia.id_cnes
             = dcf.id_cnes
+        left join dim_unidades as du on eqp.equipe_saude_familia.clinica_familia.id_cnes = du.id_cnes
     ),
 
     -- Dimensão de saúde
@@ -65,7 +77,8 @@ with
                 clinica_familia_struct.telefone,
                 clinica_familia_struct.email,
                 clinica_familia_struct.endereco,
-                clinica_familia_struct.horario_atendimento
+                clinica_familia_struct.horario_atendimento_dia_util,
+                clinica_familia_struct.horario_atendimento_sabado
             ) as clinica_familia,
             struct(
                 if(equipe_saude_familia is not null, true, false) as indicador,
@@ -75,7 +88,8 @@ with
                 equipe_saude_familia.medicos,
                 equipe_saude_familia.enfermeiros
             ) as equipe_saude_familia
-            ) as saude
+            ) as saude,
+            cast(all_cpf.cpf as int64) as cpf_particao
         from all_cpf
         left join equipe_saude_familia_struct using (cpf)
         left join clinica_familia_struct using (cpf)
