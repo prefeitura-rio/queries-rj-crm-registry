@@ -7,6 +7,11 @@ with
         where inicio_datahora >= '2025-04-18 12:00:00'
     ),
 
+    mensagem_ativa as (
+        select *
+        from `rj-crm-registry`.`crm_whatsapp`.`mensagem_ativa`
+    ),
+
     fluxo_atendimento AS (
     SELECT
         triggerId AS id_disparo, 
@@ -40,10 +45,15 @@ with
           readDate AS leitura_datahora,
           failedDate AS falha_datahora,
           replyDate AS resposta_datahora,
-          faultDescription AS descricao_falha
+          faultDescription AS descricao_falha,
+          mensagem_ativa.nome_hsm,
+          mensagem_ativa.ambiente,
+          mensagem_ativa.categoria,
+          mensagem_ativa.orgao
             ) as hsm,
         lower(status) AS status_disparo
     FROM {{ source("brutos_wetalkie_staging", "fluxo_atendimento_*") }}
+    left join mensagem_ativa ON mensagem_ativa.id_hsm = templateId
     QUALIFY row_number() OVER (PARTITION BY replyId ORDER BY datarelay_timestamp DESC) = 1
 ),
 
