@@ -2,7 +2,7 @@
     alias="telefone_disparado",
     schema="crm_whatsapp",
     materialized="incremental",
-    tags=["daily"],
+    tags=["hourly"],
     unique_key=["id_hsm", "contato_telefone", "data_particao"],
     partition_by={
         "field": "data_particao",

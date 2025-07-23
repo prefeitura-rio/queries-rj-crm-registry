@@ -3,7 +3,7 @@
     alias="fluxo_atendimento",
     schema="crm_whatsapp",
     materialized="incremental",
-    tags=["daily"],
+    tags=["hourly"],
     unique_key=["id_disparo", "id_contato", "data_particao"],
     partition_by={
         "field": "data_particao",

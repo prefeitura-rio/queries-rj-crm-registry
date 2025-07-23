@@ -1,4 +1,4 @@
-{{ config(alias="telefone_sem_whatsapp", schema="crm_whatsapp", materialized="table", tags=["daily"]) }}
+{{ config(alias="telefone_sem_whatsapp", schema="crm_whatsapp", materialized="table", tags=["hourly"]) }}
 
 WITH 
   celulares_sem_whatsapp AS (
