@@ -21,13 +21,14 @@ with
         from (select * from {{ source("bcadastro", "cpf") }})
         inner join all_prefeitura using (cpf)
     ),
-
+    -- TODO: trazer tudo de dim_saude
     source_saude as (
         select *
         from {{ source("rj-sms", "paciente") }}
         inner join all_prefeitura using (cpf)
     ),
 
+    -- TODO: trazer tudo de dim_assistencia_social
     source_cadunico as (
         select cpf, dados[offset(0)] as dados  -- #TODO: corrigir no cadunico para retornar um array de dados
         from {{ source("rj-smas", "cadastros") }}
@@ -82,34 +83,15 @@ with
 
     dim_telefone as (select * from {{ ref("int_pessoa_fisica_dim_telefone") }}),
 
-    dim_ocupacao as (select * from {{ ref("int_pessoa_fisica_dim_ocupacao") }}),
 
     -- - Orgaos
-    dim_saude as (
-        select
-            all_prefeitura.cpf,
-            struct(
-                if(equipe_saude_familia is not null, true, false) as indicador,
-                equipe_saude_familia.clinica_familia.id_cnes,
-                equipe_saude_familia.clinica_familia.nome,
-                equipe_saude_familia.clinica_familia.telefone
-            ) as clinica_familia,
-            struct(
-                if(equipe_saude_familia is not null, true, false) as indicador,
-                equipe_saude_familia.id_ine,
-                equipe_saude_familia.nome,
-                equipe_saude_familia.telefone,
-                equipe_saude_familia.medicos,
-                equipe_saude_familia.enfermeiros
-            ) as equipe_saude_familia,
-        from all_prefeitura
-        left join
-            (
-                select cpf, equipe_saude_familia[offset(0)] as equipe_saude_familia
-                from source_saude
-                where array_length(equipe_saude_familia) > 0
-            ) using (cpf)
-    ),
+    dim_assistencia_social as (select * from {{ ref("int_pessoa_fisica_dim_assistencia_social") }}),
+
+    -- dim_educacao as (select * from {{ ref("int_pessoa_fisica_dim_educacao") }}),
+
+    dim_saude as (select * from {{ ref("int_pessoa_fisica_dim_saude") }}),
+
+    dim_ocupacao as (select * from {{ ref("int_pessoa_fisica_dim_ocupacao") }}),
 
     -- FINAL TABLE
     final as (
@@ -158,7 +140,11 @@ with
             dim_telefone.telefone,
 
             -- Órgão da prefeitura
-            struct(dim_saude.clinica_familia, dim_saude.equipe_saude_familia) as saude,
+            dim_assistencia_social.assistencia_social,
+            -- dim_educacao.educacao,
+            dim_saude.saude,
+            -- struct(dim_saude.clinica_familia, dim_saude.equipe_saude_familia) as saude,
+
             dim_ocupacao.ocupacao,
 
             -- Sócio-econômicos
@@ -169,7 +155,9 @@ with
 
         from all_prefeitura
         inner join source_bcadastro as bcadastro using (cpf)
+        left join dim_assistencia_social using (cpf)
         left join dim_documentos using (cpf)
+        -- left join dim_educacao using (cpf)
         left join dim_email using (cpf)
         left join dim_endereco using (cpf)
         left join dim_mae using (cpf)
@@ -179,6 +167,7 @@ with
         left join dim_ocupacao using (cpf)
         left join source_saude as saude using (cpf)
         left join source_cadunico as cadunico using (cpf)
+
 
     )
 

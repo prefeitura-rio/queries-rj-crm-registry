@@ -151,6 +151,18 @@ models:
         description: Bairro do endereço principal
         data_type: string
         quote: true
+      - name: endereco.principal.latitude
+        description: Latitude do endereço principal
+        data_type: string
+        quote: true
+      - name: endereco.principal.longitude
+        description: Longitude do endereço principal
+        data_type: string
+        quote: true
+      - name: endereco.principal.pluscode
+        description: Google pluscode do endereço principal
+        data_type: string
+        quote: true
       - name: endereco.alternativo
         description: Lista de endereços alternativos do indivíduo (structs com origem, sistema, cep, estado, municipio, tipo_logradouro, logradouro, numero, complemento, bairro)
         data_type: record[]
@@ -193,6 +205,18 @@ models:
         quote: true
       - name: endereco.alternativo.bairro
         description: Bairro do endereço alternativo
+        data_type: string
+        quote: true
+      - name: endereco.alternativo.latitude
+        description: Latitude do endereço alternativo
+        data_type: string
+        quote: true
+      - name: endereco.alternativo.longitude
+        description: Longitude do endereço alternativo
+        data_type: string
+        quote: true
+      - name: endereco.alternativo.pluscode
+        description: Google pluscode do endereço alternativo
         data_type: string
         quote: true
       - name: email

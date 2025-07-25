@@ -1,7 +1,7 @@
 version: 2
 
 sources:
-  - name: rj-crm-registry
+  - name: brutos_wetalkie_staging
     database: rj-crm-registry
     schema: brutos_wetalkie_staging
     freshness: # default freshness
