@@ -1,7 +1,5 @@
 {{ config(alias="mensagem_ativa", schema="crm_whatsapp", materialized="table") }}
 
--- {{ config(alias="mensagem_ativa", schema="crm_whatsapp", materialized="table") }}
-
 WITH templates AS (
   SELECT templateId
   FROM UNNEST(GENERATE_ARRAY(1, 150)) AS templateId

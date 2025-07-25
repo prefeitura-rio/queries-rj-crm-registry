@@ -64,3 +64,4 @@ FULL OUTER JOIN prod_clean prod
   AND dev.base_table = prod.base_table
   AND dev.column_name = prod.column_name
 WHERE dev.data_type IS DISTINCT FROM prod.data_type
+order by dataset, base_table, column_name
