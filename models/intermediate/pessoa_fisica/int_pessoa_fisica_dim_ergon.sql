@@ -21,11 +21,12 @@ with
   all_cpf as (select cpf, cpf_particao from {{ ref("int_pessoa_fisica_all_cpf") }}),
 
   funcionarios_ergon AS (
-    SELECT
+    SELECT DISTINCT
       lpad(id_cpf, 11, '0') as cpf, 
       id_vinculo as id_funcionario
     FROM {{ source("rj-smfp", "funcionario") }}
-    where id_cpf is not null
+    WHERE id_cpf IS NOT NULL
+      AND lpad(id_cpf, 11, '0') != '00000000000'  -- Exclude invalid CPFs
   ),
 
   provimento AS (
@@ -69,6 +70,7 @@ with
       MAX(vinculo_ativo) as vinculo_ativo
     FROM unifica
     WHERE cpf IS NOT NULL
+      AND cpf != '00000000000'  -- Additional safety check
     GROUP BY cpf, cpf_particao
   ),
 
@@ -81,6 +83,21 @@ with
       ) as trabalha_prefeitura,
       cpf_particao
     FROM cpf_agregado
+  ),
+
+  -- Final deduplication step to ensure no duplicates
+  final_result AS (
+    SELECT 
+      cpf,
+      trabalha_prefeitura,
+      cpf_particao,
+      ROW_NUMBER() OVER (PARTITION BY cpf ORDER BY cpf_particao) as rn
+    FROM dim_ergon
   )
 
-SELECT * FROM dim_ergon
+SELECT 
+  cpf,
+  trabalha_prefeitura,
+  cpf_particao
+FROM final_result 
+WHERE rn = 1
