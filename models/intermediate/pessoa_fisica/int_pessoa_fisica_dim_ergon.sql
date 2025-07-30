@@ -39,12 +39,16 @@ with
   ),
 
   unifica AS (
-    SELECT * ,
+    SELECT 
+        a.cpf,
+        a.cpf_particao,
+        f.id_funcionario,
+        p.id_vinculo,
         if(f.cpf is not null, true, false) as indicador,
         case
           when (f.cpf is not null) and (p.provimento_fim is null) and (vv.data_vacancia is null)
           then true else false
-        end as vinculo_ativo,
+        end as vinculo_ativo
     FROM  all_cpf a
     LEFT JOIN funcionarios_ergon f USING(cpf)
     LEFT JOIN provimento p on f.id_funcionario = p.id_funcionario
@@ -54,15 +58,29 @@ with
               and p.id_vinculo = vv.id_vinculo
   ),
 
+  -- Aggregate by CPF to handle multiple employment records
+  cpf_agregado AS (
+    SELECT 
+      cpf,
+      cpf_particao,
+      -- If any record shows they work at prefeitura, mark as true
+      MAX(indicador) as indicador,
+      -- If any active employment exists, mark as true
+      MAX(vinculo_ativo) as vinculo_ativo
+    FROM unifica
+    WHERE cpf IS NOT NULL
+    GROUP BY cpf, cpf_particao
+  ),
+
   dim_ergon AS (
     SELECT 
-      DISTINCT cpf,
+      cpf,
       struct(
           indicador,
           vinculo_ativo
       ) as trabalha_prefeitura,
-      cast(cpf as int64) as cpf_particao
-    FROM unifica
-    WHERE cpf IS NOT NULL)
+      cpf_particao
+    FROM cpf_agregado
+  )
 
 SELECT * FROM dim_ergon
