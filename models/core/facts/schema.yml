@@ -1,0 +1,188 @@
+version: 2
+
+models:
+  - name: fct_interacoes_cidadao_v1
+    description: |
+      **Fact table unificado v1 - Interações Cidadão-Prefeitura**
+      
+      Consolida todas as interações entre cidadãos e a Prefeitura do Rio de Janeiro
+      em um modelo de dados padronizado com 19 campos essenciais.
+      
+      **Fontes de dados:**
+      - 1746 (SEGOVI): Chamados e solicitações (~14.2M registros)
+      - Wetalkie: Comunicações WhatsApp (~700 sessões)
+      - Bcadastro: Operações cadastrais (~207k cidadãos)
+      
+      **Particionamento:** Por data_particao (diário)
+      **Clustering:** Por sistema_origem, tipo_interacao, categoria_interacao
+    
+    config:
+      tags: ['core', 'facts', 'daily']
+    
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          name: fct_interacoes_cidadao_v1__id_interacao__unique
+          combination_of_columns:
+            - id_interacao
+      
+      # - dbt_utils.expression_is_true:
+      #     name: fct_interacoes_cidadao_v1__volume_minimo
+      #     expression: "(select count(*) from {{ this }}) > 1000"
+      #     config:
+      #       severity: warn
+      
+      # - dbt_utils.expression_is_true:
+      #     name: fct_interacoes_cidadao_v1__proporcao_1746
+      #     expression: |
+      #       (select count(*) from {{ this }} where sistema_origem = 'segovi') 
+      #       / (select count(*) from {{ this }}) > 0.90
+      #     config:
+      #       severity: warn
+
+    columns:
+      # IDENTIFICAÇÃO
+      - name: id_interacao
+        description: "UUID único da interação gerado automaticamente"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__id_interacao__not_null
+          - unique:
+              name: fct_interacoes_cidadao_v1__id_interacao__unique
+      
+      - name: cpf_cidadao
+        description: "CPF do cidadão (11 dígitos, obrigatório)"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__cpf_cidadao__not_null
+          - dbt_utils.expression_is_true:
+              name: fct_interacoes_cidadao_v1__cpf_cidadao__format
+              expression: "regexp_contains(cpf_cidadao, r'^\\d{11}$')"
+
+      # ORIGEM
+      - name: sistema_origem
+        description: "Sistema fonte da interação"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__sistema_origem__not_null
+          - accepted_values:
+              name: fct_interacoes_cidadao_v1__sistema_origem__values
+              values: ['segovi', 'wetalkie', 'bcadastro']
+      
+      - name: protocolo_origem
+        description: "ID/protocolo original no sistema fonte"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__protocolo_origem__not_null
+
+      # CLASSIFICAÇÃO ONTOLÓGICA
+      - name: tipo_interacao
+        description: "Tipo de interação segundo ontologia (SOLICITACAO, CONSUMO, REPORTE, COMUNICACAO, CADASTRO)"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__tipo_interacao__not_null
+          - accepted_values:
+              name: fct_interacoes_cidadao_v1__tipo_interacao__values
+              values: ['SOLICITACAO', 'CONSUMO', 'REPORTE', 'COMUNICACAO', 'CADASTRO']
+      
+      - name: categoria_interacao
+        description: "Categoria da interação por área municipal"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__categoria_interacao__not_null
+          - accepted_values:
+              name: fct_interacoes_cidadao_v1__categoria_interacao__values
+              values: ['SERVICOS_URBANOS', 'SAUDE', 'COMUNICACAO_INSTITUCIONAL', 'GESTAO_CADASTRAL', 'TRANSPORTE', 'ASSISTENCIA_SOCIAL', 'EDUCACAO']
+
+      # CANAL
+      - name: canal_interacao
+        description: "Canal específico utilizado na interação"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__canal_interacao__not_null
+          - accepted_values:
+              name: fct_interacoes_cidadao_v1__canal_interacao__values
+              values: ['CENTRAL_TELEFONICA', 'WHATSAPP', 'POSTO_ATENDIMENTO', 'PORTAL_WEB', 'UNIDADE_SAUDE', 'EQUIPAMENTO_PUBLICO', 'SISTEMA_INTERNO']
+      
+      - name: modalidade_interacao
+        description: "Modalidade da interação (DIGITAL ou FISICO)"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__modalidade_interacao__not_null
+          - accepted_values:
+              name: fct_interacoes_cidadao_v1__modalidade_interacao__values
+              values: ['DIGITAL', 'FISICO']
+
+      # TEMPORAL
+      - name: data_interacao
+        description: "Data da interação (usado para análises)"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__data_interacao__not_null
+          - dbt_utils.expression_is_true:
+              name: fct_interacoes_cidadao_v1__data_interacao__range
+              expression: "data_interacao >= '2020-01-01' and data_interacao <= current_date()"
+      
+      - name: datahora_inicio
+        description: "Timestamp de início da interação"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__datahora_inicio__not_null
+      
+      - name: data_particao
+        description: "Data para particionamento BigQuery (deve igual data_interacao)"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__data_particao__not_null
+          - dbt_utils.expression_is_true:
+              name: fct_interacoes_cidadao_v1__data_particao__consistency
+              expression: "data_particao = data_interacao"
+
+      # LOCALIZAÇÃO (opcionais)
+      - name: bairro_interacao
+        description: "Bairro da interação (quando disponível)"
+        tests:
+          - dbt_utils.expression_is_true:
+              name: fct_interacoes_cidadao_v1__bairro_interacao__not_empty
+              expression: "bairro_interacao is null or length(trim(bairro_interacao)) > 0"
+              config:
+                severity: warn
+      
+      - name: endereco_interacao
+        description: "Endereço estruturado da interação (quando disponível)"
+        # Não há testes específicos para STRUCT, validação fica no nível da aplicação
+      
+      - name: coordenadas
+        description: "Coordenadas geográficas da interação (quando disponível)"
+        # Não há testes específicos para GEOGRAPHY, validação fica no nível da aplicação
+
+      # RESULTADO
+      - name: desfecho_interacao
+        description: "Resultado da interação (quando disponível)"
+        tests:
+          - accepted_values:
+              name: fct_interacoes_cidadao_v1__desfecho_interacao__values
+              values: ['RESOLVIDA', 'NAO_RESOLVIDA', 'EM_ANDAMENTO', 'NAO_APLICAVEL', 'ABANDONADA']
+              config:
+                severity: warn
+                where: "desfecho_interacao is not null"
+
+      # FLEXÍVEL
+      - name: dados_origem
+        description: "Dados originais preservados em JSON para flexibilidade"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__dados_origem__not_null
+
+      # METADADOS
+      - name: _datalake_loaded_at
+        description: "Timestamp de carregamento no datalake"
+        tests:
+          - not_null:
+              name: fct_interacoes_cidadao_v1__datalake_loaded_at__not_null
+      
+      - name: _schema_version
+        description: "Versão do schema (1.0)"
+        tests:
+          - accepted_values:
+              name: fct_interacoes_cidadao_v1__schema_version__values
+              values: ['1.0']

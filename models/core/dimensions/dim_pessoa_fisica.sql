@@ -140,7 +140,6 @@ with
 
             -- Órgão da prefeitura
             dim_assistencia_social.assistencia_social,
-            -- dim_educacao.educacao,
             dim_saude.saude,
             -- struct(dim_saude.clinica_familia, dim_saude.equipe_saude_familia) as saude,
 
@@ -156,7 +155,6 @@ with
         inner join source_bcadastro as bcadastro using (cpf)
         left join dim_assistencia_social using (cpf)
         left join dim_documentos using (cpf)
-        -- left join dim_educacao using (cpf)
         left join dim_email using (cpf)
         left join dim_endereco using (cpf)
         left join dim_mae using (cpf)

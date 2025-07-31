@@ -7,8 +7,11 @@
     partition_by={
         "field": "data_particao",
         "data_type": "date"
-    }
+    },
+    enabled=false
 ) }}
+
+{# Disabled due to missing WhatsApp dataset #}
 
 SELECT
   DISTINCT
