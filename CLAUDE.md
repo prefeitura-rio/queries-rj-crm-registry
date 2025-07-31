@@ -13,48 +13,51 @@ This is a dbt project for the Rio de Janeiro City Hall's CRM Registry data wareh
 # Install dependencies
 uv sync
 
+# Load environment variables from ~/.zshrc
+source ~/.zshrc
+
 # Activate virtual environment (if using uv)
 source .venv/bin/activate
 ```
 
 ### dbt Operations
 ```bash
-# Run all models
-dbt run
+# Load environment variables and run all models
+source ~/.zshrc && source .venv/bin/activate && dbt run
 
 # Run specific model and its dependencies
-dbt run --select +model_name
+source ~/.zshrc && source .venv/bin/activate && dbt run --select +model_name
 
 # Run models downstream from a specific model
-dbt run --select model_name+
+source ~/.zshrc && source .venv/bin/activate && dbt run --select model_name+
 
 # Run tests
-dbt test
+source ~/.zshrc && source .venv/bin/activate && dbt test
 
 # Run tests for a specific model
-dbt test --select model_name
+source ~/.zshrc && source .venv/bin/activate && dbt test --select model_name
 
 # Compile models (useful for debugging)
-dbt compile
+source ~/.zshrc && source .venv/bin/activate && dbt compile
 
 # Generate documentation
-dbt docs generate
-dbt docs serve
+source ~/.zshrc && source .venv/bin/activate && dbt docs generate
+source ~/.zshrc && source .venv/bin/activate && dbt docs serve
 
 # Clean target directory
-dbt clean
+source ~/.zshrc && source .venv/bin/activate && dbt clean
 
 # Debug connection
-dbt debug
+source ~/.zshrc && source .venv/bin/activate && dbt debug
 ```
 
 ### SQL Formatting
 ```bash
 # Format SQL files using sqlfmt
-sqlfmt models/ macros/
+source ~/.zshrc && source .venv/bin/activate && sqlfmt models/ macros/
 
 # Format with jinja support
-sqlfmt --jinja models/ macros/
+source ~/.zshrc && source .venv/bin/activate && sqlfmt --jinja models/ macros/
 ```
 
 ## Project Architecture
@@ -156,3 +159,72 @@ The central entity is `dim_pessoa_fisica` which consolidates citizen data from m
 - Municipal registry (Bcadastro)
 
 This model is partitioned by CPF for optimal query performance and follows strict data quality standards with comprehensive testing.
+
+## Data Profiling and Test Troubleshooting Pipeline
+
+The project includes data profiling scripts in `analyses/profile/` to help diagnose and solve test failures systematically.
+
+### Profiling Scripts
+- `get_schema.sh <table_name>` - Extract table schema and column metadata
+- `get_column_details.sh <table_name> <column_name>` - Analyze column distribution and statistics
+
+### Test Troubleshooting Workflow
+
+When encountering test failures, follow this systematic approach:
+
+1. **Run the failing model tests**:
+   ```bash
+   source ~/.zshrc && source .venv/bin/activate && dbt test --select model_name
+   ```
+
+2. **Profile the table schema**:
+   ```bash
+   cd analyses/profile && ./get_schema.sh your_schema.your_table_name
+   ```
+   This generates `analyses/profile/your_table_name/schema.csv` with column metadata.
+
+3. **Analyze categorical columns with issues**:
+   ```bash
+   cd analyses/profile && ./get_column_details.sh your_schema.your_table_name column_name
+   ```
+   This generates:
+   - `analyses/profile/your_table_name/column_name_stats.csv` - Statistical summary
+   - `analyses/profile/your_table_name/column_name_categories.csv` - Value frequencies
+
+4. **Common test failure patterns and solutions**:
+
+   **Accepted Values Test Failures**:
+   - Use `get_column_details.sh` to see actual values vs expected
+   - Update `.yml` accepted values based on real data distribution
+   - Consider if new categories indicate data quality issues or legitimate new values
+
+   **Uniqueness Test Failures**:
+   - Check for duplicate generation logic (e.g., UUID conflicts)
+   - Analyze duplicate patterns in the categories file
+   - Fix source data joins or key generation logic
+
+   **Regex/Pattern Test Failures**:
+   - Use column details to see actual data patterns
+   - Simplify complex regex tests if data is too varied
+   - Consider data cleaning in the model vs strict validation
+
+   **Business Logic Test Failures**:
+   - Profile related columns to understand data relationships
+   - Check if business rules need updating based on real data patterns
+   - Consider temporal changes in data patterns
+
+5. **Iterative improvement**:
+   - Make model or test adjustments based on profiling insights
+   - Re-run tests to validate fixes
+   - Use profiling to track categorization coverage improvements (e.g., reducing "OUTROS" categories)
+
+### Example: Categorical Coverage Optimization
+
+For models with categorical mappings (like interaction types), use this approach:
+1. Profile the problematic category column
+2. Identify high-frequency unmapped values in "OUTROS" categories  
+3. Add specific mapping rules to reduce uncategorized data
+4. Target <1% for "OUTROS" categories through iterative refinement
+5. Validate with fresh profiling after each iteration
+
+This data-driven approach ensures test fixes are based on actual data patterns rather than assumptions.
