@@ -165,8 +165,8 @@ This model is partitioned by CPF for optimal query performance and follows stric
 The project includes data profiling scripts in `analyses/profile/` to help diagnose and solve test failures systematically.
 
 ### Profiling Scripts
-- `get_schema.sh <table_name>` - Extract table schema and column metadata
-- `get_column_details.sh <table_name> <column_name>` - Analyze column distribution and statistics
+- `analyses/profile/scripts/get_schema.sh <table_name>` - Extract table schema and column metadata
+- `analyses/profile/scripts/get_column_details.sh <table_name> <column_name>` - Analyze column distribution and statistics
 
 ### Test Troubleshooting Workflow
 
@@ -179,17 +179,17 @@ When encountering test failures, follow this systematic approach:
 
 2. **Profile the table schema**:
    ```bash
-   cd analyses/profile && ./get_schema.sh your_schema.your_table_name
+   cd analyses/profile/scripts && ./get_schema.sh your_schema.your_table_name
    ```
-   This generates `analyses/profile/your_table_name/schema.csv` with column metadata.
+   This generates `analyses/profile/results/your_table_name/schema.csv` with column metadata.
 
 3. **Analyze categorical columns with issues**:
    ```bash
-   cd analyses/profile && ./get_column_details.sh your_schema.your_table_name column_name
+   cd analyses/profile/scripts && ./get_column_details.sh your_schema.your_table_name column_name
    ```
    This generates:
-   - `analyses/profile/your_table_name/column_name_stats.csv` - Statistical summary
-   - `analyses/profile/your_table_name/column_name_categories.csv` - Value frequencies
+   - `analyses/profile/results/your_table_name/column_name_stats.csv` - Statistical summary
+   - `analyses/profile/results/your_table_name/column_name_categories.csv` - Value frequencies
 
 4. **Common test failure patterns and solutions**:
 

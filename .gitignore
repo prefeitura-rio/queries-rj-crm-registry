@@ -69,3 +69,5 @@ credentials/
 test.*
 .qodo
 dbt_internal_packages/
+
+analyses/profile/results/
