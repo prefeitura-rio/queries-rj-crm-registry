@@ -82,42 +82,8 @@ OUTROS:
   - Participação em evento municipal
 ```
 
-### **3. REPORTE**
-**Definição**: Cidadão **informa** sobre problemas, irregularidades ou situações
 
-**Características:**
-- Iniciativa: Cidadão
-- Direção: Cidadão → Prefeitura
-- Expectativa: Conhecimento/investigação pela prefeitura
-- Informativo: Não solicita ação específica
-
-**Exemplos por Sistema:**
-```yaml
-1746_SEGOVI:
-  - Buraco na rua
-  - Lâmpada queimada
-  - Fiscalização de estacionamento irregular
-  - Denúncia de obra irregular
-  - Foco da dengue
-  - Árvore caída
-  
-VIGILANCIA_SANITARIA:
-  - Denúncia de estabelecimento irregular
-  - Reporte de intoxicação alimentar
-  - Irregularidade em farmácia
-  
-MEIO_AMBIENTE:
-  - Poluição do ar/água
-  - Desmatamento irregular
-  - Maus tratos a animais
-  
-SEGURANCA:
-  - Ocorrência de trânsito
-  - Perturbação do sossego
-  - Irregularidade em evento público
-```
-
-### **4. COMUNICACAO**
+### **3. COMUNICACAO**
 **Definição**: Prefeitura **comunica** proativamente com o cidadão
 
 **Características:**
@@ -151,7 +117,7 @@ PORTAL_WEB:
   - Avisos importantes
 ```
 
-### **5. CADASTRO**
+### **4. CADASTRO**
 **Definição**: Atualização/manutenção de **dados pessoais** nos sistemas municipais
 
 **Características:**
@@ -193,27 +159,18 @@ prefeitura --COMUNICACAO--> cidadão : "Consulta agendada para X"
 cidadão --CONSUMO--> prefeitura : "Realiza consulta médica"
 ```
 
-### **Reporte → Solicitação → Comunicação**
-```mermaid
-cidadão --REPORTE--> prefeitura : "Buraco na Rua X"
-cidadão --SOLICITACAO--> prefeitura : "Favor reparar buraco"
-prefeitura --COMUNICACAO--> cidadão : "Reparo concluído"
-```
-
 ## 📊 Distribuição Esperada por Tipo
 
 ### **Por Volume (Estimado)**
 1. **CONSUMO** (60-70%) - Uso massivo de serviços (transporte, saúde)
 2. **COMUNICACAO** (15-20%) - Campanhas e notificações
 3. **SOLICITACAO** (10-15%) - Chamados e pedidos específicos  
-4. **REPORTE** (5-10%) - Denúncias e informações
 5. **CADASTRO** (1-5%) - Atualizações eventuais
 
 ### **Por Frequência Cidadão**
 1. **CONSUMO** - Diário/semanal (transporte, saúde básica)
 2. **COMUNICACAO** - Semanal (campanhas)
 3. **SOLICITACAO** - Mensal/eventual (problemas específicos)
-4. **REPORTE** - Eventual (quando vê problemas)
 5. **CADASTRO** - Anual/eventual (mudanças na vida)
 
 ## 🎯 Aplicação nos Facts
@@ -248,7 +205,6 @@ END as tipo_interacao
 ### **Planejamento de Capacidade**
 - **CONSUMO**: Dimensionar infraestrutura (hospitais, ônibus)
 - **SOLICITACAO**: Prever demandas sazonais  
-- **REPORTE**: Identificar pontos críticos da cidade
 - **COMUNICACAO**: Medir efetividade de campanhas
 - **CADASTRO**: Planejar atualizações de sistemas
 

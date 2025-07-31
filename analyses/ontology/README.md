@@ -27,25 +27,31 @@ A ontologia classifica cada interação por **tipo** (o que o cidadão está faz
 | **TRANSPORTE** | SMTR | A mapear |
 | **ASSISTENCIA_SOCIAL** | SMAS | A mapear |
 
-## 📊 Schema v1 Implementado
+## 📊 Schema v1.1 Implementado ⭐ **Atualizado**
 
-O **fact table unificado** possui **17 campos essenciais** organizados em 9 categorias funcionais:
+O **fact table unificado** possui **21 campos essenciais** organizados em 9 categorias funcionais:
 
 - **🆔 Identificação**: `id_interacao`, `cpf_cidadao`
 - **📋 Origem**: `sistema_origem`, `protocolo_origem`  
-- **🏷️ Classificação**: `tipo_interacao`, `categoria_interacao`
+- **🏷️ Classificação**: `tipo_interacao`, `categoria_interacao`, **`subcategoria_interacao`**, **`descricao_interacao`** ⭐
 - **📱 Canal**: `canal_interacao`, `modalidade_interacao`
 - **⏰ Temporal**: `data_interacao`, `datahora_inicio`, `data_particao`
-- **🗺️ Localização**: `bairro_interacao`
+- **🗺️ Localização**: `bairro_interacao`, `endereco_interacao`, `coordenadas`
 - **✅ Resultado**: `desfecho_interacao`
 - **🔄 Flexível**: `dados_origem` (JSON)
+- **🏗️ Metadados**: `_datalake_loaded_at`, `_schema_version`
 
-> 📋 **Detalhes completos**: Ver [`fact_schema_v1_simplified.md`](#-schema-de-dados)
+### **⭐ Principais Melhorias v1.1:**
+- **`subcategoria_interacao`**: Identifica o **objeto específico** da interação (ex: "LIMPEZA_URBANA_REMOCAO_ENTULHO")
+- **`descricao_interacao`**: Descrição aberta para contexto adicional quando disponível
+- **Localização expandida**: Campos estruturados para análise geográfica completa
+
+> 📋 **Detalhes completos**: Ver [`fact_schema.md`](#-schema-de-dados)
 
 ## 📚 Documentação
 
 ### **🏗️ Schema de Dados**
-- **[`fact_schema_v1_simplified.md`](fact_schema_v1_simplified.md)** - Schema oficial v1 com 17 campos, validações e exemplo de implementação
+- **[`fact_schema.md`](fact_schema.md)** - Schema oficial v1 com 17 campos, validações e exemplo de implementação
 
 ### **📚 Conceitos e Definições**
 - **[`interaction_types_definition.md`](interaction_types_definition.md)** - Definição detalhada dos 5 tipos de interação com critérios e exemplos
@@ -57,11 +63,12 @@ O **fact table unificado** possui **17 campos essenciais** organizados em 9 cate
 
 ## 🚀 Status de Implementação
 
-### **✅ v1.0 - Aprovada e Pronta**
-- **Schema definido**: 17 campos essenciais
-- **Fontes mapeadas**: 1746, Wetalkie, Bcadastro  
-- **Validações criadas**: Testes dbt completos
-- **Implementação**: Pronta para desenvolvimento
+### **✅ v1.1 - Implementada e Funcionando** ⭐
+- **Schema expandido**: 21 campos com subcategorias e descrições
+- **Dados em produção**: 3.4M interações do 1746 carregadas
+- **Fontes mapeadas**: 1746 completo, Wetalkie/Bcadastro (skeleton)
+- **Validações criadas**: 28 testes dbt (22 passando)
+- **Performance**: Particionamento e clustering otimizados
 
 ### **📋 v2.0 - Planejada**
 - **Campos adicionais**: Subcategorias, métricas, satisfação
