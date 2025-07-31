@@ -19,7 +19,7 @@ REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 
 # Create directory name from table name (replace dots with underscores)
 DIR_NAME=$(echo "$TABLE_NAME" | sed 's/\./_/g')
-PROFILE_DIR="$REPO_ROOT/analyses/profile/$DIR_NAME"
+PROFILE_DIR="$REPO_ROOT/analyses/profile/results/$DIR_NAME"
 OUTPUT_FILE="$PROFILE_DIR/schema.csv"
 
 # Create profile directory
