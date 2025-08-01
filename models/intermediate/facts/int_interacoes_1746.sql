@@ -1,8 +1,7 @@
-
 {{
     config(
         alias="int_interacoes_1746",
-        schema="intermediario_crm_eventos",
+        schema="intermediario_eventos",
         materialized=('table' if target.name == 'dev' else 'ephemeral'),
     )
 }}

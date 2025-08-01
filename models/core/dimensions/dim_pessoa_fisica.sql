@@ -1,7 +1,7 @@
 {{
     config(
         alias="pessoa_fisica",
-        schema="crm_dados_mestres",
+        schema="dados_mestres",
         materialized="table",
         tags=["daily"],
         partition_by={
