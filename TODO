@@ -1,0 +1,4 @@
+- create a common address structure that will be used in all tables, if needed
+    - update 1746 with address sctructure
+    - update dados mestre with address structure
+- add health events to interaction table
