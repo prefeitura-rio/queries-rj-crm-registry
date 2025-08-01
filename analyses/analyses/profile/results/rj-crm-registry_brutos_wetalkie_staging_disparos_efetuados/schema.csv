@@ -1,0 +1,11 @@
+ordinal_position,column_name,data_type,is_nullable,category
+1,id_hsm,STRING,YES,Text
+2,dispatch_date,STRING,YES,Text
+3,campaignName,STRING,YES,Text
+4,costCenterId,STRING,YES,Text
+5,to,STRING,YES,Text
+6,externalId,STRING,YES,Text
+7,vars,STRING,YES,Text
+8,ano_particao,STRING,YES,Text
+9,mes_particao,STRING,YES,Text
+10,data_particao,STRING,YES,Text

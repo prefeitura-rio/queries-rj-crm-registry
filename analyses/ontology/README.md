@@ -13,9 +13,9 @@ A ontologia classifica cada interação por **tipo** (o que o cidadão está faz
 |------|-----------|---------|
 | **SOLICITACAO** | Cidadão pede algo à prefeitura | Remoção de entulho, reparo de iluminação |
 | **CONSUMO** | Cidadão usa um serviço municipal | Consulta médica, viagem de ônibus |
-| **REPORTE** | Cidadão informa sobre problema | Buraco na rua, foco da dengue |
 | **COMUNICACAO** | Prefeitura comunica com cidadão | WhatsApp, SMS, notificação |
 | **CADASTRO** | Atualização de dados pessoais | Alteração de endereço, renovação |
+| **INTERNO** | Prefeitura gera um evento que o cidadão não sabe | Criação de um boleto |
 
 ### **Categorias de Interação** (Área municipal)
 | Categoria | Sistema Principal | Volume Estimado |

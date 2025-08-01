@@ -1,0 +1,8 @@
+Waiting on bqjob_r2d7e89f141de91a3_0000019865f9b0d6_1 ... (0s) Current status: RUNNING                                                                                      Waiting on bqjob_r2d7e89f141de91a3_0000019865f9b0d6_1 ... (1s) Current status: RUNNING                                                                                      Waiting on bqjob_r2d7e89f141de91a3_0000019865f9b0d6_1 ... (1s) Current status: DONE   
+tipo_transacao,count
+Débito,1182547
+Gratuidade,1107576
+Integração,329578
+Transferência,3251
+Débito EMV,2678
+Integração EMV,285
