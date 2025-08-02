@@ -17,7 +17,10 @@ clean-targets:         # directories to be removed by `dbt clean`
 
 vars:
   # Internal variables
-  DBT_USER: "{{ env_var('DBT_USER', 'dev_fantasma') }}"
+  DBT_USER: "{{ env_var('DBT_USER', 'patricia') }}"
+  dev_prefix: "{{ var('DBT_USER') }}__"
+  prod_project: "rj-crm-registry"
+  datasets_to_check: ['crm_whatsapp', 'crm_dados_mestres']
 
 models:
   +persist_docs:
@@ -33,6 +36,9 @@ models:
     core:
       +materialized: table
       +schema: dados_mestres
+  data_tests:
+      +schema: crm_testes
+      +materialized: table
 
 seeds:
   +schema: brutos_seeds
