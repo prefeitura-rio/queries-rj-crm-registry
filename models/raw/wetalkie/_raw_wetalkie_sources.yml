@@ -12,5 +12,6 @@ sources:
     - name: disparos_efetuados
     - name: fluxos_ura
     - name: fluxo_atendimento_*
+    - name: contato_faltante
 
 
