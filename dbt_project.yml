@@ -33,6 +33,9 @@ models:
         +schema: brutos_wetalkie
     intermediate:
       +materialized: ephemeral
+      int_whatsapp_fluxo_atendimento:
+        +materialized: table
+        +enabled: true
     core:
       +materialized: table
       +schema: dados_mestres
