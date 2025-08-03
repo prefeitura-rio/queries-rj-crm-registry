@@ -21,11 +21,12 @@ with
   all_cpf as (select cpf, cpf_particao from {{ ref("int_pessoa_fisica_all_cpf") }}),
 
   funcionarios_ergon AS (
-    SELECT
+    SELECT DISTINCT
       lpad(id_cpf, 11, '0') as cpf, 
       id_vinculo as id_funcionario
     FROM {{ source("rj-smfp", "funcionario") }}
-    where id_cpf is not null
+    WHERE id_cpf IS NOT NULL
+      AND lpad(id_cpf, 11, '0') != '00000000000'  -- Exclude invalid CPFs
   ),
 
   provimento AS (
@@ -39,12 +40,16 @@ with
   ),
 
   unifica AS (
-    SELECT * ,
+    SELECT 
+        a.cpf,
+        a.cpf_particao,
+        f.id_funcionario,
+        p.id_vinculo,
         if(f.cpf is not null, true, false) as indicador,
         case
           when (f.cpf is not null) and (p.provimento_fim is null) and (vv.data_vacancia is null)
           then true else false
-        end as vinculo_ativo,
+        end as vinculo_ativo
     FROM  all_cpf a
     LEFT JOIN funcionarios_ergon f USING(cpf)
     LEFT JOIN provimento p on f.id_funcionario = p.id_funcionario
@@ -54,15 +59,45 @@ with
               and p.id_vinculo = vv.id_vinculo
   ),
 
+  -- Aggregate by CPF to handle multiple employment records
+  cpf_agregado AS (
+    SELECT 
+      cpf,
+      cpf_particao,
+      -- If any record shows they work at prefeitura, mark as true
+      MAX(indicador) as indicador,
+      -- If any active employment exists, mark as true
+      MAX(vinculo_ativo) as vinculo_ativo
+    FROM unifica
+    WHERE cpf IS NOT NULL
+      AND cpf != '00000000000'  -- Additional safety check
+    GROUP BY cpf, cpf_particao
+  ),
+
   dim_ergon AS (
     SELECT 
-      DISTINCT cpf,
+      cpf,
       struct(
           indicador,
           vinculo_ativo
       ) as trabalha_prefeitura,
-      cast(cpf as int64) as cpf_particao
-    FROM unifica
-    WHERE cpf IS NOT NULL)
+      cpf_particao
+    FROM cpf_agregado
+  ),
 
-SELECT * FROM dim_ergon
+  -- Final deduplication step to ensure no duplicates
+  final_result AS (
+    SELECT 
+      cpf,
+      trabalha_prefeitura,
+      cpf_particao,
+      ROW_NUMBER() OVER (PARTITION BY cpf ORDER BY cpf_particao) as rn
+    FROM dim_ergon
+  )
+
+SELECT 
+  cpf,
+  trabalha_prefeitura,
+  cpf_particao
+FROM final_result 
+WHERE rn = 1

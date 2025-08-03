@@ -33,15 +33,28 @@ with
         select * from {{ source("brutos_plataforma_subpav", "unidades")}}
     ),
 
-    -- Equipe de saúde familiar
-    equipe_saude_familia_struct as (
+    -- Equipe de saúde familiar (deduplicated)
+    equipe_saude_familia_raw as (
         select cpf, equipe_saude_familia[offset(0)] as equipe_saude_familia
         from source_sms
         where array_length(equipe_saude_familia) > 0
     ),
+    
+    equipe_saude_familia_struct as (
+        select * except(row_num)
+        from (
+            select *,
+                row_number() over (
+                    partition by cpf 
+                    order by equipe_saude_familia.id_ine desc nulls last
+                ) as row_num
+            from equipe_saude_familia_raw
+        )
+        where row_num = 1
+    ),
 
-    -- Clínica de saúde familiar
-    clinica_familia_struct as (
+    -- Clínica de saúde familiar (deduplicated)
+    clinica_familia_raw as (
         select
             cpf,
             eqp.equipe_saude_familia.clinica_familia.id_cnes,
@@ -63,6 +76,19 @@ with
             on eqp.equipe_saude_familia.clinica_familia.id_cnes
             = dcf.id_cnes
         left join dim_unidades as du on eqp.equipe_saude_familia.clinica_familia.id_cnes = du.id_cnes
+    ),
+    
+    clinica_familia_struct as (
+        select * except(row_num)
+        from (
+            select *,
+                row_number() over (
+                    partition by cpf 
+                    order by id_cnes desc nulls last
+                ) as row_num
+            from clinica_familia_raw
+        )
+        where row_num = 1
     ),
 
     -- Dimensão de saúde
