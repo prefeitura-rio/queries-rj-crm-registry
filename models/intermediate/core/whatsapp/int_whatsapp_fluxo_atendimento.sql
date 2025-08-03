@@ -3,8 +3,9 @@
     alias="fluxo_atendimento",
     schema="crm_whatsapp",
     materialized="incremental",
+    incremental_strategy='merge',
     tags=["hourly"],
-    unique_key=["id_disparo", "id_contato", "data_particao"],
+    unique_key=["id_disparo", "id_contato", "datarelay_datahora"],
     partition_by={
         "field": "data_particao",
         "data_type": "date"
@@ -14,7 +15,7 @@
 -- TODO: converter datas pta UTC?
 WITH
     source AS (
-        SELECT *
+        SELECT DISTINCT *
         FROM {{ source("brutos_wetalkie_staging", "fluxo_atendimento_*" ) }}
         {% if is_incremental() %}
           WHERE createDate >= (
