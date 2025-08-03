@@ -1,6 +1,0 @@
-Waiting on bqjob_r4d12a0c9e681ddab_0000019865f9e5bf_1 ... (1s) Current status: RUNNING                                                                                      Waiting on bqjob_r4d12a0c9e681ddab_0000019865f9e5bf_1 ... (1s) Current status: DONE   
-+------------+-----------------+-------------+-----------------+
-| total_rows | distinct_values | null_values | null_percentage |
-+------------+-----------------+-------------+-----------------+
-|    2625915 |               6 |           0 |             0.0 |
-+------------+-----------------+-------------+-----------------+
