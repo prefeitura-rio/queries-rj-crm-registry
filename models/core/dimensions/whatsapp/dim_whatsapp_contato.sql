@@ -20,7 +20,7 @@ missing_contacts AS (
   CAST(id_contato AS INT64) id_contato,
   contato_nome,
   contato_telefone
-  FROM `rj-crm-registry`.`brutos_wetalkie_staging`.`contato_faltante`
+  FROM {{ source("brutos_wetalkie_staging", "contato_faltante") }}
   where contato_telefone is not null
 ),
 
@@ -32,9 +32,11 @@ ura_contacts AS (
     MIN(data_particao) AS data_optin
   FROM {{ ref("raw_wetalkie_fluxos_ura") }}
   
-  WHERE 
+  WHERE
+  -- data que migrou para o ambiente de produção, se tirar teremos id_contato desconhecidos "2025-07-09"
+  DATE(data_particao) >= "2025-05-24" AND
   {% if is_incremental() %}
-    DATE(data_particao) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 24 DAY)
+    DATE(data_particao) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 5 DAY)
   {% else %}
     TRUE
   {% endif %}
@@ -51,9 +53,11 @@ hsm_contacts AS (
       WHEN descricao_falha LIKE "%131048%" THEN data_particao ELSE NULL END) AS data_inicio_quarentena
   FROM {{ ref("int_whatsapp_fluxo_atendimento") }}
 
-  WHERE 
+  WHERE
+  -- data que migrou para o ambiente de produção, se tirar teremos id_contato desconhecidos "2025-07-09"
+  DATE(data_particao) >= "2025-05-24" AND
   {% if is_incremental() %}
-    DATE(data_particao) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 24 DAY)
+    DATE(data_particao) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 5 DAY)
   {% else %}
     TRUE
   {% endif %}
