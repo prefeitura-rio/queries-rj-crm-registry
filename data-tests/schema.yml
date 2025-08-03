@@ -1,0 +1,5 @@
+version: 2
+data_tests:
+  - name: dev_vs_prod__row_count_diff
+    description: >
+      Compara o número de linhas entre as tabelas do ambiente de desenvolvimento e produção.
