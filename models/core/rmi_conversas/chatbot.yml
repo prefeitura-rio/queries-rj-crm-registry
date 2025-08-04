@@ -1,0 +1,180 @@
+version: 2
+
+models:
+  - name: chatbot
+    description: |
+      Conversas completas via chatbot por CPF consolidando interações do WhatsApp 
+      através da plataforma Wetalkie. Inclui tanto mensagens ativas (HSM) quanto 
+      receptivas (URA) com linkagem ao CPF do cidadão.
+      
+      **Fontes principais:**
+      - crm_whatsapp.sessao (conversas completas)  
+      - crm_whatsapp.contato (linkagem CPF-telefone)
+      
+      **Granularidade:** Uma linha por sessão de conversa completa
+      **Particionamento:** Por data_particao (diário)
+      **Clustering:** Por cpf_cidadao, tipo_conversa, orgao_responsavel
+    
+    config:
+      materialized: incremental
+      
+    columns:
+      - name: id_conversa
+        description: "UUID único da conversa gerado pelo dbt"
+        tests:
+          - unique
+          - not_null
+          
+      - name: cpf_cidadao  
+        description: "CPF do cidadão obtido via linkagem telefone-contato (quando disponível)"
+        tests:
+          - relationships:
+              to: ref('pessoa_fisica')
+              field: cpf
+              where: "cpf_cidadao is not null"
+          
+      - name: telefone_contato
+        description: "Telefone usado na conversa (sempre presente)"
+        tests:
+          - not_null
+              
+      - name: id_sessao
+        description: "ID da sessão no sistema Wetalkie"
+        tests:
+          - not_null
+          
+      - name: data_conversa
+        description: "Data da conversa (partição principal)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: "'2020-01-01'"
+              max_value: "current_date()"
+              
+      - name: inicio_datahora
+        description: "Timestamp de início da sessão"
+        tests:
+          - not_null
+          
+      - name: fim_datahora
+        description: "Timestamp de fim da sessão (quando disponível)"
+        
+      - name: duracao_total_seg
+        description: "Duração total da sessão em segundos (pode ser negativa devido a problemas nos dados de origem)"
+              
+      - name: tipo_conversa
+        description: |
+          Tipo de conversa baseado na complexidade da interação:
+          - HSM_ONLY: Apenas mensagem enviada, sem resposta
+          - URA_COMPLETA: Conversa com fluxo URA
+          - ATENDIMENTO_HUMANO: Transferência para operador humano
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['HSM_ONLY', 'URA_COMPLETA', 'ATENDIMENTO_HUMANO']
+              
+      - name: categoria_hsm
+        description: "Categoria da HSM (utilidade, marketing, autenticação)"
+        tests:
+          - accepted_values:
+              values: ['Utilidade', 'Marketing', 'Autenticacao', 'NAO_INFORMADO']
+              
+      - name: orgao_responsavel
+        description: "Órgão responsável pelo envio da HSM"
+        
+      - name: nome_hsm
+        description: "Nome/template da HSM enviada"
+        
+      - name: desfecho_conversa
+        description: |
+          Resultado final da conversa:
+          - RESOLVIDA_AUTOMATICA: Resolvida pelo chatbot
+          - TRANSFERIDA_HUMANO: Transferida para atendimento humano  
+          - ABANDONADA: Cidadão não completou ou não respondeu
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['RESOLVIDA_AUTOMATICA', 'TRANSFERIDA_HUMANO', 'ABANDONADA']
+              
+      - name: teve_resposta_cidadao
+        description: "Indica se o cidadão respondeu à HSM"
+        tests:
+          - not_null
+          
+      - name: teve_busca
+        description: "Indica se houve busca por informações na conversa"
+        tests:
+          - not_null
+          
+      - name: teve_erro_fluxo
+        description: "Indica se houve erro no fluxo da conversa"
+        tests:
+          - not_null
+          
+      - name: total_mensagens
+        description: "Total de mensagens na conversa"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1000
+              
+      - name: mensagens_cidadao
+        description: "Número de mensagens enviadas pelo cidadão"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              
+      - name: mensagens_busca
+        description: "Número de mensagens relacionadas à busca"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              
+      - name: tempo_resposta_medio_seg
+        description: "Tempo médio de resposta do cidadão em segundos"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 86400  # 24 horas
+              where: "tempo_resposta_medio_seg is not null"
+              
+      - name: hsm_detalhes
+        description: |
+          Estrutura com detalhes da HSM enviada:
+          - id_hsm: ID da HSM
+          - timestamps de criação, envio, entrega, leitura, resposta
+          - informações de falha
+          - metadados da HSM (nome, ambiente, categoria, órgão)
+          
+      - name: mensagens
+        description: |
+          Array com todas as mensagens da conversa ordenadas por timestamp.
+          Cada mensagem contém: data, texto, tipo, fonte, anexos, mídia, 
+          informações URA, etc.
+          
+      - name: busca_detalhes
+        description: |
+          Estrutura com detalhes de busca realizada:
+          - indicador: se houve busca
+          - feedback: pergunta, resposta e complementos
+          
+      - name: ura_detalhes
+        description: |
+          Estrutura com detalhes da URA:
+          - id e nome da URA
+          - operador e usuário de finalização
+          - fila e tabulação
+          
+      - name: data_particao
+        description: "Data de particionamento da tabela (formato DATE)"
+        tests:
+          - not_null
+              
+      - name: data_processamento
+        description: "Timestamp do processamento dbt"
+        tests:
+          - not_null
+
