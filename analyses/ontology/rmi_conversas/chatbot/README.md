@@ -16,59 +16,109 @@ Centralizar em uma única estrutura todas as conversas completas realizadas via 
 
 ## Fontes de Dados
 
-### 1. Mensagens Ativas (HSM - High Structured Messages)
+### COMPLETUDE: Capturar TODAS as interações, incluindo falhas
+
+**Total de HSMs enviadas**: ~11.184 
+**Total de sessões com resposta**: ~14.847 
+**Gap de dados**: Precisa incluir HSMs sem resposta e falhas de entrega
+
+### 1. HSMs Enviadas (TODAS - com e sem resposta)
 - **Fonte**: `rj-crm-registry.brutos_wetalkie_staging.disparos_efetuados`
-- **Tipo**: Mensagens enviadas pela prefeitura para cidadãos
-- **Características**: Comunicações institucionais, notificações, campanhas
+- **Cobertura**: 100% das mensagens enviadas pela prefeitura
+- **Dados**: ID HSM, telefone, data disparo, campanha, variáveis
+- **Status**: CRÍTICO - inclui HSMs que falharam ou não tiveram resposta
 
-### 2. Mensagens Receptivas (Conversas URA)  
-- **Fonte**: `rj-crm-registry.brutos_wetalkie.fluxos_ura`
-- **Tipo**: Conversas completas iniciadas por HSM com resposta do cidadão
-- **Características**: Interação bidirecional, fluxo de URA, possível atendimento humano
+### 2. Estados da HSM (Delivery Status)
+- **Fonte**: `rj-crm-registry.brutos_wetalkie_staging.fluxo_atendimento_*`
+- **Cobertura**: Status de entrega, leitura, resposta por HSM
+- **Dados**: Criação, envio, recebimento, leitura, resposta, falhas
+- **Status**: CRÍTICO - distingue HSMs entregues vs. não entregues
 
-### 3. Dados Consolidados
-- **Fonte**: `rj-crm-registry.crm_whatsapp.sessao` 
-- **Tipo**: União das informações de HSM + URA com dados parseados
-- **Características**: Sessão completa de interação com metadados
+### 3. Início e Fim de Atendimento
+- **Fontes**: 
+  - `rj-crm-registry.brutos_wetalkie_staging.atendimento_iniciado_*`
+  - `rj-crm-registry.brutos_wetalkie_staging.atendimento_finalizado_*`
+- **Cobertura**: Metadados de sessões de atendimento
+- **Dados**: ID, protocolo, tabulação de finalização
 
-### 4. Dados de Contato
+### 4. Conversas Completas (APENAS com resposta do cidadão)
+- **Fontes**: 
+  - `rj-crm-registry.brutos_wetalkie.fluxos_ura`
+  - `rj-crm-registry.crm_whatsapp.sessao` (view processada)
+- **Cobertura**: PARCIAL - apenas HSMs que tiveram resposta
+- **Dados**: Mensagens completas, URA, operadores, busca
+- **Limitação**: Exclui HSMs sem resposta (maioria dos casos)
+
+### 5. Telefones com Problemas
+- **Fonte**: `rj-crm-registry.crm_whatsapp.telefone_sem_whatsapp`
+- **Cobertura**: Telefones que falharam definitivamente
+- **Dados**: Números que não estão no WhatsApp ou rejeitaram termos
+
+### 6. Dados de Contato e CPF
 - **Fonte**: `rj-crm-registry.crm_whatsapp.contato`
-- **Tipo**: Informações de contato e CPF para linkagem
-- **Características**: Permite identificação do cidadão
+- **Cobertura**: Linkagem telefone-CPF (quando disponível)
+- **Status**: PROBLEMA - CPFs não estão preenchidos atualmente
+
+### 7. Blocklist (Opt-outs)
+- **Fonte**: `rj-crm-registry.brutos_wetalkie_staging.blocklist`
+- **Cobertura**: Cidadãos que solicitaram parar de receber HSMs
+- **Dados**: Telefones que optaram por sair das comunicações
 
 ## Arquitetura de Dados
 
-### Granularidade
-- **Uma linha por sessão de conversa completa por CPF**
-- Cada sessão pode conter múltiplas mensagens (estrutura aninhada)
-- Particionamento por data da conversa
+### Nova Granularidade (REVISADA)
+- **Uma linha por tentativa de interação com cidadão via WhatsApp**
+- Inclui HSMs sem resposta, falhas de entrega, conversas completas
+- Estrutura que cresce do simples (HSM enviada) ao complexo (conversa completa)
+- Particionamento por data do disparo/interação
+
+### Tipos de Interação por Completude
+1. **HSM_SENT_ONLY**: HSM enviada, status desconhecido
+2. **HSM_DELIVERY_FAILED**: HSM falhou na entrega (erro conhecido)
+3. **HSM_DELIVERED_NO_READ**: HSM entregue mas não lida
+4. **HSM_READ_NO_RESPONSE**: HSM lida mas sem resposta
+5. **CONVERSATION_PARTIAL**: Respondeu mas não completou fluxo
+6. **CONVERSATION_COMPLETE**: Conversa completa com resolução
+7. **CONVERSATION_ESCALATED**: Transferida para atendimento humano
 
 ### Relacionamentos
-- **CPF**: Link com `rmi_dados_mestres.pessoa_fisica`
-- **Telefone**: Informação de contato secundária
-- **Sessão**: Identificador único da conversa
+- **CPF**: Link com `rmi_dados_mestres.pessoa_fisica` (quando disponível)
+- **Telefone**: Chave primária de identificação do cidadão
+- **ID_HSM**: Link entre todas as tabelas de disparo
+- **ID_Sessão**: Disponível apenas para conversas com resposta
 
 ## Casos de Uso
 
-### 1. Análise de Engajamento
-- Taxa de resposta a HSMs por tipo de campanha
-- Tempo médio de resposta dos cidadãos  
-- Abandono de conversa por etapa do fluxo
+### 1. Análise Completa de Engajamento (ATUALIZADA)
+- **Funil completo**: HSMs enviadas → entregues → lidas → respondidas
+- Taxa de entrega por operadora/região
+- Taxa de abertura por tipo de mensagem/horário
+- Taxa de resposta por campanha/conteúdo
+- Identificação de telefones problemáticos
 
-### 2. Efetividade do Chatbot
-- Resolução automática vs. transferência para humano
-- Satisfação do atendimento (quando disponível)
-- Identificação de pontos de melhoria no fluxo
+### 2. Qualidade da Base de Contatos
+- Telefones inválidos/inexistentes no WhatsApp
+- Números que mudaram de proprietário
+- Telefones em blocklist/opt-out
+- Limpeza proativa da base de dados
 
-### 3. Comportamento do Cidadão
-- Padrões de uso por perfil demográfico
-- Temas mais demandados por região/perfil
-- Sazonalidade das interações
+### 3. Otimização de Campanhas
+- Melhores horários para envio por perfil
+- Tipos de conteúdo que geram mais engajamento
+- Segmentação de audiência por responsividade
+- A/B testing de mensagens
 
-### 4. Operacional
-- Volume de atendimentos por canal
-- Carga de trabalho para operadores humanos
-- Performance do sistema de chatbot
+### 4. Efetividade Operacional
+- Volume total de interações (tentadas vs. bem-sucedidas)
+- Carga real de trabalho para operadores
+- Custos por interação efetiva
+- ROI de campanhas de comunicação
+
+### 5. Identificação de Problemas Técnicos
+- Falhas de infraestrutura (deliverabilidade)
+- Bugs no fluxo de conversa
+- Problemas de integração entre sistemas
+- Monitoramento de SLA de resposta
 
 ## Qualidade de Dados
 

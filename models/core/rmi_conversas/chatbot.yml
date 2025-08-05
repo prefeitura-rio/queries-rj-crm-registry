@@ -3,26 +3,30 @@ version: 2
 models:
   - name: chatbot
     description: |
-      Conversas completas via chatbot por CPF consolidando interações do WhatsApp 
-      através da plataforma Wetalkie. Inclui tanto mensagens ativas (HSM) quanto 
-      receptivas (URA) com linkagem ao CPF do cidadão.
+      **MODELO COMPLETO** - Todas as interações com cidadãos via WhatsApp, incluindo:
+      - HSMs enviadas sem resposta (falhas de entrega, não lidas, não respondidas)
+      - Conversas completas com URA e atendimento humano
+      - Telefones problemáticos (inválidos, opt-outs)
+      - Tracking completo do funil: disparo → entrega → leitura → resposta → resolução
       
-      **Fontes principais:**
-      - crm_whatsapp.sessao (conversas completas)  
-      - crm_whatsapp.contato (linkagem CPF-telefone)
-      
-      **Granularidade:** Uma linha por sessão de conversa completa
-      **Particionamento:** Por data_particao (diário)
-      **Clustering:** Por cpf_cidadao, tipo_conversa, orgao_responsavel
+      **Cobertura**: 100% das tentativas de interação (11K+ HSMs + conversas)
+      **Granularidade**: Uma linha por tentativa de interação com cidadão
+      **Particionamento**: Por data_particao (diário)
+      **Clustering**: Por cpf_cidadao, tipo_interacao, orgao_responsavel
     
     config:
       materialized: incremental
       
     columns:
-      - name: id_conversa
-        description: "UUID único da conversa gerado pelo dbt"
+      - name: id_interacao
+        description: "UUID único da tentativa de interação (substitui id_conversa)"
         tests:
           - unique
+          - not_null
+          
+      - name: id_hsm
+        description: "ID da HSM enviada (chave para linking entre tabelas)"
+        tests:
           - not_null
           
       - name: cpf_cidadao  
@@ -34,145 +38,159 @@ models:
               where: "cpf_cidadao is not null"
           
       - name: telefone_contato
-        description: "Telefone usado na conversa (sempre presente)"
-        tests:
-          - not_null
-              
-      - name: id_sessao
-        description: "ID da sessão no sistema Wetalkie"
+        description: "Telefone usado na interação (sempre presente)"
         tests:
           - not_null
           
-      - name: data_conversa
-        description: "Data da conversa (partição principal)"
+      - name: id_sessao
+        description: "ID da sessão URA (apenas se houve resposta do cidadão)"
+        
+      - name: tipo_interacao
+        description: |
+          **CLASSIFICAÇÃO HIERÁRQUICA DA INTERAÇÃO**:
+          
+          **Problemas Conhecidos:**
+          - PHONE_INVALID: Telefone não registrado no WhatsApp
+          - OPTED_OUT: Usuário solicitou parar de receber mensagens
+          
+          **Falhas Técnicas:**
+          - DELIVERY_FAILED: HSM falhou na entrega (erro conhecido)
+          - SENT_NOT_DELIVERED: HSM enviada mas não entregue
+          
+          **Engajamento Parcial:**
+          - DELIVERED_NOT_READ: HSM entregue mas não lida
+          - READ_NO_RESPONSE: HSM lida mas sem resposta
+          
+          **Conversas Completas:**
+          - CONVERSATION_ABANDONED: Respondeu mas abandonou
+          - CONVERSATION_COMPLETED: Conversa completa
+          - CONVERSATION_ERROR: Erro no fluxo da conversa
+          - RESOLVED_AUTOMATICALLY: Resolvida pelo chatbot
+          - ESCALATED_TO_HUMAN: Transferida para atendimento humano
+          
+          **Outros:**
+          - STATUS_UNKNOWN: Sem informações de tracking
+          - OTHER: Casos não classificados
+        tests:
+          - not_null
+          - accepted_values:
+              values: [
+                'PHONE_INVALID', 'OPTED_OUT', 
+                'DELIVERY_FAILED', 'SENT_NOT_DELIVERED',
+                'DELIVERED_NOT_READ', 'READ_NO_RESPONSE',
+                'CONVERSATION_ABANDONED', 'CONVERSATION_COMPLETED', 'CONVERSATION_ERROR',
+                'RESOLVED_AUTOMATICALLY', 'ESCALATED_TO_HUMAN',
+                'STATUS_UNKNOWN', 'OTHER'
+              ]
+              
+      - name: data_interacao
+        description: "Data da tentativa de interação"
         tests:
           - not_null
           - dbt_utils.accepted_range:
               min_value: "'2020-01-01'"
               max_value: "current_date()"
               
-      - name: inicio_datahora
-        description: "Timestamp de início da sessão"
+      - name: disparo_datahora
+        description: "Timestamp de quando a HSM foi disparada"
         tests:
           - not_null
           
-      - name: fim_datahora
-        description: "Timestamp de fim da sessão (quando disponível)"
+      # Timestamps do funil de entrega
+      - name: envio_datahora
+        description: "Quando foi enviada ao WhatsApp (quando disponível)"
         
-      - name: duracao_total_seg
-        description: "Duração total da sessão em segundos (pode ser negativa devido a problemas nos dados de origem)"
-              
-      - name: tipo_conversa
-        description: |
-          Tipo de conversa baseado na complexidade da interação:
-          - HSM_ONLY: Apenas mensagem enviada, sem resposta
-          - URA_COMPLETA: Conversa com fluxo URA
-          - ATENDIMENTO_HUMANO: Transferência para operador humano
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['HSM_ONLY', 'URA_COMPLETA', 'ATENDIMENTO_HUMANO']
-              
-      - name: categoria_hsm
-        description: "Categoria da HSM (utilidade, marketing, autenticação)"
-        tests:
-          - accepted_values:
-              values: ['Utilidade', 'Marketing', 'Autenticacao', 'NAO_INFORMADO']
-              
+      - name: entrega_datahora
+        description: "Quando foi entregue ao usuário (quando disponível)"
+        
+      - name: leitura_datahora
+        description: "Quando foi lida pelo usuário (quando disponível)"
+        
+      - name: resposta_datahora
+        description: "Quando o usuário respondeu (quando disponível)"
+        
+      - name: falha_datahora
+        description: "Quando houve falha na entrega (quando disponível)"
+        
+      # Dados da campanha
+      - name: nome_campanha
+        description: "Nome da campanha de comunicação"
+        
       - name: orgao_responsavel
         description: "Órgão responsável pelo envio da HSM"
         
-      - name: nome_hsm
-        description: "Nome/template da HSM enviada"
+      - name: categoria_hsm
+        description: "Categoria da HSM (Utilidade, Marketing, etc.)"
         
-      - name: desfecho_conversa
-        description: |
-          Resultado final da conversa:
-          - RESOLVIDA_AUTOMATICA: Resolvida pelo chatbot
-          - TRANSFERIDA_HUMANO: Transferida para atendimento humano  
-          - ABANDONADA: Cidadão não completou ou não respondeu
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['RESOLVIDA_AUTOMATICA', 'TRANSFERIDA_HUMANO', 'ABANDONADA']
-              
-      - name: teve_resposta_cidadao
-        description: "Indica se o cidadão respondeu à HSM"
+      - name: template_hsm
+        description: "Template/nome da HSM utilizada"
+        
+      # Indicadores booleanos
+      - name: foi_entregue
+        description: "Indica se a HSM foi entregue ao usuário"
         tests:
           - not_null
           
-      - name: teve_busca
-        description: "Indica se houve busca por informações na conversa"
+      - name: foi_lida
+        description: "Indica se a HSM foi lida pelo usuário"
         tests:
           - not_null
           
-      - name: teve_erro_fluxo
-        description: "Indica se houve erro no fluxo da conversa"
+      - name: teve_resposta
+        description: "Indica se o usuário respondeu à HSM"
         tests:
           - not_null
           
-      - name: total_mensagens
-        description: "Total de mensagens na conversa"
+      - name: gerou_conversa
+        description: "Indica se a HSM gerou uma sessão de conversa URA"
         tests:
           - not_null
-          - dbt_utils.accepted_range:
-              min_value: 0
-              max_value: 1000
-              
-      - name: mensagens_cidadao
-        description: "Número de mensagens enviadas pelo cidadão"
+          
+      - name: tem_problema_conhecido
+        description: "Indica se o telefone tem problema conhecido (inválido/opt-out)"
         tests:
           - not_null
-          - dbt_utils.accepted_range:
-              min_value: 0
-              
-      - name: mensagens_busca
-        description: "Número de mensagens relacionadas à busca"
-        tests:
-          - not_null
-          - dbt_utils.accepted_range:
-              min_value: 0
-              
-      - name: tempo_resposta_medio_seg
-        description: "Tempo médio de resposta do cidadão em segundos"
+          
+      # Descrições de erro
+      - name: descricao_erro
+        description: "Descrição do erro quando houver falha ou problema conhecido"
+        
+      # Métricas calculadas
+      - name: duracao_conversa_seg
+        description: "Duração da conversa em segundos (quando houve conversa)"
         tests:
           - dbt_utils.accepted_range:
               min_value: 0
               max_value: 86400  # 24 horas
-              where: "tempo_resposta_medio_seg is not null"
+              where: "duracao_conversa_seg is not null"
               
-      - name: hsm_detalhes
-        description: |
-          Estrutura com detalhes da HSM enviada:
-          - id_hsm: ID da HSM
-          - timestamps de criação, envio, entrega, leitura, resposta
-          - informações de falha
-          - metadados da HSM (nome, ambiente, categoria, órgão)
-          
+      - name: tempo_resposta_seg
+        description: "Tempo entre leitura e resposta em segundos"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 86400  # 24 horas
+              where: "tempo_resposta_seg is not null"
+              
+      # Estruturas aninhadas (quando disponível)
       - name: mensagens
-        description: |
-          Array com todas as mensagens da conversa ordenadas por timestamp.
-          Cada mensagem contém: data, texto, tipo, fonte, anexos, mídia, 
-          informações URA, etc.
-          
-      - name: busca_detalhes
-        description: |
-          Estrutura com detalhes de busca realizada:
-          - indicador: se houve busca
-          - feedback: pergunta, resposta e complementos
-          
-      - name: ura_detalhes
-        description: |
-          Estrutura com detalhes da URA:
-          - id e nome da URA
-          - operador e usuário de finalização
-          - fila e tabulação
-          
+        description: "Array com todas as mensagens da conversa (quando houve conversa)"
+        
+      - name: busca
+        description: "Estrutura com detalhes de busca realizada (quando houve)"
+        
+      - name: ura
+        description: "Estrutura com detalhes da URA (quando houve)"
+        
+      - name: estatisticas
+        description: "Estatísticas da conversa (quando houve)"
+        
+      # Metadados
       - name: data_particao
         description: "Data de particionamento da tabela (formato DATE)"
         tests:
           - not_null
-              
+          
       - name: data_processamento
         description: "Timestamp do processamento dbt"
         tests:

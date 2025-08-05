@@ -1,33 +1,39 @@
-# Schema - rmi_conversas.chatbot
+# Schema - rmi_conversas.chatbot (REVISADO)
 
-## Estrutura da Tabela
+## Estrutura da Tabela - TODAS AS INTERAÇÕES
 
 ### Campos de Identificação
 
 | Campo | Tipo | Descrição | Fonte |
 |-------|------|-----------|-------|
-| `id_conversa` | STRING | UUID único da conversa | Gerado |
+| `id_interacao` | STRING | UUID único da tentativa de interação | Gerado |
 | `cpf_cidadao` | STRING | CPF do cidadão (quando disponível) | `crm_whatsapp.contato.cpf` |
-| `telefone_contato` | STRING | Telefone do contato | `crm_whatsapp.contato.contato_telefone` |
-| `id_sessao` | STRING | ID da sessão no sistema Wetalkie | `crm_whatsapp.sessao.id_sessao` |
+| `telefone_contato` | STRING | Telefone do contato | `disparos_efetuados.to` |
+| `id_hsm` | INTEGER | ID da HSM enviada | `disparos_efetuados.id_hsm` |
+| `id_sessao` | STRING | ID da sessão (apenas se houve resposta) | `crm_whatsapp.sessao.id_sessao` |
 
-### Campos Temporais
-
-| Campo | Tipo | Descrição | Fonte |
-|-------|------|-----------|-------|
-| `data_conversa` | DATE | Data da conversa | `crm_whatsapp.sessao.inicio_data` |
-| `inicio_datahora` | DATETIME | Início da sessão | `crm_whatsapp.sessao.inicio_datahora` |
-| `fim_datahora` | DATETIME | Fim da sessão | `crm_whatsapp.sessao.fim_datahora` |
-| `duracao_total_seg` | FLOAT | Duração total em segundos | `crm_whatsapp.sessao.estatisticas.duracao_sessao_seg` |
-
-### Campos de Classificação
+### Campos Temporais (REVISADOS)
 
 | Campo | Tipo | Descrição | Fonte |
 |-------|------|-----------|-------|
-| `tipo_conversa` | STRING | HSM_ONLY, URA_COMPLETA, ATENDIMENTO_HUMANO | Derivado |
-| `categoria_hsm` | STRING | Categoria da mensagem (utilidade, marketing, autenticação) | `crm_whatsapp.sessao.hsm.categoria` |
-| `orgao_responsavel` | STRING | Órgão que enviou a HSM | `crm_whatsapp.sessao.hsm.orgao` |
-| `nome_hsm` | STRING | Nome/template da HSM | `crm_whatsapp.sessao.hsm.nome_hsm` |
+| `data_interacao` | DATE | Data da tentativa de interação | `disparos_efetuados.dispatch_date` |
+| `disparo_datahora` | DATETIME | Quando a HSM foi disparada | `disparos_efetuados.dispatch_date` |
+| `envio_datahora` | DATETIME | Quando foi enviada ao WhatsApp | `fluxo_atendimento.sendDate` |
+| `entrega_datahora` | DATETIME | Quando foi entregue ao usuário | `fluxo_atendimento.receiveDate` |
+| `leitura_datahora` | DATETIME | Quando foi lida pelo usuário | `fluxo_atendimento.readDate` |
+| `resposta_datahora` | DATETIME | Quando o usuário respondeu | `fluxo_atendimento.replyDate` |
+| `inicio_conversa_datahora` | DATETIME | Início da sessão URA (se houver) | `crm_whatsapp.sessao.inicio_datahora` |
+| `fim_conversa_datahora` | DATETIME | Fim da sessão URA (se houver) | `crm_whatsapp.sessao.fim_datahora` |
+
+### Campos de Classificação (REVISADOS)
+
+| Campo | Tipo | Descrição | Fonte |
+|-------|------|-----------|-------|
+| `tipo_interacao` | STRING | Nível de completude da interação | Derivado (ver tipos acima) |
+| `categoria_hsm` | STRING | Categoria da mensagem | `disparos_efetuados.campaignName` |
+| `orgao_responsavel` | STRING | Órgão que enviou a HSM | `mensagem_ativa.orgao` |
+| `nome_campanha` | STRING | Nome da campanha | `disparos_efetuados.campaignName` |
+| `template_hsm` | STRING | Template usado | `mensagem_ativa.nome_hsm` |
 
 ### Campos de Resultado
 

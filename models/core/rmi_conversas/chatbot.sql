@@ -4,149 +4,162 @@
         schema="rmi_conversas", 
         materialized="incremental",
         incremental_strategy="merge",
-        unique_key="id_conversa",
+        unique_key="id_interacao",
         partition_by={
             "field": "data_particao", 
             "data_type": "date"
         },
-        cluster_by=["cpf_cidadao", "tipo_conversa", "orgao_responsavel"],
+        cluster_by=["cpf_cidadao", "tipo_interacao", "orgao_responsavel"],
         on_schema_change="sync_all_columns"
     )
 }}
 
--- Modelo de conversas completas via chatbot por CPF
--- Consolida interações do WhatsApp através da plataforma Wetalkie
+-- MODELO FINAL: Todas as interações WhatsApp com dados completos
+-- Usa intermediate tables para performance e manutenibilidade
 
-with 
-
--- Contatos com ranking por data mais recente
-contatos_ranked as (
+with
+interacoes_completas as (
     select 
-        *,
-        row_number() over (
-            partition by contato_telefone 
-            order by data_particao desc
-        ) as rn
-    from `rj-crm-registry.crm_whatsapp.contato`
-),
-
-contatos_mais_recentes as (
-    select * 
-    from contatos_ranked 
-    where rn = 1
-),
-
--- Sessões completas com dados de URA e HSM
-sessoes_completas as (
-    select 
-        -- IDENTIFICAÇÃO
-        generate_uuid() as id_conversa,
-        safe_cast(c.cpf as string) as cpf_cidadao,
-        s.contato_telefone as telefone_contato,
-        s.id_sessao,
+        -- IDENTIFICAÇÃO - UUID determinístico simples baseado na chave única
+        to_hex(md5(d.chave_unica)) as id_interacao,
+        d.id_hsm,
+        d.telefone_contato,
+        c.cpf as cpf_cidadao,
+        c.nome_contato,
+        conv.id_sessao,
         
-        -- TEMPORAL
-        s.inicio_data as data_conversa,
-        s.inicio_datahora,
-        s.fim_datahora,
-        coalesce(
-            s.estatisticas.duracao_sessao_seg,
-            timestamp_diff(s.fim_datahora, s.inicio_datahora, SECOND)
-        ) as duracao_total_seg,
+        -- TEMPORALIDADE COMPLETA
+        d.data_interacao,
+        d.disparo_datahora,
+        se.criacao_datahora,
+        se.envio_datahora,
+        se.entrega_datahora,
+        se.leitura_datahora,
+        se.resposta_datahora,
+        se.falha_datahora,
+        conv.inicio_datahora as inicio_conversa_datahora,
+        conv.fim_datahora as fim_conversa_datahora,
         
-        -- CLASSIFICAÇÃO
+        -- CLASSIFICAÇÃO HIERÁRQUICA POR COMPLETUDE
         case 
-            when s.operador is not null then 'ATENDIMENTO_HUMANO'
-            when array_length(s.mensagens) > 1 then 'URA_COMPLETA'
-            else 'HSM_ONLY'
-        end as tipo_conversa,
+            -- Problemas conhecidos
+            when tp.tipo_problema = 'PHONE_INVALID_WHATSAPP' then 'PHONE_INVALID'
+            when tp.tipo_problema = 'OPTED_OUT' then 'OPTED_OUT'
+            
+            -- Falhas técnicas
+            when se.falha_datahora is not null then 'DELIVERY_FAILED'
+            when se.envio_datahora is not null and se.entrega_datahora is null then 'SENT_NOT_DELIVERED'
+            
+            -- Diferentes níveis de engajamento
+            when se.entrega_datahora is not null and se.leitura_datahora is null then 'DELIVERED_NOT_READ'
+            when se.leitura_datahora is not null and se.resposta_datahora is null then 'READ_NO_RESPONSE'
+            
+            -- Conversas (apenas se responderam)
+            when conv.resultado_conversa = 'ESCALATED_TO_HUMAN' then 'ESCALATED_TO_HUMAN'
+            when conv.resultado_conversa = 'RESOLVED_AUTOMATICALLY' then 'RESOLVED_AUTOMATICALLY'
+            when conv.resultado_conversa = 'CONVERSATION_ABANDONED' then 'CONVERSATION_ABANDONED'
+            when conv.resultado_conversa = 'CONVERSATION_ERROR' then 'CONVERSATION_ERROR'
+            when conv.resultado_conversa = 'CONVERSATION_COMPLETED' then 'CONVERSATION_COMPLETED'
+            
+            -- Status desconhecido (sem tracking)
+            when se.id_hsm is null and conv.id_hsm is null then 'STATUS_UNKNOWN'
+            else 'OTHER'
+        end as tipo_interacao,
         
-        coalesce(s.hsm.categoria, 'UTILIDADE') as categoria_hsm,
-        coalesce(s.hsm.orgao, 'NAO_INFORMADO') as orgao_responsavel,
-        s.hsm.nome_hsm,
+        -- DADOS DA CAMPANHA
+        d.nome_campanha,
+        d.orgao_responsavel,
+        d.categoria_hsm,
+        d.nome_campanha as template_hsm,
+        d.ambiente,
         
-        -- RESULTADO
+        -- INDICADORES BOOLEANOS
+        se.entrega_datahora is not null as foi_entregue,
+        se.leitura_datahora is not null as foi_lida,
+        se.resposta_datahora is not null as teve_resposta,
+        conv.id_sessao is not null as gerou_conversa,
+        tp.tipo_problema is not null as tem_problema_conhecido,
+        
+        -- DESCRIÇÕES DE ERRO
+        coalesce(se.descricao_falha, tp.descricao_problema) as descricao_erro,
+        
+        -- DADOS DA CONVERSA (quando disponível)
+        conv.mensagens,
+        conv.busca,
+        conv.ura,
+        conv.estatisticas,
+        conv.teve_erro_fluxo,
+        conv.operador,
+        conv.tabulacao,
+        
+        -- METADADOS ADICIONAIS
+        d.id_externo,
+        d.descricao_falha as falha_inicial,
+        c.data_optin,
+        c.data_optout,
+        
+        -- MÉTRICAS CALCULADAS (com validação)
         case 
-            when s.operador is not null then 'TRANSFERIDA_HUMANO'
-            when s.busca.indicador = true and s.busca.feedback.resposta is not null 
-                then 'RESOLVIDA_AUTOMATICA'
-            when s.fim_datahora is null then 'ABANDONADA'
-            when s.hsm.resposta_datahora is null then 'ABANDONADA'
-            else 'RESOLVIDA_AUTOMATICA'
-        end as desfecho_conversa,
+            when conv.inicio_datahora is not null and conv.fim_datahora is not null
+                and conv.fim_datahora > conv.inicio_datahora
+                and timestamp_diff(conv.fim_datahora, conv.inicio_datahora, second) <= 86400
+            then timestamp_diff(conv.fim_datahora, conv.inicio_datahora, second)
+        end as duracao_conversa_seg,
         
-        coalesce(s.hsm.resposta_datahora is not null, false) as teve_resposta_cidadao,
-        coalesce(s.busca.indicador, false) as teve_busca,
-        coalesce(s.erro_fluxo.indicador, false) as teve_erro_fluxo,
+        case 
+            when se.resposta_datahora is not null and se.leitura_datahora is not null
+                and se.resposta_datahora > se.leitura_datahora
+                and timestamp_diff(se.resposta_datahora, se.leitura_datahora, second) <= 86400
+            then timestamp_diff(se.resposta_datahora, se.leitura_datahora, second)
+        end as tempo_resposta_seg,
         
-        -- ESTATÍSTICAS
-        coalesce(s.estatisticas.total_mensagens, 0) as total_mensagens,
-        coalesce(s.estatisticas.total_mensagens_contato, 0) as mensagens_cidadao,
-        coalesce(s.estatisticas.total_mensagens_busca, 0) as mensagens_busca,
-        s.estatisticas.tempo_medio_resposta_cliente_seg as tempo_resposta_medio_seg,
-        
-        -- ESTRUTURAS ANINHADAS
-        struct(
-            s.hsm.id_hsm,
-            s.hsm.criacao_envio_datahora,
-            s.hsm.envio_datahora,
-            s.hsm.entrega_datahora,
-            s.hsm.leitura_datahora,
-            s.hsm.falha_datahora,
-            s.hsm.resposta_datahora,
-            s.hsm.descricao_falha,
-            s.hsm.nome_hsm,
-            s.hsm.ambiente,
-            s.hsm.categoria,
-            s.hsm.orgao
-        ) as hsm_detalhes,
-        
-        s.mensagens,
-        
-        struct(
-            coalesce(s.busca.indicador, false) as indicador,
-            struct(
-                s.busca.feedback.pergunta,
-                s.busca.feedback.resposta,
-                s.busca.feedback.resposta_negativa_complemento
-            ) as feedback
-        ) as busca_detalhes,
-        
-        struct(
-            s.ura.id,
-            s.ura.nome,
-            s.observacao,
-            s.operador,
-            s.usuario_finalizacao,
-            s.fila,
-            struct(
-                s.tabulacao.nome,
-                s.tabulacao.id
-            ) as tabulacao
-        ) as ura_detalhes,
-        
-        -- METADADOS
-        s.data_particao,
+        -- PARTICIONAMENTO E METADADOS
+        d.data_particao,
         current_datetime() as data_processamento
         
-    from `rj-crm-registry.crm_whatsapp.sessao` s
-    left join contatos_mais_recentes c
-        on s.contato_telefone = c.contato_telefone
-    where s.inicio_datahora >= '2020-01-01'
-        -- Filtrar dados de teste
-        and lower(coalesce(s.hsm.nome_hsm, '')) not like '%teste%'
-        and lower(coalesce(s.hsm.orgao, '')) not like '%teste%'
-        -- Garantir dados válidos
-        and s.contato_telefone is not null
-        and length(s.contato_telefone) >= 10
-),
-
--- Resultado final
-conversas_chatbot as (
-    select * from sessoes_completas
+    from {{ ref('int_chatbot_base_disparos') }} d
+    
+    -- Status de entrega (quando disponível)
+    left join {{ ref('int_chatbot_status_entrega') }} se
+        on d.id_hsm = se.id_hsm
+    
+    -- Conversas completas (quando responderam) - deduplicated
+    left join {{ ref('int_chatbot_conversas_deduplicated') }} conv
+        on d.id_hsm = conv.id_hsm 
+        and d.telefone_contato = conv.telefone_contato
+    
+    -- Dados de contato para CPF (mais recente por telefone)
+    left join (
+        select 
+            contato_telefone as telefone,
+            safe_cast(cpf as string) as cpf,
+            contato_nome as nome_contato,
+            data_optin,
+            data_optout
+        from (
+            select 
+                *,
+                row_number() over (
+                    partition by contato_telefone 
+                    order by data_particao desc
+                ) as rn
+            from `rj-crm-registry.crm_whatsapp.contato`
+            where contato_telefone is not null
+        )
+        where rn = 1
+    ) c on d.telefone_contato = c.telefone
+    
+    -- Telefones problemáticos
+    left join (
+        select 
+            contato_telefone as telefone,
+            'PHONE_INVALID_WHATSAPP' as tipo_problema,
+            'Telefone não registrado no WhatsApp ou não aceitou termos' as descricao_problema
+        from `rj-crm-registry.crm_whatsapp.telefone_sem_whatsapp`
+    ) tp on d.telefone_contato = tp.telefone
 )
 
-select * from conversas_chatbot
+select * from interacoes_completas
 
 -- Filtro incremental
 {% if is_incremental() %}
