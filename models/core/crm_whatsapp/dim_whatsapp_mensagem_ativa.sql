@@ -56,7 +56,8 @@ CASE
   WHEN templateId IN (59) THEN "SMTR"
   WHEN templateId in (19, 20) THEN "Autenticação"
   ELSE "Outro"
-END AS orgao
+END AS orgao,
+NULL as nome_campanha
 
 
 FROM templates
