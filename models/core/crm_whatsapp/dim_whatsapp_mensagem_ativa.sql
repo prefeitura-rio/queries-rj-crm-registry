@@ -1,7 +1,5 @@
 {{ config(alias="mensagem_ativa", schema="crm_whatsapp", materialized="table") }}
 
--- {{ config(alias="mensagem_ativa", schema="crm_whatsapp", materialized="table") }}
-
 WITH templates AS (
   SELECT templateId
   FROM UNNEST(GENERATE_ARRAY(1, 150)) AS templateId
@@ -33,16 +31,19 @@ CASE
   WHEN templateId = 24 THEN "SMS Confirmação SISREG [PROD] v3"
   WHEN templateId = 31 THEN "Agendamento Cadúnico"
   WHEN templateId = 59 THEN "SMTR - Mudança Sistema Jaé (com nome)"
-  ELSE "Outro"
+  WHEN templateId = 100 THEN "smtr-jae-prod-v10"
+  WHEN templateId = 101 THEN "smas-agendcadunico-prod-v1"
+  WHEN templateId = 113 THEN "sme-abandono-escolar-prod-v3"
+  ELSE "Teste"
 END AS nome_hsm,
 CASE
   WHEN templateId IN (1) THEN "dev"
   WHEN templateId IN (4, 6, 9, 10, 11, 13, 14, 15, 16, 18, 19, 20, 21, 22, 23) THEN "hom"
-  WHEN templateId IN (7, 8, 12, 17, 24, 31, 59) THEN "prod"
+  WHEN templateId IN (7, 8, 12, 17, 24, 31, 59, 100, 101, 113) THEN "prod"
   ELSE NULL
 END AS ambiente,
 CASE
-  WHEN templateId IN (14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 31, 59) THEN "Utilidade"
+  WHEN templateId IN (14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 31, 59, 100, 101, 113) THEN "Utilidade"
   WHEN templateId IN (1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 15) THEN "Marketing"
   WHEN templateId IN (20) THEN "Autenticação"
   ELSE NULL
@@ -50,12 +51,12 @@ END AS categoria,
 CASE
   WHEN templateId IN (1, 4, 6, 7, 8, 9, 10, 11, 12) THEN "IPLAN"
   WHEN templateId = 2 THEN "Ouvidores PCRJ"
-  WHEN templateId IN (13, 14, 15, 16, 17) THEN "SME"
+  WHEN templateId IN (13, 14, 15, 16, 17, 113) THEN "SME"
   WHEN templateId IN (18, 21, 22, 23, 24) THEN "SMS"
-  WHEN templateId IN (31) THEN "SMAS"
-  WHEN templateId IN (59) THEN "SMTR"
+  WHEN templateId IN (31, 101) THEN "SMAS"
+  WHEN templateId IN (59, 100) THEN "SMTR"
   WHEN templateId in (19, 20) THEN "Autenticação"
-  ELSE "Outro"
+  ELSE "Teste"
 END AS orgao,
 NULL as nome_campanha
 

@@ -87,7 +87,6 @@ with
     -- - Orgaos
     dim_assistencia_social as (select * from {{ ref("int_pessoa_fisica_dim_assistencia_social") }}),
 
-
     dim_saude as (select * from {{ ref("int_pessoa_fisica_dim_saude") }}),
 
     dim_ocupacao as (select * from {{ ref("int_pessoa_fisica_dim_ocupacao") }}),
