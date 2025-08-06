@@ -3,7 +3,7 @@
         materialized="incremental",
         schema="intermediario_rmi_conversas",
         tags=["hourly"],
-        unique_key=["id_hsm", "contato_telefone", "disparo_datahora"],
+        unique_key=["id_hsm", "id_disparo", "contato_telefone", "criacao_envio_datahora"],
         partition_by={
             "field": "data_particao",
             "data_type": "date"
@@ -61,7 +61,11 @@ WITH
             datarelay_timestamp AS datarelay_datahora,
             CAST(EXTRACT(YEAR FROM DATETIME(sendDate, 'America/Sao_Paulo')) AS STRING) AS ano_particao,
             CAST(EXTRACT(MONTH FROM DATETIME(sendDate, 'America/Sao_Paulo')) AS STRING) AS mes_particao,
-            DATE(DATETIME(sendDate, 'America/Sao_Paulo')) AS data_particao
+            DATE(DATETIME(sendDate, 'America/Sao_Paulo')) AS data_particao,
+            row_number() over (
+                partition by triggerId, templateId, flatTarget 
+                order by datarelay_timestamp desc
+            ) as rn
         FROM source
     )
 
@@ -95,3 +99,4 @@ select
 from telefone_disparado td
 left join {{ ref( "dim_whatsapp_mensagem_ativa" ) }} ma
     on td.id_hsm = ma.id_hsm
+WHERE rn = 1
