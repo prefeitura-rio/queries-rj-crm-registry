@@ -1,0 +1,14 @@
+- create a common address structure that will be used in all tables, if needed
+    - update 1746 with address sctructure
+    - update dados mestre with address structure
+- Update connection with real time data from SMTR
+- Update connection with real time data from 1746
+- Add CPF to Wetalkie. 
+- Adicionar validação de telefone em dim_telefone
+    - tipo de telefone (residencial, celular)
+    - whatsapp_ativo
+        - ultimo_contato (data)
+- Reestruturar models por dataset_id
+
+
+

@@ -1,0 +1,23 @@
+ordinal_position,column_name,data_type,is_nullable,category
+1,id_hci,STRING,YES,Text
+2,paciente_cpf,STRING,YES,Text
+3,paciente,"STRUCT<cpf STRING, cns ARRAY<STRING>, id_paciente STRING, data_nascimento DATE>",YES,Other
+4,tipo,STRING,YES,Text
+5,subtipo,STRING,YES,Text
+6,entrada_data,DATE,YES,Temporal
+7,entrada_datahora,DATETIME,YES,Temporal
+8,saida_datahora,DATETIME,YES,Temporal
+9,exames_realizados,"ARRAY<STRUCT<tipo STRING, descricao STRING>>",NO,Other
+10,procedimentos_realizados,STRING,YES,Text
+11,medidas,"STRUCT<altura FLOAT64, circunferencia_abdominal FLOAT64, frequencia_cardiaca FLOAT64, frequencia_respiratoria FLOAT64, glicemia FLOAT64, hemoglobina_glicada FLOAT64, imc FLOAT64, peso FLOAT64, pressao_sistolica FLOAT64, pressao_diastolica FLOAT64, pulso_ritmo STRING, saturacao_oxigenio FLOAT64, temperatura FLOAT64>",YES,Other
+12,motivo_atendimento,STRING,YES,Text
+13,desfecho_atendimento,STRING,YES,Text
+14,obito_indicador,BOOL,YES,Other
+15,condicoes,"ARRAY<STRUCT<id STRING, descricao STRING, situacao STRING, data_diagnostico STRING, resumo STRING>>",NO,Other
+16,prescricoes,"ARRAY<STRUCT<id STRING, nome STRING, concentracao STRING, uso_continuo STRING>>",NO,Other
+17,medicamentos_administrados,"ARRAY<STRUCT<nome STRING, quantidade INT64, unidade_medida STRING, uso STRING, via_administracao STRING, prescricao_data TIMESTAMP>>",NO,Other
+18,estabelecimento,"STRUCT<id_cnes STRING, nome STRING, estabelecimento_tipo STRING>",YES,Other
+19,profissional_saude_responsavel,"STRUCT<id STRING, cpf STRING, cns STRING, nome STRING, especialidade STRING>",YES,Other
+20,prontuario,"STRUCT<id_prontuario_global STRING, fornecedor STRING>",YES,Other
+21,metadados,"STRUCT<updated_at DATETIME, imported_at DATETIME, processed_at DATETIME>",YES,Other
+22,data_particao,DATE,YES,Temporal

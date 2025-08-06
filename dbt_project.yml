@@ -17,7 +17,7 @@ clean-targets:         # directories to be removed by `dbt clean`
 
 vars:
   # Internal variables
-  DBT_USER: "{{ env_var('DBT_USER', 'patricia') }}"
+  DBT_USER: "{{ env_var('DBT_USER', 'dev_fantasma') }}"
   dev_prefix: "{{ var('DBT_USER') }}__"
   prod_project: "rj-crm-registry"
   datasets_to_check: ['crm_whatsapp', 'crm_dados_mestres']
@@ -33,15 +33,19 @@ models:
         +schema: brutos_wetalkie
     intermediate:
       +materialized: ephemeral
-      int_whatsapp_fluxo_atendimento:
-        +materialized: table
-        +enabled: true
     core:
       +materialized: table
       +schema: dados_mestres
+      facts:
+        +materialized: table
+        +schema: crm_eventos
+        +partition_by:
+          field: data_particao
+          data_type: date
   data_tests:
       +schema: crm_testes
       +materialized: table
+
 
 seeds:
   +schema: brutos_seeds

@@ -1,0 +1,6 @@
+Waiting on bqjob_r3438f6d74c38d7d8_0000019865f9938d_1 ... (0s) Current status: RUNNING                                                                                      Waiting on bqjob_r3438f6d74c38d7d8_0000019865f9938d_1 ... (1s) Current status: RUNNING                                                                                      Waiting on bqjob_r3438f6d74c38d7d8_0000019865f9938d_1 ... (1s) Current status: DONE   
++------------+-----------------+-------------+-----------------+
+| total_rows | distinct_values | null_values | null_percentage |
++------------+-----------------+-------------+-----------------+
+|    2625915 |               6 |           0 |             0.0 |
++------------+-----------------+-------------+-----------------+

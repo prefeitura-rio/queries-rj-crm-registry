@@ -1,0 +1,102 @@
+{{
+    config(
+        materialized="incremental",
+        schema="intermediario_rmi_conversas",
+        tags=["hourly"],
+        unique_key=["id_hsm", "id_disparo", "contato_telefone", "criacao_envio_datahora"],
+        partition_by={
+            "field": "data_particao",
+            "data_type": "date"
+        },
+    )
+}}
+
+-- Base consolidada de disparos com metadados de campanha
+-- Fonte: telefone_disparado + mensagem_ativa para dados completos
+
+WITH
+    source AS (
+        SELECT *
+        FROM {{ source("brutos_wetalkie_staging", "fluxo_atendimento_*" ) }}
+        {% if is_incremental() %}
+          WHERE createDate >= (
+            SELECT MAX(criacao_envio_datahora) 
+            FROM {{ this }}
+          )
+          -- OR createDate >= TIMESTAMP_SUB(
+          --   CURRENT_TIMESTAMP(),
+          --   INTERVAL 2 DAY
+          -- ) -- Safety net para garantir captura
+        {% else %}
+          -- Carga inicial completa
+          WHERE createDate >= '2025-04-18 12:00:00'
+        {% endif %}
+    ),
+
+    telefone_disparado AS (
+        SELECT
+            DISTINCT
+            account AS id_conta,
+            templateId AS id_hsm,
+            triggerId AS id_disparo,
+            targetExternalId AS id_externo,
+            replyId AS id_sessao,
+            targetId AS id_contato,
+            flatTarget AS contato_telefone,
+            createDate AS criacao_envio_datahora,
+            sendDate AS envio_datahora,
+            deliveryDate AS entrega_datahora,
+            readDate AS leitura_datahora,
+            failedDate AS falha_datahora,
+            replyDate AS resposta_datahora,
+            faultDescription AS descricao_falha,
+            LOWER(status) AS status_disparo,
+            CASE
+                WHEN status = "PROCESSING" THEN 1
+                WHEN status = "SENT" THEN 2
+                WHEN status = "DELIVERED" THEN 3
+                WHEN status = "READ" THEN 4
+                WHEN status = "FAILED" THEN 5
+            END AS id_status_disparo,
+            datarelay_timestamp AS datarelay_datahora,
+            CAST(EXTRACT(YEAR FROM DATETIME(sendDate, 'America/Sao_Paulo')) AS STRING) AS ano_particao,
+            CAST(EXTRACT(MONTH FROM DATETIME(sendDate, 'America/Sao_Paulo')) AS STRING) AS mes_particao,
+            DATE(DATETIME(sendDate, 'America/Sao_Paulo')) AS data_particao,
+            row_number() over (
+                partition by triggerId, templateId, flatTarget 
+                order by datarelay_timestamp desc
+            ) as rn
+        FROM source
+    )
+
+select 
+    td.id_conta,
+    td.id_hsm,
+    td.id_disparo,
+    td.id_sessao,
+    td.id_externo,
+    td.id_contato,
+    td.contato_telefone,
+    ma.nome_hsm,
+    ma.nome_campanha as nome_campanha,
+    ma.orgao as orgao_responsavel,
+    ma.categoria as categoria_hsm,
+    ma.ambiente,
+    td.criacao_envio_datahora,
+    td.envio_datahora,
+    td.entrega_datahora,
+    td.leitura_datahora,
+    td.falha_datahora,
+    td.resposta_datahora,
+    td.datarelay_datahora,
+    td.descricao_falha,
+    td.id_status_disparo,
+    td.status_disparo,
+    td.ano_particao,
+    td.mes_particao,
+    td.data_particao
+
+from telefone_disparado td
+left join {{ ref( "dim_whatsapp_mensagem_ativa" ) }} ma
+    on td.id_hsm = ma.id_hsm
+WHERE rn = 1
