@@ -1,7 +1,7 @@
-project_id: rj_crm_registry.rmi_dados_mestre
+project_id: rj_crm_registry.rmi_dados_mestres
 
-Dados mestre
-dataset_id: rmi_dados_mestre
+Dados mestres
+dataset_id: rmi_dados_mestres
 
 - pessoa_fisica
 - pessoa_juridica
