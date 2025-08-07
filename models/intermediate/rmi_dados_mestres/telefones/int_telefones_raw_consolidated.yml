@@ -42,13 +42,13 @@ models:
       - name: sistema_nome
         description: >
           Nome do sistema de origem do telefone.
-          Valores: bcadastro, sms, wetalkie.
+          Valores: bcadastro, sms, wetalkie, ergon.
         data_tests:
           - not_null:
               name: intermediario_telefones_raw_consolidated__sistema_nome__not_null
           - accepted_values:
               name: intermediario_telefones_raw_consolidated__sistema_nome__accepted_values
-              values: ['bcadastro', 'sms', 'wetalkie']
+              values: ['bcadastro', 'sms', 'wetalkie', 'ergon']
 
       - name: campo_origem
         description: >
@@ -65,17 +65,19 @@ models:
                 - 'sms_paciente.contato.telefone[]'
                 - 'wetalkie_disparos.to'
                 - 'wetalkie_disparos.vars.telefoneescola'
+                - 'ergon_funcionario.celular'
+                - 'ergon_funcionario.telefone'
 
       - name: contexto
         description: >
           Contexto de uso do telefone.
-          PESSOAL (CPF), EMPRESARIAL (CNPJ), SAUDE (SMS), COMUNICACAO (Wetalkie).
+          PESSOAL (CPF), EMPRESARIAL (CNPJ), SAUDE (SMS), COMUNICACAO (Wetalkie), FUNCIONAL (ERGON).
         data_tests:
           - not_null:
               name: intermediario_telefones_raw_consolidated__contexto__not_null
           - accepted_values:
               name: intermediario_telefones_raw_consolidated__contexto__accepted_values
-              values: ['PESSOAL', 'EMPRESARIAL', 'SAUDE', 'COMUNICACAO']
+              values: ['PESSOAL', 'EMPRESARIAL', 'SAUDE', 'COMUNICACAO', 'FUNCIONAL']
 
       - name: data_atualizacao
         description: >
@@ -99,6 +101,7 @@ models:
               when sistema_nome = 'bcadastro' then campo_origem like 'bcadastro_%'
               when sistema_nome = 'sms' then campo_origem like 'sms_%'
               when sistema_nome = 'wetalkie' then campo_origem like 'wetalkie_%'
+              when sistema_nome = 'ergon' then campo_origem like 'ergon_%'
               else false
             end
             
@@ -106,7 +109,8 @@ models:
           name: intermediario_telefones_raw_consolidated__contexto_origem_tipo_consistencia
           expression: >
             case 
-              when origem_tipo = 'CPF' then contexto = 'PESSOAL'
+              when origem_tipo = 'CPF' and sistema_nome = 'bcadastro' then contexto = 'PESSOAL'
+              when origem_tipo = 'CPF' and sistema_nome = 'ergon' then contexto = 'FUNCIONAL'
               when origem_tipo = 'CNPJ' then contexto = 'EMPRESARIAL'
               when origem_tipo = 'CNS' then contexto = 'SAUDE'
               when origem_tipo = 'COMUNICACAO' then contexto = 'COMUNICACAO'

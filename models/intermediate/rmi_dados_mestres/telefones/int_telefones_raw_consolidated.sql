@@ -67,9 +67,44 @@ telefones_sms as (
     unnest(s.contato.telefone) as tel  
   where tel.valor is not null and cns_item is not null
 ),
--- FUNCIONAL - ERGON (servidores públicos)
--- TODO: verificar fonte correta e ativar telefones_ergon
 
+-- FUNCIONAL - ERGON (servidores públicos) - Celular
+-- TYPES: origem_id STRING, origem_tipo STRING, telefone_numero_completo STRING, 
+-- sistema_nome STRING, campo_origem STRING, contexto STRING, data_atualizacao DATETIME
+telefones_ergon_celular as (
+  select 
+    lpad(e.id_cpf, 11, '0') as origem_id,  -- Standardize CPF format with leading zeros
+    'CPF' as origem_tipo,
+    -- ERGON celular numbers need Brazilian DDI added and cleaning
+    concat('55', {{ padronize_telefone('e.celular') }}) as telefone_numero_completo,
+    'ergon' as sistema_nome,
+    'ergon_funcionario.celular' as campo_origem,
+    'FUNCIONAL' as contexto,
+    null as data_atualizacao  -- No timestamp available in ERGON
+  from {{ source('rj-smfp', 'funcionario') }} as e
+  where e.celular is not null 
+    and e.id_cpf is not null
+    and lpad(e.id_cpf, 11, '0') != '00000000000'  -- Exclude invalid CPFs
+),
+
+-- FUNCIONAL - ERGON (servidores públicos) - Telefone Fixo
+-- TYPES: origem_id STRING, origem_tipo STRING, telefone_numero_completo STRING, 
+-- sistema_nome STRING, campo_origem STRING, contexto STRING, data_atualizacao DATETIME
+telefones_ergon_telefone as (
+  select 
+    lpad(e.id_cpf, 11, '0') as origem_id,  -- Standardize CPF format with leading zeros
+    'CPF' as origem_tipo,
+    -- ERGON telefone numbers need Brazilian DDI added and cleaning
+    concat('55', {{ padronize_telefone('e.telefone') }}) as telefone_numero_completo,
+    'ergon' as sistema_nome,
+    'ergon_funcionario.telefone' as campo_origem,
+    'FUNCIONAL' as contexto,
+    null as data_atualizacao  -- No timestamp available in ERGON
+  from {{ source('rj-smfp', 'funcionario') }} as e
+  where e.telefone is not null 
+    and e.id_cpf is not null
+    and lpad(e.id_cpf, 11, '0') != '00000000000'  -- Exclude invalid CPFs
+),
 
 telefones_all_sources as (
   -- BCadastro CPF (Pessoas Físicas)
@@ -84,6 +119,16 @@ telefones_all_sources as (
   
   -- SMS Saúde (Pacientes do sistema de saúde)
   select * from telefones_sms
+
+  union all
+  
+  -- ERGON Celular (Funcionários públicos - celular)
+  select * from telefones_ergon_celular
+
+  union all
+  
+  -- ERGON Telefone (Funcionários públicos - telefone fixo)
+  select * from telefones_ergon_telefone
 
   
   -- All sources now use explicit table aliases and consistent field types:
