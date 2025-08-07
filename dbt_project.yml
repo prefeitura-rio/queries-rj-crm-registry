@@ -19,6 +19,42 @@ vars:
   # Internal variables
   DBT_USER: "{{ env_var('DBT_USER', 'dev_fantasma') }}"
 
+  # Phone validation configuration
+  phone_validation:
+    # Limites de frequência para classificação de qualidade
+    freq_valid_max: 5           # <= 5 pessoas = VÁLIDO
+    freq_suspicious_min: 6      # 6-15 pessoas = SUSPEITO  
+    freq_suspicious_max: 15
+    freq_invalid_min: 16        # > 15 pessoas = INVÁLIDO
+    
+    # Padrões para detecção de números suspeitos
+    max_repeated_digits: 5      # Máximo de dígitos repetidos seguidos
+    suspicious_patterns:
+      - "212121"               # Repetição de dois dígitos
+      - "123123123"            # Repetição de três dígitos
+    
+    # Padrões conhecidos de números falsos/dummy
+    dummy_patterns:
+      - "123456789"            # Sequência numérica
+      - "987654321"            # Sequência reversa
+      - "111111111"            # Todos iguais
+      - "000000000"            # Todos zeros
+      - "999999999"            # Todos noves
+      - "888888888"            # Todos oitos
+    
+    # Configuração por país
+    countries:
+      brasil:
+        ddi: "55"
+        celular_length: 9
+        celular_prefix: "9"
+        fixo_length: 8
+        valid_ddds: [11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34, 35, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 54, 55, 61, 62, 63, 64, 65, 66, 67, 68, 69, 71, 73, 74, 75, 77, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+    
+    # Configuração de auditoria
+    rmi_version: "v1.0"
+    hash_algorithm: "sha256"
+
 models:
   +persist_docs:
     relation: true

@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: telefones
+    description: "Dimensão principal de telefones RMI - Registro Mestre de Informações consolidado"
+    
+    columns:
+      - name: telefone_numero_completo
+        description: "Número completo formatado com DDI e DDD (ex: '5521987654321')"
+        tests:
+          - not_null:
+              name: core_telefones__telefone_numero_completo__not_null
+          - unique:
+              name: core_telefones__telefone_numero_completo__unique
+      
+      - name: telefone_ddi
+        description: "Código do país para Discagem Direta Internacional (ex: '55' para Brasil)"
+        
+      - name: telefone_ddd
+        description: "Código de área para Discagem Direta à Distância, aplicável apenas para números brasileiros"
+        
+      - name: telefone_numero
+        description: "Número do telefone sem DDI/DDD"
+        
+      - name: telefone_tipo
+        description: "Classificação do tipo de telefone"
+        tests:
+          - accepted_values:
+              name: core_telefones__telefone_tipo__accepted_values
+              values: ['CELULAR', 'FIXO', 'VOIP', 'OUTROS']
+      
+      - name: telefone_nacionalidade
+        description: "País de origem do número telefônico"
+        
+      - name: telefone_qualidade
+        description: "Avaliação técnica da validade do número"
+        tests:
+          - accepted_values:
+              name: core_telefones__telefone_qualidade__accepted_values
+              values: ['VALIDO', 'SUSPEITO', 'INVALIDO']
+      
+      - name: telefone_aparicoes
+        description: "Lista de aparições do telefone em diferentes sistemas"
+        
+      - name: telefone_aparicoes_quantidade
+        description: "Número total de aparições do telefone em todos os sistemas"
+        
+      - name: telefone_proprietarios_quantidade
+        description: "Número de proprietários únicos associados ao telefone"
+        
+      - name: telefone_sistemas_quantidade
+        description: "Número de sistemas diferentes onde o telefone aparece"
+        
+      - name: rmi_data_criacao
+        description: "Data de criação do registro no RMI"
+        
+      - name: rmi_data_atualizacao
+        description: "Data da última atualização do registro no RMI"
+        
+      - name: rmi_versao
+        description: "Versão do schema utilizada"
+        
+      - name: rmi_hash_validacao
+        description: "Hash para controle de integridade dos dados"
