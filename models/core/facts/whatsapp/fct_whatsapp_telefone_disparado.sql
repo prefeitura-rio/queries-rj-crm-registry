@@ -20,8 +20,8 @@ WITH seleciona_dados AS (
     data_particao,
     descricao_falha,
     ROW_NUMBER() OVER (PARTITION BY id_hsm, contato_telefone, id_disparo, criacao_envio_datahora ORDER BY datarelay_datahora DESC, descricao_falha DESC) AS last_webhook
-  FROM {{ ref("int_whatsapp_fluxo_atendimento") }}
-  WHERE (descricao_falha NOT LIKE "%131048%" OR descricao_falha IS NULL) -- remove erro de disparo fora do limite
+  FROM {{ ref("int_chatbot_base_disparo") }}
+  -- WHERE (descricao_falha NOT LIKE "%131048%" OR descricao_falha IS NULL) -- remove erro de disparo fora do limite
 
   {% if is_incremental() %}
     AND DATE(data_particao) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 4 DAY)

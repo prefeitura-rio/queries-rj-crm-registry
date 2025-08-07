@@ -1,7 +1,13 @@
 {{
     config(
         materialized="table",
-        schema="intermediario_rmi_conversas"
+        schema="intermediario_rmi_conversas",
+        tags=["hourly"],
+        unique_key=["id_hsm", "id_sessao", "inicio_datahora"],
+        partition_by={
+            "field": "data_particao",
+            "data_type": "date"
+        },
     )
 }}
 

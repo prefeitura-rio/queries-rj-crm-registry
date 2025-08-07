@@ -3,7 +3,7 @@
 with
     source as (
         select *
-        from {{ ref("raw_wetalkie_fluxos_ura") }}
+        from {{ ref("int_chatbot_base_receptiva") }}
         where inicio_datahora >= '2025-04-18 12:00:00'
     ),
 

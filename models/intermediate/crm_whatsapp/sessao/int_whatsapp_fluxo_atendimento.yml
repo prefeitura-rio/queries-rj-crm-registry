@@ -1,9 +1,0 @@
-version: 2
-
-models:
-  - name: int_whatsapp_fluxo_atendimento
-    description: Fluxo intermediário de atendimento WhatsApp/Wetalkie
-    config:
-      materialized: table
-      enabled: true
-      tags: ["hourly"]

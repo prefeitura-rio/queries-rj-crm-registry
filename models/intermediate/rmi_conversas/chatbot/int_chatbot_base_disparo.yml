@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: int_chatbot_base_disparos
+  - name: int_chatbot_base_disparo
     description: "Base consolidada de disparos de HSM com metadados de campanha - primeira etapa do pipeline chatbot"
     
     columns:

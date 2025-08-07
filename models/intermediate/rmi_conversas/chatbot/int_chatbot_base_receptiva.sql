@@ -1,8 +1,31 @@
-{{ config(alias="fluxos_ura", materialized="view") }}
+{{
+    config(
+        materialized="incremental",
+        schema="intermediario_rmi_conversas",
+        tags=["hourly"],
+        unique_key=["id_sessao", "inicio_datahora"],
+        partition_by={
+            "field": "data_particao",
+            "data_type": "date"
+        }
+    )
+}}
 
 with
-    source as (select * from {{ source("brutos_wetalkie_staging", "fluxos_ura") }}),
-
+    source as (
+        select * from {{ source("brutos_wetalkie_staging", "fluxos_ura") }}
+        {% if is_incremental() %}
+            -- Filtra dados para processamento incremental baseado na data de início do atendimento
+            where
+                date(
+                parse_timestamp(
+                    '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.beginDate')
+                ),
+                'America/Sao_Paulo'
+                )
+                >= (select max(data_particao) from {{ this }})
+        {% endif %}
+    ),
     -- Corrigindo formato do JSON para compatibilidade com BigQuery
     fix_json as (
         select
@@ -22,28 +45,22 @@ with
             protocol as protocolo,
             channel as canal,
             date(
-                timestamp_sub(
-                    parse_timestamp(
-                        '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.beginDate')
-                    ),
-                    interval 3 hour  -- Ajuste de fuso horário para -3
-                )
+                parse_timestamp(
+                    '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.beginDate')
+                ),
+                'America/Sao_Paulo'
             ) as inicio_data,
             datetime(
-                timestamp_sub(
-                    parse_timestamp(
-                        '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.beginDate')
-                    ),
-                    interval 3 hour  -- Ajuste de fuso horário para -3
-                )
+                parse_timestamp(
+                    '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.beginDate')
+                ),
+                'America/Sao_Paulo'
             ) as inicio_datahora,
             datetime(
-                timestamp_sub(
-                    parse_timestamp(
-                        '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.endDate')
-                    ),
-                    interval 3 hour  -- Ajuste de fuso horário para -3
-                )
+                parse_timestamp(
+                    '%Y-%m-%dT%H:%M:%E*S%Ez', json_value(json_data, '$.endDate')
+                ),
+                'America/Sao_Paulo'
             ) as fim_datahora,
             json_value(json_data, '$.id') as id,
 
@@ -82,7 +99,7 @@ with
                 json_extract_scalar(
                     json_extract(json_data, '$.contact'), '$.name'
                 ) as nome,
-                json_extract_scalar(json_extract(json_data, '$.contact'), '$.id') as id
+                COALESCE(json_extract_scalar(json_extract(json_data, '$.contact'), '$.id'), dim_contato.id_contato) as id
             ) as contato,
 
             -- Histórico de mensagens trocadas durante o atendimento
@@ -91,12 +108,12 @@ with
                     array_agg(
                         struct(
                             -- Dados temporais da mensagem
-                            timestamp_add(
+                            datetime(
                                 parse_timestamp(
                                     '%Y-%m-%dT%H:%M:%E*S%Ez',
                                     json_extract_scalar(json_str, '$.date')
                                 ),
-                                interval -3 hour
+                                'America/Sao_Paulo'
                             ) as data,
 
                             -- Conteúdo e metadados da mensagem
@@ -141,15 +158,16 @@ with
                             )
                     )
                 from unnest(json_extract_array(json_data, '$.messages')) as json_str
-            ) as mensagens,
+            ) as mensagens
 
-            -- Dados de particionamento
-            ano_particao,
-            mes_particao,
-            cast(data_particao as date) as data_particao
         from fix_json
+        left join {{ ref("dim_whatsapp_contato") }} dim_contato 
+            on dim_contato.id_contato = json_extract_scalar(json_data, '$.contact.id')
     )
 
 -- Resultado final
-select *
+select *,
+    CAST(EXTRACT(YEAR FROM inicio_datahora) AS STRING) AS ano_particao,
+    CAST(EXTRACT(MONTH FROM inicio_datahora) AS STRING) AS mes_particao,
+    DATE(inicio_datahora) AS data_particao,
 from transformed

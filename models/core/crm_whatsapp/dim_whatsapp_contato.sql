@@ -17,7 +17,7 @@
 WITH
 missing_contacts AS (
   SELECT
-  CAST(id_contato AS INT64) id_contato,
+  CAST(id_contato AS STRING) AS id_contato,
   contato_nome,
   contato_telefone
   FROM {{ source("brutos_wetalkie_staging", "contato_faltante") }}
@@ -26,11 +26,11 @@ missing_contacts AS (
 
 ura_contacts AS (
   SELECT 
-    contato.nome AS contato_nome,
-    CAST(contato.id AS INTEGER) AS id_contato,
+    contato_nome,
+    CAST(id_contato AS STRING) AS id_contato,
     MAX(data_particao) AS data_update,
     MIN(data_particao) AS data_optin
-  FROM {{ ref("raw_wetalkie_fluxos_ura") }}
+  FROM {{ ref("int_ura_contatos") }}
   
   WHERE
   -- data que migrou para o ambiente de produção, se tirar teremos id_contato desconhecidos "2025-07-09"
@@ -45,13 +45,13 @@ ura_contacts AS (
 
 hsm_contacts AS (
   SELECT
-    id_contato,
+    CAST(id_contato AS STRING) AS id_contato,
     contato_telefone,
     MAX(data_particao) AS data_update,
     MIN(data_particao) AS data_optin,
     MAX(CASE
       WHEN descricao_falha LIKE "%131048%" THEN data_particao ELSE NULL END) AS data_inicio_quarentena
-  FROM {{ ref("int_whatsapp_fluxo_atendimento") }}
+  FROM {{ ref("int_chatbot_base_disparo") }}
 
   WHERE
   -- data que migrou para o ambiente de produção, se tirar teremos id_contato desconhecidos "2025-07-09"
@@ -116,7 +116,7 @@ final AS (
 )
 
 SELECT
-  id_contato,
+  CAST(id_contato AS STRING) AS id_contato,
   cpf,
   contato_nome,
   contato_telefone,
