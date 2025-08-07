@@ -1,7 +1,7 @@
 {{
   config(
     schema="intermediario_rmi_conversas", 
-    materialized='incremental',
+    materialized='ephemeral',
     tags=["hourly"],
     unique_key='id_contato',
     incremental_strategy='merge',
@@ -44,17 +44,18 @@ WITH
         {% endif %}
     ),
 
-    ura_contacts AS (
+    ura_contacts_ AS (
         SELECT 
+        DISTINCT
             json_extract_scalar(json_data, '$.contact.name') AS contato_nome,
-            json_extract_scalar(json_data, '$.contact.id') AS id_contato,
+            CAST(json_extract_scalar(json_data, '$.contact.id') AS STRING) AS id_contato,
             MAX(DATE(parse_timestamp('%Y-%m-%dT%H:%M:%E*S%Ez', json_extract_scalar(json_data, '$.beginDate')), 'America/Sao_Paulo')) AS data_update,
             MIN(DATE(parse_timestamp('%Y-%m-%dT%H:%M:%E*S%Ez', json_extract_scalar(json_data, '$.beginDate')), 'America/Sao_Paulo')) AS data_optin,
-            DATE(parse_timestamp('%Y-%m-%dT%H:%M:%E*S%Ez', json_extract_scalar(json_data, '$.beginDate')), 'America/Sao_Paulo') as data_particao
+            MAX(DATE(parse_timestamp('%Y-%m-%dT%H:%M:%E*S%Ez', json_extract_scalar(json_data, '$.beginDate')), 'America/Sao_Paulo')) as data_particao
         FROM fix_json
         WHERE
             DATE(parse_timestamp('%Y-%m-%dT%H:%M:%E*S%Ez', json_extract_scalar(json_data, '$.beginDate')), 'America/Sao_Paulo') >= "2025-05-24"
-        GROUP BY 1, 2, 5
+        GROUP BY 1, 2
     )
 
-SELECT * FROM ura_contacts
+SELECT * FROM ura_contacts_

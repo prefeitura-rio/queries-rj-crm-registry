@@ -6,7 +6,7 @@ WITH templates AS (
 
 )
 SELECT 
-templateId AS id_hsm,
+CAST(templateId AS STRING) AS id_hsm,
 CASE
   WHEN templateId = 1 THEN "WebSummit"
   WHEN templateId = 2 THEN "Ouvidores PCRJ"
@@ -58,8 +58,8 @@ CASE
   WHEN templateId in (19, 20) THEN "Autenticação"
   ELSE "Teste"
 END AS orgao,
-NULL as nome_campanha
+CAST(NULL AS STRING) as nome_campanha
 
 
 FROM templates
-ORDER BY id_hsm
+ORDER BY CAST(id_hsm AS INT64)

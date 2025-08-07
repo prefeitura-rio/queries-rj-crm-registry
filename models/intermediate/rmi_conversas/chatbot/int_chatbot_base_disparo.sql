@@ -36,13 +36,13 @@ WITH
     telefone_disparado AS (
         SELECT
             DISTINCT
-            account AS id_conta,
-            templateId AS id_hsm,
-            triggerId AS id_disparo,
-            targetExternalId AS id_externo,
-            replyId AS id_sessao,
-            targetId AS id_contato,
-            flatTarget AS contato_telefone,
+            CAST(account AS STRING) AS id_conta,
+            CAST(templateId AS STRING) AS id_hsm,
+            CAST(triggerId AS STRING) AS id_disparo,
+            CAST(targetExternalId AS STRING) AS id_externo,
+            CAST(replyId AS STRING) AS id_sessao,
+            CAST(targetId AS STRING) AS id_contato,
+            CAST(flatTarget AS STRING) AS contato_telefone,
             createDate AS criacao_envio_datahora,
             sendDate AS envio_datahora,
             deliveryDate AS entrega_datahora,
@@ -62,10 +62,12 @@ WITH
             CAST(EXTRACT(YEAR FROM DATETIME(sendDate, 'America/Sao_Paulo')) AS STRING) AS ano_particao,
             CAST(EXTRACT(MONTH FROM DATETIME(sendDate, 'America/Sao_Paulo')) AS STRING) AS mes_particao,
             DATE(DATETIME(sendDate, 'America/Sao_Paulo')) AS data_particao,
-            row_number() over (
-                partition by triggerId, templateId, flatTarget 
-                order by datarelay_timestamp desc
-            ) as rn
+            ROW_NUMBER() OVER (
+                PARTITION BY templateId, flatTarget, triggerId, createDate 
+                ORDER BY 
+                    CASE WHEN faultDescription IS NOT NULL THEN 0 ELSE 1 END, -- Prioriza não-nulos
+                    datarelay_timestamp DESC
+            ) AS rn
         FROM source
     )
 

@@ -28,27 +28,24 @@ ura_contacts AS (
   SELECT 
     contato_nome,
     CAST(id_contato AS STRING) AS id_contato,
-    MAX(data_particao) AS data_update,
-    MIN(data_particao) AS data_optin
-  FROM {{ ref("int_ura_contatos") }}
+    data_update,
+    data_optin
+  FROM {{ ref("int_chatbot_base_receptiva_contatos") }}
   
   WHERE
   -- data que migrou para o ambiente de produção, se tirar teremos id_contato desconhecidos "2025-07-09"
-  DATE(data_particao) >= "2025-05-24" AND
+  DATE(data_update) >= "2025-05-24" AND
   {% if is_incremental() %}
-    DATE(data_particao) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 5 DAY)
-  {% else %}
-    TRUE
+    DATE(data_update) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 5 DAY)
   {% endif %}
-  GROUP BY 1, 2
 ),
 
 hsm_contacts AS (
   SELECT
     CAST(id_contato AS STRING) AS id_contato,
     contato_telefone,
-    MAX(data_particao) AS data_update,
     MIN(data_particao) AS data_optin,
+    MAX(data_particao) AS data_update,
     MAX(CASE
       WHEN descricao_falha LIKE "%131048%" THEN data_particao ELSE NULL END) AS data_inicio_quarentena
   FROM {{ ref("int_chatbot_base_disparo") }}
