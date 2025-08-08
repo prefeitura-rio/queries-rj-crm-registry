@@ -96,10 +96,12 @@ with
 
             -- Dados do contato
             struct(
-                json_extract_scalar(
+                COALESCE(json_extract_scalar(
                     json_extract(json_data, '$.contact'), '$.name'
-                ) as nome,
-                COALESCE(json_extract_scalar(json_extract(json_data, '$.contact'), '$.id'), dim_contato.id_contato) as id
+                ), dim_contato.contato_nome) as nome,
+                json_extract_scalar(json_extract(json_data, '$.contact'), '$.id') as id,
+                dim_contato.contato_telefone as telefone,
+                dim_contato.cpf as cpf
             ) as contato,
 
             -- Histórico de mensagens trocadas durante o atendimento

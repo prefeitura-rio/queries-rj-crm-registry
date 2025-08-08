@@ -34,10 +34,10 @@ ura_contacts AS (
   
   WHERE
   -- data que migrou para o ambiente de produção, se tirar teremos id_contato desconhecidos "2025-07-09"
-  DATE(data_update) >= "2025-05-24" AND
-  {% if is_incremental() %}
-    DATE(data_update) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 5 DAY)
-  {% endif %}
+  DATE(data_update) >= "2025-05-24"
+  -- {% if is_incremental() %}
+  --    AND DATE(data_update) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 5 DAY)
+  -- {% endif %}
 ),
 
 hsm_contacts AS (
@@ -114,8 +114,8 @@ final AS (
 
 SELECT
   CAST(id_contato AS STRING) AS id_contato,
-  cpf,
-  contato_nome,
+  CAST(cpf AS STRING) AS cpf,
+  {{ proper_br("contato_nome") }} AS contato_nome,
   contato_telefone,
   data_optin,
   data_optout,
