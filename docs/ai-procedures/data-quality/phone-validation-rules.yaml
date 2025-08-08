@@ -1,0 +1,350 @@
+procedure_name: "phone_validation_rules"
+version: "1.0.0"
+description: "Comprehensive phone validation rules and quality classification system for RMI telefones"
+created_date: "2025-01-08"
+based_on_analysis: "RMI telefones quality validation logic and ERGON case study"
+
+# Core validation framework
+validation_framework:
+  quality_categories:
+    VALIDO:
+      description: "Valid phone numbers with good format and low sharing frequency"
+      criteria:
+        format_valid: true
+        frequency_ownership: "<= 5 proprietários"
+        
+    SUSPEITO:
+      description: "Suspicious phones with medium frequency or questionable patterns" 
+      criteria:
+        format_valid: true
+        frequency_ownership: "6-15 proprietários"
+        OR:
+          suspicious_patterns: true
+          
+    INVALIDO:
+      description: "Invalid phones due to format issues, high frequency, or known fake patterns"
+      criteria:
+        OR:
+          format_invalid: true
+          frequency_ownership: ">= 16 proprietários"
+          dummy_patterns: true
+
+# Format validation rules
+format_validation:
+  brazilian_phone_format:
+    ddi: "55"
+    total_length_acceptable: [12, 13, 14]  # 55 + DDD + 8/9 digits
+    breakdown:
+      landline: "12 digits (55 + DDD + 8 digits)"
+      mobile_old: "13 digits (55 + DDD + 8 digits with area code)"
+      mobile_new: "14 digits (55 + DDD + 9 digits with leading 9)"
+    
+    valid_ddd_codes: [11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34, 35, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 54, 55, 61, 62, 63, 64, 65, 66, 67, 68, 69, 71, 73, 74, 75, 77, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+  
+  format_validation_sql: |
+    (
+      -- Validação para números brasileiros
+      (
+        starts_with({phone_column}, '55')
+        and length({phone_column}) in (12, 13, 14)  -- 55 + DDD + 8/9 dígitos
+        and cast(substr({phone_column}, 3, 2) as int64) in ({valid_ddds})
+      )
+      -- Adicionar validações para outros países aqui
+    )
+
+# Phone type classification
+phone_type_classification:
+  classification_logic:
+    CELULAR:
+      conditions:
+        - "DDI = 55 AND length(numero) = 9 AND starts_with(numero, '9')"
+      description: "Brazilian mobile phones with 9th digit"
+      
+    FIXO:
+      conditions:
+        - "DDI = 55 AND length(numero) = 8"
+        - "DDI = 55 AND length(numero) = 9 AND NOT starts_with(numero, '9')"
+      description: "Brazilian landline phones"
+      
+    OUTROS:
+      conditions:
+        - "DDI != 55"
+        - "any other format not matching above"
+      description: "International or atypical phone formats"
+  
+  classification_sql: |
+    case
+      when extract_ddi({phone_column}) = '55' 
+           and length(extract_numero({phone_column})) = 9
+           and starts_with(extract_numero({phone_column}), '9')
+      then 'CELULAR'
+      
+      when extract_ddi({phone_column}) = '55' 
+           and length(extract_numero({phone_column})) = 8
+      then 'FIXO'
+      
+      when extract_ddi({phone_column}) != '55'
+      then 'OUTROS'  -- Internacional
+      
+      else 'OUTROS'
+    end
+
+# Frequency-based quality assessment
+frequency_validation:
+  thresholds:
+    valid_max: 5
+    suspicious_min: 6
+    suspicious_max: 15
+    invalid_min: 16
+  
+  reasoning:
+    low_frequency: "1-5 owners typically indicates personal/legitimate phone"
+    medium_frequency: "6-15 owners may indicate shared family/business numbers"
+    high_frequency: "16+ owners likely indicates service numbers or fake data"
+  
+  frequency_analysis_sql: |
+    select 
+      telefone_numero_completo,
+      count(distinct origem_id) as telefone_proprietarios_quantidade,
+      count(distinct sistema_nome) as telefone_sistemas_quantidade,
+      count(*) as telefone_aparicoes_quantidade
+    from {source_table}
+    where origem_id is not null
+    group by telefone_numero_completo
+
+# Suspicious pattern detection
+suspicious_patterns:
+  configuration:
+    max_repeated_digits: 5
+    patterns_to_detect:
+      - "212121"
+      - "123123123"
+      
+  detection_sql: |
+    (
+      -- Repetição excessiva de dígitos (BigQuery regex syntax)
+      regexp_contains({phone_column}, r'(\d)\\1{5,}')
+      
+      -- Padrões suspeitos específicos
+      or strpos({phone_column}, '212121') > 0
+      or strpos({phone_column}, '123123123') > 0
+    )
+
+# Known fake/dummy patterns
+dummy_patterns:
+  common_fake_numbers:
+    - "123456789"
+    - "987654321" 
+    - "111111111"
+    - "000000000"
+    - "999999999"
+    - "888888888"
+    
+  detection_sql: |
+    (
+      -- Padrões conhecidos como falsos
+      strpos({phone_column}, '123456789') > 0
+      or strpos({phone_column}, '987654321') > 0
+      or strpos({phone_column}, '111111111') > 0
+      or strpos({phone_column}, '000000000') > 0
+      or strpos({phone_column}, '999999999') > 0
+      or strpos({phone_column}, '888888888') > 0
+    )
+
+# Complete quality validation macro logic
+quality_validation_sql: |
+  case
+    when {format_validation} 
+         and {frequency_column} <= 5 
+    then 'VALIDO'
+    
+    when {format_validation} 
+         and (
+           {frequency_column} between 6 and 15
+           or {suspicious_patterns}
+         )
+    then 'SUSPEITO'
+    
+    when not {format_validation}
+         or {frequency_column} >= 16
+         or {dummy_patterns}
+    then 'INVALIDO'
+    
+    else 'SUSPEITO'
+  end
+
+# Nationality detection
+nationality_mapping:
+  ddi_to_country:
+    "55": "Brasil"
+    "1": "Estados Unidos"
+    "54": "Argentina"
+    "default": "Internacional"
+    
+  nationality_sql: |
+    case
+      when extract_ddi({phone_column}) = '55' then 'Brasil'
+      when extract_ddi({phone_column}) = '1' then 'Estados Unidos'
+      when extract_ddi({phone_column}) = '54' then 'Argentina'
+      else 'Internacional'
+    end
+
+# Quality expectations by source system
+quality_expectations:
+  by_source_system:
+    bcadastro:
+      expected_valido: "> 95%"
+      expected_invalido: "< 3%"
+      reasoning: "High quality official government data"
+      
+    sms:
+      expected_valido: "> 90%"
+      expected_invalido: "< 8%"
+      reasoning: "Healthcare system with validated patient data"
+      
+    ergon:
+      expected_valido: "60-70%"
+      expected_invalido: "25-35%"
+      reasoning: "Many phones stored without DDD, causing format invalidity"
+      data_limitation: "Source stores local numbers without area codes"
+      
+    wetalkie:
+      expected_valido: "context-dependent"
+      reasoning: "Communication platform, quality varies by usage"
+
+# Common data quality issues and solutions
+data_quality_issues:
+  missing_ddd:
+    symptom: "Phone numbers with 7-10 digits only"
+    cause: "Source system stores local numbers without area code"
+    solution: "MAINTAIN_ORIGINAL - do not assume DDDs"
+    classification: "INVALIDO due to format"
+    
+  special_characters:
+    symptom: "Numbers with /, ., +, *, etc."
+    cause: "Inconsistent data entry formats"
+    solution: "Apply padronize_telefone macro with [^0-9] cleaning"
+    prevention: "Use regexp_replace to remove non-numeric characters"
+    
+  corrupted_data:
+    symptom: "Numbers > 15 digits or with letters"
+    cause: "Data corruption or system errors"
+    solution: "padronize_telefone macro filters these out"
+    classification: "INVALIDO"
+    
+  high_frequency_sharing:
+    symptom: "Same number shared by hundreds/thousands of people"
+    cause: "Service numbers, call centers, or fake data"
+    solution: "Frequency analysis marks as INVALIDO"
+    examples: "556133152425 (451,775 owners), 552121050000 (260,354 owners)"
+
+# Validation testing framework
+testing_framework:
+  format_validation_tests:
+    test_valid_brazilian_mobile: |
+      SELECT COUNT(*) FROM test_table 
+      WHERE telefone_numero_completo = '5521987654321'
+      AND telefone_qualidade = 'VALIDO'
+    
+    test_valid_brazilian_landline: |
+      SELECT COUNT(*) FROM test_table
+      WHERE telefone_numero_completo = '552133334444'
+      AND telefone_qualidade = 'VALIDO'
+    
+    test_invalid_short_number: |
+      SELECT COUNT(*) FROM test_table
+      WHERE telefone_numero_completo = '5521987654'
+      AND telefone_qualidade = 'INVALIDO'
+  
+  frequency_validation_tests:
+    test_high_frequency_invalid: |
+      SELECT COUNT(*) FROM test_table
+      WHERE telefone_proprietarios_quantidade > 16
+      AND telefone_qualidade = 'INVALIDO'
+    
+    test_low_frequency_valid: |
+      SELECT COUNT(*) FROM test_table  
+      WHERE telefone_proprietarios_quantidade <= 5
+      AND telefone_qualidade = 'VALIDO'
+
+# Integration validation queries
+integration_validation:
+  quality_distribution_check: |
+    SELECT 
+      telefone_qualidade,
+      COUNT(*) as quantidade,
+      ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentual
+    FROM {rmi_table}
+    GROUP BY telefone_qualidade
+    ORDER BY quantidade DESC
+  
+  length_distribution_analysis: |
+    SELECT 
+      LENGTH(telefone_numero_completo) as telefone_length,
+      COUNT(*) as quantidade,
+      ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentual,
+      MIN(telefone_numero_completo) as exemplo_min,
+      MAX(telefone_numero_completo) as exemplo_max
+    FROM {rmi_table}
+    WHERE telefone_qualidade = 'INVALIDO'
+    GROUP BY LENGTH(telefone_numero_completo)
+    ORDER BY quantidade DESC
+  
+  source_quality_comparison: |
+    SELECT 
+      sistema_name,
+      telefone_qualidade,
+      COUNT(*) as quantidade,
+      ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY sistema_name), 2) as percentual_do_sistema
+    FROM {rmi_table}
+    CROSS JOIN UNNEST(telefone_aparicoes) as ap
+    GROUP BY sistema_name, telefone_qualidade
+    ORDER BY sistema_name, quantidade DESC
+
+# AI decision matrix for quality assessment
+ai_decision_matrix:
+  quality_assessment_algorithm:
+    step_1_format: "IF format_invalid THEN INVALIDO"
+    step_2_frequency: "IF frequency >= 16 THEN INVALIDO"
+    step_3_patterns: "IF dummy_patterns THEN INVALIDO"
+    step_4_suspicious: "IF frequency 6-15 OR suspicious_patterns THEN SUSPEITO"
+    step_5_default: "ELSE VALIDO"
+  
+  investigation_triggers:
+    - condition: "INVALIDO percentage > 40%"
+      action: "investigate_source_data_quality"
+    - condition: "VALIDO percentage < 50%"
+      action: "review_validation_rules"
+    - condition: "unusual_length_distribution"
+      action: "analyze_data_format_issues"
+  
+  acceptable_quality_ranges:
+    excellent_source: "VALIDO > 90%, INVALIDO < 5%"
+    good_source: "VALIDO > 70%, INVALIDO < 20%"
+    problematic_source: "VALIDO < 60%, INVALIDO > 30%"
+    action_required: "INVALIDO > 50%"
+
+# Documentation and reporting
+quality_documentation:
+  required_documentation:
+    - source_quality_analysis: "Document VALIDO/INVALIDO/SUSPEITO distribution"
+    - limitation_documentation: "Note any known data quality issues"
+    - investigation_summary: "Explain any high INVALIDO percentages"
+    - business_impact: "Assess usability of phone data for contact purposes"
+  
+  reporting_template: |
+    ## {SOURCE_NAME} Phone Quality Analysis
+    
+    ### Quality Distribution
+    - VALIDO: {valido_count} ({valido_percent}%)
+    - INVALIDO: {invalido_count} ({invalido_percent}%)  
+    - SUSPEITO: {suspeito_count} ({suspeito_percent}%)
+    
+    ### Known Limitations
+    {limitation_description}
+    
+    ### Business Impact
+    {business_impact_assessment}
+    
+    ### Recommendations
+    {improvement_recommendations}

@@ -1,0 +1,372 @@
+template_name: "dbt_phone_integration_template"
+version: "1.0.0"
+description: "Reusable dbt model templates for integrating phone data sources into RMI telefones"
+created_date: "2025-01-08"
+based_on_patterns: "BCadastro, SMS, ERGON integration patterns"
+
+# Core template structure for phone data integration
+integration_templates:
+  
+  single_phone_field_template:
+    description: "Template for sources with one phone field"
+    template: |
+      telefones_{source_name}_{field_type} as (
+        select 
+          {id_processing} as origem_id,
+          '{origem_tipo}' as origem_tipo,
+          concat('55', {{ padronize_telefone('{phone_field}') }}) as telefone_numero_completo,
+          '{source_name}' as sistema_nome,
+          '{source_name}_{table}.{phone_field}' as campo_origem,
+          '{context}' as contexto,
+          {timestamp_processing} as data_atualizacao
+        from {{ source('{source_config}', '{table}') }} as {table_alias}
+        where {phone_field} is not null 
+          and {id_field} is not null
+          and {additional_filters}
+      )
+    
+    variable_definitions:
+      source_name: "System identifier (e.g., 'ergon', 'sms')"
+      field_type: "Phone type (e.g., 'celular', 'telefone')"
+      id_processing: "ID standardization logic"
+      origem_tipo: "ID type ('CPF', 'CNPJ', 'CNS')"
+      phone_field: "Source phone column name"
+      context: "Business context ('PESSOAL', 'FUNCIONAL', etc.)"
+      timestamp_processing: "Timestamp handling or NULL"
+      source_config: "dbt source configuration name"
+      table: "Source table name"
+      table_alias: "SQL table alias"
+      additional_filters: "Extra WHERE conditions"
+
+  nested_phone_field_template:
+    description: "Template for sources with nested/repeated phone structures"
+    template: |
+      telefones_{source_name}_{field_type} as (
+        select 
+          {id_processing} as origem_id,
+          '{origem_tipo}' as origem_tipo,
+          concat('55', {ddd_logic}, {{ padronize_telefone('{nested_phone_field}') }}) as telefone_numero_completo,
+          '{source_name}' as sistema_nome,
+          '{source_name}_{table}.{nested_structure_path}' as campo_origem,
+          '{context}' as contexto,
+          {timestamp_processing} as data_atualizacao
+        from {{ source('{source_config}', '{table}') }} as {table_alias},
+          {unnest_logic}
+        where {nested_phone_field} is not null 
+          and {id_field} is not null
+          and {additional_filters}
+      )
+    
+    variable_definitions:
+      ddd_logic: "DDD extraction or default (e.g., 'tel.ddd', '21')"
+      nested_phone_field: "Phone field within nested structure"
+      nested_structure_path: "Full path to nested field"
+      unnest_logic: "UNNEST operations for repeated fields"
+
+# Common ID processing patterns
+id_processing_patterns:
+  cpf_standardization:
+    pattern: "lpad({cpf_field}, 11, '0')"
+    validation: "length(lpad({cpf_field}, 11, '0')) = 11"
+    origem_tipo: "CPF"
+    
+  cnpj_standardization:
+    pattern: "lpad({cnpj_field}, 14, '0')"
+    validation: "length(lpad({cnpj_field}, 14, '0')) = 14"
+    origem_tipo: "CNPJ"
+    
+  cns_standardization:
+    pattern: "cast({cns_field} as string)"
+    validation: "length(cast({cns_field} as string)) = 15"
+    origem_tipo: "CNS"
+    
+  direct_string:
+    pattern: "{id_field}"
+    validation: "{id_field} is not null"
+    origem_tipo: "CUSTOM"
+
+# Timestamp processing patterns
+timestamp_processing:
+  null_timestamp:
+    pattern: "null"
+    usage: "When source has no update timestamp"
+    
+  date_field:
+    pattern: "cast({date_field} as datetime)"
+    usage: "When source has DATE field"
+    
+  timestamp_field:
+    pattern: "{timestamp_field}"
+    usage: "When source has TIMESTAMP/DATETIME field"
+    
+  string_timestamp:
+    pattern: "parse_datetime('%Y-%m-%d %H:%M:%S', {string_field})"
+    usage: "When timestamp is stored as string"
+    
+  nested_timestamp:
+    pattern: "{nested_path}.{timestamp_field}"
+    usage: "When timestamp is in nested structure"
+
+# Additional filter patterns
+filter_patterns:
+  cpf_validity:
+    filter: "lpad({cpf_field}, 11, '0') != '00000000000'"
+    description: "Exclude invalid CPFs"
+    
+  cnpj_validity:
+    filter: "lpad({cnpj_field}, 14, '0') != '00000000000000'"
+    description: "Exclude invalid CNPJs"
+    
+  string_length:
+    filter: "length(trim({field})) > 0"
+    description: "Exclude empty strings"
+    
+  not_test_data:
+    filter: "{field} not like '%test%' and {field} not like '%fake%'"
+    description: "Exclude test/fake data"
+    
+  active_records:
+    filter: "{status_field} = 'ACTIVE' or {status_field} is null"
+    description: "Include only active records"
+
+# Context determination logic
+context_mapping:
+  PESSOAL:
+    criteria: "Individual citizen data from BCadastro CPF"
+    id_type: "CPF"
+    source_examples: ["bcadastro"]
+    
+  EMPRESARIAL:
+    criteria: "Business data from BCadastro CNPJ"
+    id_type: "CNPJ"
+    source_examples: ["bcadastro"]
+    
+  FUNCIONAL:
+    criteria: "Employee/worker data from HR systems"
+    id_type: "CPF"
+    source_examples: ["ergon", "hr_system"]
+    
+  SAUDE:
+    criteria: "Healthcare patient data"
+    id_type: "CNS"
+    source_examples: ["sms", "sus", "saude"]
+    
+  COMUNICACAO:
+    criteria: "Communication platform data, may not have person ID"
+    id_type: "COMUNICACAO"
+    source_examples: ["wetalkie", "whatsapp"]
+
+# Complete integration examples by source type
+integration_examples:
+  
+  government_registry_example:
+    description: "BCadastro-style government registry with CPF"
+    template: |
+      telefones_bcadastro_cpf as (
+        select 
+          lpad(t.cpf, 11, '0') as origem_id,
+          'CPF' as origem_tipo,
+          concat('55', coalesce(t.contato.telefone.ddi, '55'), 
+                 t.contato.telefone.ddd, 
+                 {{ padronize_telefone('t.contato.telefone.numero') }}) as telefone_numero_completo,
+          'bcadastro' as sistema_nome,
+          'bcadastro_cpf.contato.telefone' as campo_origem,
+          'PESSOAL' as contexto,
+          cast(t.atualizacao_data as datetime) as data_atualizacao
+        from {{ source('bcadastro', 'cpf') }} as t
+        where t.contato.telefone.numero is not null
+          and t.cpf is not null
+          and lpad(t.cpf, 11, '0') != '00000000000'
+      )
+  
+  hr_system_example:
+    description: "ERGON-style HR system with employee data"
+    template: |
+      telefones_ergon_celular as (
+        select 
+          lpad(e.id_cpf, 11, '0') as origem_id,
+          'CPF' as origem_tipo,
+          concat('55', {{ padronize_telefone('e.celular') }}) as telefone_numero_completo,
+          'ergon' as sistema_nome,
+          'ergon_funcionario.celular' as campo_origem,
+          'FUNCIONAL' as contexto,
+          null as data_atualizacao
+        from {{ source('rj-smfp', 'funcionario') }} as e
+        where e.celular is not null 
+          and e.id_cpf is not null
+          and lpad(e.id_cpf, 11, '0') != '00000000000'
+      )
+  
+  health_system_example:
+    description: "SMS-style health system with patient data"
+    template: |
+      telefones_sms as (
+        select 
+          cast(cns_item as string) as origem_id,
+          'CNS' as origem_tipo,
+          concat('55', tel.ddd, {{ padronize_telefone('tel.valor') }}) as telefone_numero_completo,
+          'sms' as sistema_nome,
+          'sms_paciente.contato.telefone[]' as campo_origem,
+          'SAUDE' as contexto,
+          s.metadados.processed_at as data_atualizacao
+        from {{ source('rj-sms', 'paciente') }} as s,
+          unnest(s.cns) as cns_item,
+          unnest(s.contato.telefone) as tel  
+        where tel.valor is not null 
+          and cns_item is not null
+      )
+
+# UNION integration patterns
+union_integration:
+  basic_union_pattern: |
+    telefones_all_sources as (
+      -- {Source 1 Description}
+      select * from telefones_{source1}_{type1}
+      
+      union all
+      
+      -- {Source 2 Description}
+      select * from telefones_{source2}_{type2}
+      
+      union all
+      
+      -- {Source N Description}
+      select * from telefones_{sourceN}_{typeN}
+    )
+  
+  type_validation_note: |
+    -- All sources must output consistent schema:
+    -- origem_id STRING, origem_tipo STRING, telefone_numero_completo STRING, 
+    -- sistema_nome STRING, campo_origem STRING, contexto STRING, data_atualizacao DATETIME
+
+# Test configuration templates
+test_configuration:
+  sistema_nome_test_update:
+    template: |
+      - accepted_values:
+          name: intermediario_telefones_raw_consolidated__sistema_nome__accepted_values
+          values: [{existing_values}, '{new_source_name}']
+  
+  campo_origem_test_update:
+    template: |
+      - accepted_values:
+          name: intermediario_telefones_raw_consolidated__campo_origem__accepted_values
+          values: 
+            {existing_values}
+            - '{new_source_name}_{table}.{field1}'
+            - '{new_source_name}_{table}.{field2}'
+  
+  contexto_test_validation:
+    template: |
+      # Verify new context is in accepted values:
+      - accepted_values:
+          values: ['PESSOAL', 'EMPRESARIAL', 'SAUDE', 'FUNCIONAL', 'COMUNICACAO']
+  
+  business_logic_test_update:
+    sistema_campo_consistency: |
+      when sistema_nome = '{new_source}' then campo_origem like '{new_source}_%'
+    
+    contexto_origem_tipo_consistency: |
+      when origem_tipo = '{id_type}' and sistema_nome = '{new_source}' then contexto = '{expected_context}'
+
+# Model configuration templates
+model_configuration:
+  intermediate_model_config:
+    template: |
+      {{
+          config(
+              alias="{model_alias}",
+              schema="intermediario_rmi_telefones",
+              materialized=("table" if target.name == "dev" else "ephemeral"),
+          )
+      }}
+  
+  core_model_config:
+    template: |
+      {{
+          config(
+              alias="{model_alias}",
+              schema="rmi_dados_mestres", 
+              materialized="table",
+              partition_by={"field": "rmi_data_criacao", "data_type": "datetime"},
+              cluster_by=["telefone_qualidade", "telefone_tipo"],
+              unique_key="telefone_numero_completo"
+          )
+      }}
+
+# Documentation templates
+documentation_templates:
+  column_documentation:
+    origem_id: |
+      description: >
+        Identificador único da entidade proprietária do telefone.
+        {id_type} para {entity_description}.
+    
+    sistema_nome: |
+      description: >
+        Nome do sistema de origem do telefone.
+        Valores: {list_of_sistema_names}.
+    
+    campo_origem: |
+      description: >
+        Campo específico de origem do telefone na tabela fonte.
+        Permite rastreabilidade exata do dado.
+    
+    contexto: |
+      description: >
+        Contexto de uso do telefone.
+        {context_description}.
+
+# Quality expectations templates
+quality_expectations:
+  high_quality_source:
+    expected_valido: "> 90%"
+    expected_invalido: "< 5%"
+    expected_suspeito: "< 10%"
+    characteristics: "Government registries, verified data"
+    
+  medium_quality_source:
+    expected_valido: "70-90%"
+    expected_invalido: "5-20%"
+    expected_suspeito: "5-15%"
+    characteristics: "Administrative systems, some data quality issues"
+    
+  problematic_source:
+    expected_valido: "50-70%"
+    expected_invalido: "20-40%"
+    expected_suspeito: "5-15%"
+    characteristics: "Legacy systems, missing DDDs, format issues"
+    investigation_required: true
+
+# AI automation helpers
+ai_helpers:
+  variable_substitution_example: |
+    # To use templates, substitute variables:
+    source_name: "new_system"
+    field_type: "mobile"
+    id_processing: "lpad(n.employee_id, 11, '0')"
+    origem_tipo: "CPF"
+    phone_field: "n.mobile_phone"
+    context: "FUNCIONAL"
+    
+    # Result becomes:
+    telefones_new_system_mobile as (
+      select 
+        lpad(n.employee_id, 11, '0') as origem_id,
+        'CPF' as origem_tipo,
+        concat('55', {{ padronize_telefone('n.mobile_phone') }}) as telefone_numero_completo,
+        ...
+    )
+  
+  template_selection_logic:
+    if_single_phone_field: "use single_phone_field_template"
+    if_nested_structure: "use nested_phone_field_template"
+    if_multiple_phone_types: "create multiple CTEs with same pattern"
+    if_complex_processing: "customize template based on specific needs"
+  
+  validation_checklist:
+    - template_variables_substituted: true
+    - schema_consistency_maintained: true
+    - business_logic_appropriate: true
+    - test_configuration_updated: true
+    - documentation_complete: true
