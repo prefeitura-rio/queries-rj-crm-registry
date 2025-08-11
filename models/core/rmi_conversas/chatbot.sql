@@ -25,7 +25,7 @@ with
 
     receptivo as (
         select *
-        from {{ ref('int_chatbot_base_receptiva') }}
+        from {{ ref('int_chatbot_base_receptivo') }}
     ),
 
     -- Junção full outer para capturar todas as interações, ativas e receptivas
@@ -33,9 +33,15 @@ with
         select
             coalesce(d.id_sessao, r.id_sessao) as id_sessao,
             to_hex(md5(coalesce(d.id_sessao, r.id_sessao, CONCAT(d.id_disparo, d.id_contato, CAST(d.criacao_envio_datahora AS STRING))))) as id_interacao,
-            d.* except(id_sessao, data_particao, contato_telefone),
-            r.* except(id_sessao, data_particao),
+            d.* except(id_sessao, data_particao, contato_telefone, fim_datahora),
+            r.* except(id_sessao, data_particao, inicio_datahora, fim_datahora),
             coalesce(d.contato_telefone, r.contato.telefone) as contato_telefone,
+            d.criacao_envio_datahora AS inicio_datahora_ativo,
+            d.fim_datahora AS fim_datahora_ativo,
+            r.inicio_datahora AS inicio_datahora_receptivo,
+            r.fim_datahora AS fim_datahora_receptivo,
+            (select min(inicio_interacao_datahora) from unnest([d.criacao_envio_datahora, r.inicio_datahora]) as inicio_interacao_datahora) as inicio_datahora,
+            (select max(fim_interacao_datahora) from unnest([d.criacao_envio_datahora, r.fim_datahora]) as fim_interacao_datahora) as fim_datahora,
             coalesce(d.data_particao, r.data_particao) as data_particao
         from disparo as d
         full outer join receptivo as r on d.id_sessao = r.id_sessao
@@ -175,8 +181,11 @@ with
                 count(distinct sm.id_mensagem) as total_mensagens,
                 count(distinct case when sm.fonte = 'CUSTOMER' then sm.id_mensagem end) as total_mensagens_contato,
                 count(distinct case when sm.fonte = 'URA' and sm.passo_ura_nome = '@VLR_RESPOSTA_BUSCA' then sm.id_mensagem end) as total_mensagens_busca,
+                -- Tempo efetivo de sessão (do início/hsm até a última mensagem do cliente) 
                 max(timestamp_diff(timestamp(st.ultima_mensagem_cliente_datahora), coalesce(timestamp(ij.leitura_datahora), timestamp(sm.sessao_inicio_datahora)), second)) as duracao_sessao_seg,
+                -- Tempo efetivo de interação do cliente sessão (do início da interação até a última mensagem do cliente)
                 max(timestamp_diff(timestamp(st.ultima_mensagem_cliente_datahora), timestamp(st.primeira_mensagem_datahora), second)) as duracao_interacao_seg,
+                -- Tempo efetivo de sessão (do início da URA até a última mensagem do cliente)
                 max(timestamp_diff(timestamp(st.ultima_mensagem_cliente_datahora), timestamp(sm.sessao_inicio_datahora), second)) as duracao_ura_seg,
                 avg(mrt.tempo_resposta_cliente_seg) as tempo_medio_resposta_cliente_seg
             ) as estatisticas
@@ -213,9 +222,14 @@ with
     final as (
         select
             -- CHAVE
-            -- to_hex(md5(ij.id_sessao)) as id_interacao,
             ij.id_interacao,
             ij.id_sessao,
+            ij.id_externo,
+            ij.protocolo,
+
+            -- TEMPORALIDADE
+            ij.inicio_datahora,
+            ij.fim_datahora,
 
             -- CONTATO
             struct(
@@ -229,6 +243,8 @@ with
 
             -- HSM (Disparo Ativo)
             struct(
+                if(ij.id_hsm is not null, true, false) as indicador,
+                if(ij.falha_datahora is not null, true, false) as indicador_falha,
                 ij.id_hsm,
                 ij.id_disparo,
                 ij.status_disparo,
@@ -242,16 +258,14 @@ with
                 ij.leitura_datahora,
                 ij.resposta_datahora,
                 ij.falha_datahora,
-                ij.descricao_falha
+                ij.descricao_falha,
+                ij.inicio_datahora_ativo,
+                ij.fim_datahora_ativo
             ) as hsm,
-
-            -- TEMPORALIDADE
-            ij.inicio_datahora as inicio_conversa_datahora,
-            ij.fim_datahora as fim_conversa_datahora,
 
             -- ERRO FLUXO
             struct(
-                if(err.id_sessao is not null, true, false) as indicador,
+                if(err.id_sessao is not null, true, false) as indicador,  -- TODO: errado
                 err.tipo_erro
             ) as erro_fluxo,
 
@@ -261,7 +275,13 @@ with
                 if(b.id_sessao is not null, true, false) as indicador,
                 b.feedback
             ) as busca,
-            ij.ura,
+            STRUCT(
+              if(ij.ura.id is not null, true, false) as indicador,
+              ij.ura.id,
+              ij.ura.nome,
+              ij.inicio_datahora_receptivo,
+              ij.fim_datahora_receptivo
+            ) AS ura,
             stat.estatisticas,
             ij.operador,
             ij.tabulacao,
@@ -270,21 +290,7 @@ with
             ij.entrega_datahora is not null as foi_entregue,
             ij.leitura_datahora is not null as foi_lida,
             ij.resposta_datahora is not null as foi_respondida,
-            ij.id_sessao is not null and ij.inicio_datahora is not null as gerou_conversa,
-
-            -- METADADADOS
-            ij.id_externo,
-
-            -- MÉTRICAS CALCULADAS
-            case
-                when ij.inicio_datahora is not null and ij.fim_datahora is not null
-                then timestamp_diff(ij.fim_datahora, ij.inicio_datahora, second)
-            end as duracao_conversa_seg,
-
-            case
-                when ij.resposta_datahora is not null and ij.leitura_datahora is not null
-                then timestamp_diff(ij.resposta_datahora, ij.leitura_datahora, second)
-            end as tempo_resposta_seg,
+            ij.id_sessao is not null and ij.inicio_datahora_receptivo is not null as gerou_conversa,
 
             -- PARTICIONAMENTO E METADADADOS
             ij.data_particao,

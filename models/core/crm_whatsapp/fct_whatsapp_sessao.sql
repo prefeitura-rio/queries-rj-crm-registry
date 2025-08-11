@@ -3,7 +3,7 @@
 with
     source as (
         select *
-        from {{ ref("int_chatbot_base_receptiva") }}
+        from {{ ref("int_chatbot_base_receptivo") }}
         where inicio_datahora >= '2025-04-18 12:00:00'
     ),
 

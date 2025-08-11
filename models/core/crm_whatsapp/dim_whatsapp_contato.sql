@@ -30,7 +30,7 @@ ura_contacts AS (
     CAST(id_contato AS STRING) AS id_contato,
     data_update,
     data_optin
-  FROM {{ ref("int_chatbot_base_receptiva_contatos") }}
+  FROM {{ ref("int_chatbot_base_receptivo_contatos") }}
   
   WHERE
   -- data que migrou para o ambiente de produção, se tirar teremos id_contato desconhecidos "2025-07-09"

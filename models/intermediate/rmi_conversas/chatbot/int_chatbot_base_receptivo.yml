@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: int_chatbot_base_receptiva
+  - name: int_chatbot_base_receptivo
     description: "Modelo intermediário que transforma e enriquece os dados brutos de fluxos de URA do Wetalkie, extraindo informações detalhadas de sessões de chatbot receptivo. Inclui a extração de metadados da sessão, informações do contato, mensagens, e dados de temporalidade."
     columns:
       - name: id_sessao
