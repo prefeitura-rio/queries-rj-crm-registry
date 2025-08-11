@@ -48,28 +48,34 @@ models:
         description: "Ambiente de onde o disparo foi feito (ex: produção, homologação, desenvolvimento)"
 
       - name: criacao_envio_datahora
-        description: "Timestamp de quando o envio foi criado"
+        description: "Data e hora de quando o envio foi criado. Fuso horário America/Sao_Paulo."
 
       - name: envio_datahora
-        description: "Timestamp de quando a mensagem foi enviada"
+        description: "Data e hora de quando a mensagem foi enviada. Fuso horário America/Sao_Paulo."
 
       - name: entrega_datahora
-        description: "Timestamp de quando a mensagem foi entregue"
+        description: "Data e hora de quando a mensagem foi entregue. Fuso horário America/Sao_Paulo."
 
       - name: leitura_datahora
-        description: "Timestamp de quando a mensagem foi lida"
+        description: "Data e hora de quando a mensagem foi lida. Fuso horário America/Sao_Paulo."
 
       - name: falha_datahora
-        description: "Timestamp de quando o envio falhou"
+        description: "Data e hora de quando o envio falhou. Fuso horário America/Sao_Paulo."
 
       - name: resposta_datahora
-        description: "Timestamp de quando o contato respondeu"
+        description: "Data e hora de quando o contato respondeu. Fuso horário America/Sao_Paulo."
+
+      - name: fim_datahora
+        description: "Data e hora do último evento registrado para o disparo. Fuso horário America/Sao_Paulo."
 
       - name: datarelay_datahora
-        description: "Timestamp do data relay"
+        description: "Timestamp do data relay. Fuso horário America/Sao_Paulo."
 
       - name: descricao_falha
         description: "Descrição da falha, caso tenha ocorrido"
+      
+      - name: indicador_falha
+        description: "Indicador (true/false) se o disparo resultou em falha."
 
       - name: id_status_disparo
         description: "ID numérico do status do disparo"

@@ -59,7 +59,7 @@ WITH
                 WHEN status = "FAILED" THEN 5
             END AS id_status_disparo,
             if(failedDate is not null, true, false) as indicador_falha,
-            datarelay_timestamp AS datarelay_datahora,
+            DATETIME(datarelay_timestamp, 'America/Sao_Paulo') AS datarelay_datahora,
             CAST(EXTRACT(YEAR FROM DATETIME(sendDate, 'America/Sao_Paulo')) AS STRING) AS ano_particao,
             CAST(EXTRACT(MONTH FROM DATETIME(sendDate, 'America/Sao_Paulo')) AS STRING) AS mes_particao,
             DATE(DATETIME(sendDate, 'America/Sao_Paulo')) AS data_particao,

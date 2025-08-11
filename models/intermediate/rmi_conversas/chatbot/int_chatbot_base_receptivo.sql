@@ -122,7 +122,7 @@ with
                             json_query_array(json_str, '$.attachments') as anexos,
                             json_extract_scalar(json_str, '$.hsm') as hsm,
                             safe_cast(
-                                json_extract_scalar(json_str, '$.id') as int64
+                                json_extract_scalar(json_str, '$.id') as string
                             ) as id,
                             json_extract_scalar(json_str, '$.source') as fonte,
 
@@ -149,7 +149,7 @@ with
                                 safe_cast(
                                     json_extract_scalar(
                                         json_str, '$.uraStep.id'
-                                    ) as int64
+                                    ) as string
                                 ) as id
                             ) as passo_ura
                         )

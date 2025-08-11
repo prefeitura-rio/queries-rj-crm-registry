@@ -16,13 +16,13 @@ models:
         description: "Canal de comunicação onde o atendimento foi realizado (ex: WhatsApp, Web, etc.)."
 
       - name: inicio_data
-        description: "Data de início do atendimento, ajustada para o fuso horário de São Paulo."
+        description: "Data de início do atendimento. Fuso horário America/Sao_Paulo."
 
       - name: inicio_datahora
-        description: "Data e hora de início do atendimento, ajustada para o fuso horário de São Paulo."
+        description: "Data e hora de início do atendimento. Fuso horário America/Sao_Paulo."
 
       - name: fim_datahora
-        description: "Data e hora de término do atendimento, ajustada para o fuso horário de São Paulo."
+        description: "Data e hora de término do atendimento. Fuso horário America/Sao_Paulo."
 
       - name: id
         description: "ID da conversa extraído do JSON."
@@ -51,13 +51,13 @@ models:
         description: "Usuário que finalizou o atendimento."
 
       - name: data_primeiro_enfileiramento
-        description: "Timestamp do primeiro enfileiramento do atendimento."
+        description: "Timestamp do primeiro enfileiramento do atendimento, em formato string (ISO 8601). Fuso horário UTC."
 
       - name: data_envio_operador
-        description: "Timestamp do envio do atendimento para um operador."
+        description: "Timestamp do envio do atendimento para um operador, em formato string (ISO 8601). Fuso horário UTC."
 
       - name: data_ultimo_enfileiramento
-        description: "Timestamp do último enfileiramento do atendimento."
+        description: "Timestamp do último enfileiramento do atendimento, em formato string (ISO 8601). Fuso horário UTC."
 
       - name: fila
         description: "Fila para a qual o atendimento foi direcionado."
@@ -83,9 +83,48 @@ models:
             description: "Nome do contato."
           - name: id
             description: "ID do contato."
+          - name: telefone
+            description: "Número de telefone do contato."
+          - name: cpf
+            description: "CPF do contato."
 
       - name: mensagens
         description: "Array contendo o histórico de mensagens trocadas durante o atendimento."
+        columns:
+          - name: data
+            description: "Data e hora da mensagem. Fuso horário America/Sao_Paulo."
+          - name: anexos
+            description: "Array de anexos na mensagem."
+          - name: hsm
+            description: "Indicador de mensagem HSM (template)."
+          - name: id
+            description: "ID da mensagem."
+          - name: fonte
+            description: "Fonte da mensagem (ex: 'contact' ou 'operator')."
+          - name: midia
+            description: "Estrutura com dados de mídia."
+            columns:
+              - name: arquivo
+                description: "Caminho do arquivo de mídia."
+              - name: nome
+                description: "Nome do arquivo de mídia."
+              - name: tipo_conteudo
+                description: "Tipo de conteúdo da mídia (ex: 'image/jpeg')."
+          - name: texto
+            description: "Conteúdo textual da mensagem."
+          - name: tipo
+            description: "Tipo da mensagem (ex: 'text' ou 'media')."
+          - name: titulo
+            description: "Título da mensagem."
+          - name: operador
+            description: "Operador que enviou a mensagem."
+          - name: passo_ura
+            description: "Estrutura com informações do passo da URA."
+            columns:
+              - name: nome
+                description: "Nome do passo da URA."
+              - name: id
+                description: "ID do passo da URA."
 
       - name: ano_particao
         description: "Ano extraído da data de início do atendimento, usado para particionamento."
@@ -95,3 +134,5 @@ models:
 
       - name: data_particao
         description: "Data de início do atendimento, usada como campo de particionamento principal da tabela."
+        tests:
+          - not_null
