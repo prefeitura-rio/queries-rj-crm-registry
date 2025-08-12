@@ -3,17 +3,10 @@ version: 2
 models:
   - name: interacoes_pessoa_fisica_prefeitura
     description: |
-      **Fact table - Interações Cidadão-Prefeitura Unificada**
+      Interações Cidadão-Prefeitura Unificada
       
       Consolida interações dos sistemas 1746 e SMS com ontologia padronizada 
       e 19 campos essenciais.
-      
-      **Fontes de dados:**
-      - 1746: Chamados e solicitações de serviços urbanos (~3.4M registros)
-      - SMS: Episódios assistenciais de saúde (~102.7M registros)
-      
-      **Particionamento:** Por data_particao (diário)
-      **Clustering:** Por sistema_origem, tipo_interacao, categoria_interacao
     
     config:
       tags: ['core', 'facts', 'daily']
