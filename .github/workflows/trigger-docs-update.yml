@@ -1,0 +1,19 @@
+name: Trigger Documentation Update
+
+on:
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'models/**/*.sql'
+      - 'models/**/*.yml'
+
+jobs:
+  trigger-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger documentation update
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.DOCS_UPDATE_TOKEN }}
+          repository: prefeitura-rio/mintlify-docs
+          event-type: dbt-schema-updated
