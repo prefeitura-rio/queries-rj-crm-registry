@@ -1,6 +1,6 @@
 {{
   config(
-    alias="contato",
+    alias="int_crm_whatsapp_contato",
     schema="intermediario_crm_whatsapp", 
     materialized='incremental',
     tags=["hourly"],
