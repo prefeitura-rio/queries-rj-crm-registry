@@ -66,7 +66,9 @@ WITH
             ROW_NUMBER() OVER (
                 PARTITION BY templateId, flatTarget, triggerId, createDate 
                 ORDER BY 
-                    CASE WHEN faultDescription IS NOT NULL THEN 0 ELSE 1 END, -- Prioriza não-nulos
+                    CASE
+                        WHEN faultDescription IS NOT NULL THEN 0
+                        WHEN replyId IS NOT NULL THEN 0 ELSE 1 END, -- Prioriza não-nulos
                     datarelay_timestamp DESC
             ) AS rn
         FROM source

@@ -13,8 +13,8 @@
 WITH seleciona_dados AS (
   -- para eliminar as linhas que posteriormente tiveram erro e na descricao_falha aparece null
   SELECT
-    id_hsm,
-    id_disparo,
+    CAST(id_hsm AS STRING) AS id_hsm,
+    CAST(id_disparo AS STRING) AS id_disparo,
     contato_telefone,
     criacao_envio_datahora,
     data_particao,
@@ -27,10 +27,11 @@ WITH seleciona_dados AS (
     ) AS last_webhook
   FROM {{ ref("int_chatbot_base_disparo") }}
   WHERE
+  TRUE
   -- WHERE (descricao_falha NOT LIKE "%131048%" OR descricao_falha IS NULL) -- remove erro de disparo fora do limite
 
   {% if is_incremental() %}
-    DATE(data_particao) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 4 DAY)
+    AND DATE(data_particao) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 4 DAY)
   {% endif %}
 
 )
@@ -39,9 +40,9 @@ SELECT
   DISTINCT
     id_hsm,
     id_disparo,
-    contato_telefone,
     DATE(criacao_envio_datahora) AS data_disparo,
-    data_particao,
-    descricao_falha
+    contato_telefone,
+    descricao_falha,
+    data_particao
 FROM seleciona_dados
 WHERE last_webhook = 1
