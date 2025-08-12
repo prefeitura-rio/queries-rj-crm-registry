@@ -212,7 +212,7 @@ with
                     partition by contato_telefone
                     order by data_particao desc
                 ) as rn
-            from {{ ref('dim_whatsapp_contato') }}
+            from {{ ref('contato') }}
             where contato_telefone is not null
         )
         where rn = 1

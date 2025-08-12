@@ -15,6 +15,7 @@ WITH seleciona_dados AS (
   SELECT
     CAST(id_hsm AS STRING) AS id_hsm,
     CAST(id_disparo AS STRING) AS id_disparo,
+    CAST(id_contato AS STRING) AS id_contato,
     contato_telefone,
     criacao_envio_datahora,
     data_particao,
@@ -40,6 +41,7 @@ SELECT
   DISTINCT
     id_hsm,
     id_disparo,
+    id_contato,
     DATE(criacao_envio_datahora) AS data_disparo,
     contato_telefone,
     descricao_falha,

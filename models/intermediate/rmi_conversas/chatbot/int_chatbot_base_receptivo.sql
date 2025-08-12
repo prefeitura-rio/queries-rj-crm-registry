@@ -163,7 +163,7 @@ with
             ) as mensagens
 
         from fix_json
-        left join {{ ref("dim_whatsapp_contato") }} dim_contato 
+        left join {{ ref("contato") }} dim_contato 
             on dim_contato.id_contato = json_extract_scalar(json_data, '$.contact.id')
     )
 

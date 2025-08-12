@@ -15,12 +15,14 @@
 }}
 
 WITH
+source AS (select * from {{ source("brutos_wetalkie_staging", "contato_faltante") }}),
+
 missing_contacts AS (
   SELECT
   CAST(id_contato AS STRING) AS id_contato,
   contato_nome,
   contato_telefone
-  FROM {{ source("brutos_wetalkie_staging", "contato_faltante") }}
+  FROM source
   where contato_telefone is not null
 ),
 
@@ -48,7 +50,7 @@ hsm_contacts AS (
     MAX(data_particao) AS data_update,
     MAX(CASE
       WHEN descricao_falha LIKE "%131048%" THEN data_particao ELSE NULL END) AS data_inicio_quarentena
-  FROM {{ ref("int_chatbot_base_disparo") }}
+  FROM {{ ref("telefone_disparado") }}
 
   WHERE
   -- data que migrou para o ambiente de produção, se tirar teremos id_contato desconhecidos "2025-07-09"

@@ -114,6 +114,6 @@ select
     td.data_particao
 
 from telefone_disparado td
-left join {{ ref( "dim_whatsapp_mensagem_ativa" ) }} ma
+left join {{ ref( "mensagem_ativa" ) }} ma
     on td.id_hsm = ma.id_hsm
 WHERE rn = 1
