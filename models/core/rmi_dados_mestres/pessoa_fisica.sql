@@ -167,5 +167,5 @@ with
 
     )
 
-select *
-from final
+select * from final
+
