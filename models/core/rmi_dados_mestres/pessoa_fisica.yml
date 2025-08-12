@@ -9,7 +9,7 @@ models:
       materialized: table
     columns:
       - name: cpf
-        description: Cadastro de Pessoa Física (CPF) do indivíduo
+        description: Cadastro de Pessoa Física (CPF) dos indivíduos
         data_type: string
         quote: true
         data_tests:
