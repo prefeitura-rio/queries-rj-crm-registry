@@ -12,6 +12,7 @@ dataset_id: rmi_dados_mestres
 - equipamentos
 - divisoes_administrativas
 - servicos_publicos
+- telefones
 
 Eventos
 dataset_id: rmi_eventos
@@ -34,5 +35,3 @@ WhatsApp
 dataset_id: crm_whatsapp
 
 - telefones_invalidos
-- 
-- 

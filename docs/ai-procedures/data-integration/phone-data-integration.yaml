@@ -1,0 +1,377 @@
+procedure_name: "integrate_phone_data_source"
+version: "1.0.0"
+description: "Systematic procedure for integrating phone data from any source system into RMI telefones"
+created_date: "2025-01-08"
+based_on_case: "ERGON telefones integration"
+
+# Prerequisites that must be validated before starting
+prerequisites:
+  existing_models:
+    - "int_telefones_raw_consolidated.sql"
+    - "core telefones RMI model"
+  source_configuration:
+    - source_name_in_yml: true
+    - table_access_confirmed: true
+  permissions:
+    - read_source_data: true
+    - write_intermediate_models: true
+    - run_dbt_tests: true
+
+# Step-by-step investigation procedure
+investigation_steps:
+  
+  step_1_schema_discovery:
+    description: "Discover phone-related columns in source table"
+    commands:
+      list_tables: |
+        bq query --use_legacy_sql=false --format=prettyjson --max_rows=50 "
+        SELECT table_name, table_type
+        FROM `{database}.{schema}.INFORMATION_SCHEMA.TABLES`
+        ORDER BY table_name"
+      
+      find_phone_columns: |
+        bq query --use_legacy_sql=false --format=prettyjson --max_rows=50 "
+        SELECT column_name, data_type
+        FROM `{database}.{schema}.INFORMATION_SCHEMA.COLUMNS`
+        WHERE table_name = '{table_name}'
+          AND (LOWER(column_name) LIKE '%telefone%' 
+               OR LOWER(column_name) LIKE '%phone%'
+               OR LOWER(column_name) LIKE '%celular%'
+               OR LOWER(column_name) LIKE '%contato%'
+               OR LOWER(column_name) LIKE '%fone%')
+        ORDER BY ordinal_position"
+    
+    success_criteria:
+      min_phone_columns: 1
+      acceptable_data_types: ["STRING", "RECORD", "REPEATED"]
+    
+    failure_actions:
+      no_phone_columns: "ABORT - Source has no phone data"
+      no_access: "CHECK - Verify source permissions"
+
+  step_2_identify_key_columns:
+    description: "Find identifier columns (CPF, CNPJ, CNS, etc.)"
+    commands:
+      find_id_columns: |
+        bq query --use_legacy_sql=false --format=prettyjson --max_rows=20 "
+        SELECT column_name, data_type
+        FROM `{database}.{schema}.INFORMATION_SCHEMA.COLUMNS`
+        WHERE table_name = '{table_name}'
+          AND (column_name LIKE '%cpf%' 
+               OR column_name LIKE '%cnpj%'
+               OR column_name LIKE '%cns%'
+               OR column_name LIKE '%id%'
+               OR column_name LIKE '%matricula%')
+        ORDER BY ordinal_position"
+    
+    success_criteria:
+      min_id_columns: 1
+    
+    required_mapping:
+      - column_type: "CPF"
+        expected_format: "11_digits_string"
+        processing: "lpad({column}, 11, '0')"
+      - column_type: "CNPJ" 
+        expected_format: "14_digits_string"
+        processing: "lpad({column}, 14, '0')"
+      - column_type: "CNS"
+        expected_format: "15_digits_string"
+        processing: "cast({column} as string)"
+
+  step_3_data_sampling:
+    description: "Sample and analyze phone data quality"
+    commands:
+      sample_data: |
+        bq query --use_legacy_sql=false --format=prettyjson --max_rows=10 "
+        SELECT {id_column}, {phone_columns}
+        FROM `{source_table}`
+        WHERE ({phone_columns} IS NOT NULL)
+          AND {id_column} IS NOT NULL
+        LIMIT 10"
+      
+      count_statistics: |
+        bq query --use_legacy_sql=false --format=prettyjson "
+        SELECT 
+          COUNT(*) as total_records,
+          COUNT({id_column}) as id_not_null,
+          COUNT({phone_column}) as phone_not_null,
+          COUNT(CASE WHEN {phone_column} IS NOT NULL AND {id_column} IS NOT NULL THEN 1 END) as usable_records
+        FROM `{source_table}`"
+      
+      analyze_phone_patterns: |
+        bq query --use_legacy_sql=false --format=prettyjson --max_rows=20 "
+        SELECT 
+          LENGTH({phone_column}) as phone_length,
+          COUNT(*) as quantity,
+          MIN({phone_column}) as example_min,
+          MAX({phone_column}) as example_max
+        FROM `{source_table}`
+        WHERE {phone_column} IS NOT NULL
+        GROUP BY LENGTH({phone_column})
+        ORDER BY quantity DESC"
+    
+    analysis_criteria:
+      min_usable_records: 1000
+      max_null_percentage: 80
+      length_patterns:
+        - acceptable_lengths: [7, 8, 9, 10, 11, 12, 13, 14]
+        - investigate_if: "length > 15 OR length < 7"
+
+  step_4_geographic_analysis:
+    description: "Determine geographic context for DDD mapping (if needed)"
+    commands:
+      check_geographic_fields: |
+        bq query --use_legacy_sql=false --format=prettyjson --max_rows=20 "
+        SELECT column_name, data_type
+        FROM `{database}.{schema}.INFORMATION_SCHEMA.COLUMNS`
+        WHERE table_name = '{table_name}'
+          AND (LOWER(column_name) LIKE '%uf%' 
+               OR LOWER(column_name) LIKE '%estado%'
+               OR LOWER(column_name) LIKE '%municipio%'
+               OR LOWER(column_name) LIKE '%cidade%'
+               OR LOWER(column_name) LIKE '%endereco%')
+        ORDER BY ordinal_position"
+      
+      analyze_geographic_distribution: |
+        bq query --use_legacy_sql=false --format=prettyjson --max_rows=15 "
+        SELECT 
+          {uf_column},
+          {municipio_column},
+          COUNT(*) as funcionarios,
+          COUNT(CASE WHEN {phone_column} IS NOT NULL THEN 1 END) as with_phone,
+          ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentage
+        FROM `{source_table}`
+        WHERE {id_column} IS NOT NULL
+          AND {phone_column} IS NOT NULL
+        GROUP BY {uf_column}, {municipio_column}
+        ORDER BY funcionarios DESC"
+    
+    geographic_decision_matrix:
+      if_rio_de_janeiro_majority: "> 90%"
+      action: "MAINTAIN_ORIGINAL - do not assume DDD"
+      reasoning: "preserve_data_integrity"
+      alternative: "consider_optional_ddd_mapping_for_incomplete_numbers"
+
+# Core decision matrix for integration approach
+decision_matrix:
+  data_quality_assessment:
+    thresholds:
+      excellent: "> 80% complete phones with valid format"
+      good: "60-80% complete phones"
+      poor: "< 60% complete phones"
+      
+    phone_format_patterns:
+      complete_with_ddd: "length >= 12 digits"
+      missing_ddd: "length 7-9 digits"
+      corrupted: "length > 15 OR contains_non_numeric"
+  
+  integration_strategy:
+    if_complete_phones_majority:
+      action: "standard_integration"
+      processing: "concat('55', padronize_telefone(column))"
+      
+    if_missing_ddd_majority:
+      action: "maintain_original_integrity"
+      processing: "concat('55', padronize_telefone(column))"
+      note: "will result in higher INVALIDO percentage - document limitation"
+      
+    if_corrupted_data_majority:
+      action: "investigate_further"
+      options: ["exclude_source", "additional_cleaning", "manual_review"]
+
+# Template for dbt model implementation
+implementation_template:
+  cte_naming_pattern: "telefones_{source_name}_{field_type}"
+  
+  celular_cte_template: |
+    telefones_{source_name}_celular as (
+      select 
+        {id_processing} as origem_id,
+        '{origem_tipo}' as origem_tipo,
+        concat('55', {{ padronize_telefone('{celular_column}') }}) as telefone_numero_completo,
+        '{source_name}' as sistema_nome,
+        '{source_name}_{table}.{celular_column}' as campo_origem,
+        '{context}' as contexto,
+        {timestamp_field} as data_atualizacao
+      from {{ source('{source_config}', '{table}') }} as e
+      where {celular_column} is not null 
+        and {id_column} is not null
+        and {additional_filters}
+    )
+  
+  telefone_cte_template: |
+    telefones_{source_name}_telefone as (
+      select 
+        {id_processing} as origem_id,
+        '{origem_tipo}' as origem_tipo,
+        concat('55', {{ padronize_telefone('{telefone_column}') }}) as telefone_numero_completo,
+        '{source_name}' as sistema_nome,
+        '{source_name}_{table}.{telefone_column}' as campo_origem,
+        '{context}' as contexto,
+        {timestamp_field} as data_atualizacao
+      from {{ source('{source_config}', '{table}') }} as e
+      where {telefone_column} is not null 
+        and {id_column} is not null
+        and {additional_filters}
+    )
+  
+  union_integration: |
+    -- Add to telefones_all_sources in int_telefones_raw_consolidated.sql:
+    
+    union all
+    
+    -- {SOURCE_NAME} Celular ({description})
+    select * from telefones_{source_name}_celular
+
+    union all
+    
+    -- {SOURCE_NAME} Telefone ({description})  
+    select * from telefones_{source_name}_telefone
+
+# Validation and testing requirements
+validation_checklist:
+  compilation_check:
+    - command: "dbt compile --select int_telefones_raw_consolidated"
+    - success_criteria: "compiles without errors"
+  
+  record_count_validation:
+    - query: "SELECT COUNT(*) FROM raw_consolidated WHERE sistema_nome = '{source_name}'"
+    - criteria: "count > 0 AND count reasonable for source size"
+  
+  data_type_consistency:
+    - check: "all columns match expected schema"
+    - validation: "origem_id STRING, origem_tipo STRING, telefone_numero_completo STRING"
+  
+  business_logic_validation:
+    - origem_tipo_values: ["CPF", "CNPJ", "CNS"]
+    - sistema_nome_unique: "new source name not conflicting"
+    - contexto_appropriate: ["PESSOAL", "EMPRESARIAL", "SAUDE", "FUNCIONAL", "COMUNICACAO"]
+
+# Test configuration updates required
+test_configuration_updates:
+  sistema_nome_test:
+    file: "int_telefones_raw_consolidated.yml"
+    test: "accepted_values"
+    action: "add '{source_name}' to values array"
+  
+  campo_origem_test:
+    file: "int_telefones_raw_consolidated.yml" 
+    test: "accepted_values"
+    action: "add new campo_origem patterns"
+    values_to_add:
+      - "'{source_name}_{table}.{celular_column}'"
+      - "'{source_name}_{table}.{telefone_column}'"
+  
+  contexto_test:
+    file: "int_telefones_raw_consolidated.yml"
+    test: "accepted_values" 
+    action: "verify {context} is in accepted values"
+  
+  business_logic_tests:
+    sistema_campo_consistency:
+      update: "add case for sistema_nome = '{source_name}'"
+      pattern: "campo_origem like '{source_name}_%'"
+    
+    contexto_origem_tipo_consistency:
+      update: "add case for new context if needed"
+      example: "when origem_tipo = 'CPF' and sistema_nome = '{source_name}' then contexto = '{context}'"
+
+# Quality analysis and expectations
+quality_analysis:
+  expected_quality_distribution:
+    if_complete_phones: "VALIDO > 80%, INVALIDO < 15%, SUSPEITO < 10%"
+    if_incomplete_phones: "VALIDO 60-70%, INVALIDO 25-35%, SUSPEITO 5-10%"
+  
+  investigate_if:
+    - "INVALIDO > 50%"
+    - "VALIDO < 40%" 
+    - "unusual_patterns_in_length_distribution"
+  
+  quality_analysis_queries:
+    length_distribution: |
+      SELECT 
+        LENGTH(telefone_numero_completo) as telefone_length,
+        COUNT(*) as quantidade,
+        ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentual,
+        MIN(telefone_numero_completo) as exemplo_min,
+        MAX(telefone_numero_completo) as exemplo_max
+      FROM `{rmi_table}`
+      WHERE EXISTS (
+        SELECT 1 FROM UNNEST(telefone_aparicoes) as ap 
+        WHERE ap.sistema_nome = '{source_name}'
+      )
+      GROUP BY LENGTH(telefone_numero_completo)
+      ORDER BY quantidade DESC
+    
+    quality_distribution: |
+      SELECT 
+        telefone_qualidade,
+        COUNT(*) as quantidade,
+        ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentual,
+        COUNT(CASE WHEN telefone_tipo = 'CELULAR' THEN 1 END) as celulares,
+        COUNT(CASE WHEN telefone_tipo = 'FIXO' THEN 1 END) as fixos,
+        COUNT(CASE WHEN telefone_tipo = 'OUTROS' THEN 1 END) as outros
+      FROM `{rmi_table}`
+      WHERE EXISTS (
+        SELECT 1 FROM UNNEST(telefone_aparicoes) as ap 
+        WHERE ap.sistema_nome = '{source_name}'
+      )
+      GROUP BY telefone_qualidade
+      ORDER BY quantidade DESC
+
+# Error handling and troubleshooting
+error_handling:
+  common_errors:
+    union_type_mismatch:
+      symptom: "Column X in UNION ALL has incompatible types"
+      solution: "add explicit casting: cast({column} as string)"
+      prevention: "use table aliases consistently"
+    
+    source_not_found:
+      symptom: "Table X not found"
+      solution: "verify source configuration in yml"
+      check: "source name matches _raw_*.yml configuration"
+    
+    permission_denied:
+      symptom: "Access Denied"
+      solution: "verify BigQuery permissions"
+      escalation: "contact data team for access"
+  
+  validation_failures:
+    tests_failing:
+      action: "review accepted_values in yml files"
+      fix: "add new source values to test configurations"
+    
+    record_count_zero:
+      investigation: "check where conditions and filters"
+      verify: "source table has data for expected columns"
+
+# Integration completion checklist
+completion_checklist:
+  - raw_model_compiles: true
+  - raw_model_runs_successfully: true
+  - tests_pass: "> 90% pass rate"
+  - rmi_model_compiles: true
+  - rmi_model_runs_successfully: true
+  - quality_analysis_completed: true
+  - documentation_updated: true
+  - business_logic_tests_updated: true
+
+# Metadata for AI optimization
+ai_metadata:
+  decision_points:
+    - condition: "missing_ddd_percentage > 50"
+      options: ["maintain_original", "exclude_incomplete", "document_limitation"]
+      recommendation: "maintain_original"
+      reasoning: "data_integrity_over_metrics"
+  
+  automation_level: "high"
+  human_review_required:
+    - "quality_distribution_unusual"
+    - "business_context_unknown"
+    - "geographic_assumptions_needed"
+  
+  success_metrics:
+    - "integration_completed_without_data_corruption"
+    - "business_logic_tests_maintain_consistency"
+    - "quality_metrics_documented_and_reasonable"
