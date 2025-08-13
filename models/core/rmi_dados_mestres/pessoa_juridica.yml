@@ -1,11 +1,24 @@
+version: 2
+
 models:
   - name: pessoa_juridica
     description: Modelo contendo informações cadastrais e societárias de pessoas jurídicas (empresas)
+    config:
+      alias: pessoa_juridica
+      schema: crm_dados_mestres
+      materialized: table
     columns:
       - name: cnpj
         description: Cadastro Nacional da Pessoa Jurídica (CNPJ)
         data_type: string
         quote: true
+        data_tests:
+          - unique:
+              name: dim_pessoa_juridica__cnpj__unique
+              severity: error
+          - not_null:
+              name: dim_pessoa_juridica__cnpj__not_null
+              severity: error
 
       - name: nome_empresarial
         description: Razão social da empresa
@@ -47,9 +60,9 @@ models:
         data_type: string
         quote: true
 
-      - name: indicador_matriz
-        description: Indica se é matriz (1) ou filial (2)
-        data_type: string
+      - name: matriz_filial
+        description: Indica se é matriz ou filial (estrutura aninhada)
+        data_type: record
         quote: true
 
       - name: data_inicio_atividade
@@ -73,8 +86,8 @@ models:
         quote: false
 
       - name: situacao_cadastral
-        description: Situação cadastral atual (Ativa, Baixada, etc)
-        data_type: string
+        description: Situação cadastral atual (estrutura aninhada)
+        data_type: record
         quote: true
 
       - name: natureza_juridica
@@ -217,9 +230,9 @@ models:
         quote: true
 
       # Responsável
-      - name: cpf_responsavel
-        description: CPF do responsável pela empresa
-        data_type: string
+      - name: responsavel
+        description: Informações do responsável pela empresa (estrutura aninhada)
+        data_type: record
         quote: true
 
       - name: qualificacao_responsavel
@@ -314,3 +327,7 @@ models:
         description: Partição do CNPJ para distribuição de dados
         data_type: integer
         quote: false
+        data_tests:
+          - not_null:
+              name: dim_pessoa_juridica__cnpj_particao__not_null
+              severity: error

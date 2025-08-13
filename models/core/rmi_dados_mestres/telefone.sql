@@ -2,7 +2,7 @@
 -- Consolidação final de todos os telefones com qualidade e metadados
 {{
     config(
-        alias="telefones",
+        alias="telefone",
         schema="rmi_dados_mestres", 
         materialized="table",
         partition_by={"field": "rmi_data_criacao", "data_type": "datetime"},
