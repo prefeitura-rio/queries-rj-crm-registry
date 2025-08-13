@@ -1,7 +1,7 @@
 {{
   config(
-    alias="contato",
-    schema="crm_whatsapp", 
+    alias="int_crm_whatsapp_contato",
+    schema="intermediario_crm_whatsapp", 
     materialized='incremental',
     tags=["hourly"],
     unique_key='id_contato',
@@ -15,43 +15,42 @@
 }}
 
 WITH
+source AS (select * from {{ source("brutos_wetalkie_staging", "contato_faltante") }}),
+
 missing_contacts AS (
   SELECT
-  CAST(id_contato AS INT64) id_contato,
+  CAST(id_contato AS STRING) AS id_contato,
   contato_nome,
   contato_telefone
-  FROM {{ source("brutos_wetalkie_staging", "contato_faltante") }}
+  FROM source
   where contato_telefone is not null
 ),
 
 ura_contacts AS (
   SELECT 
-    contato.nome AS contato_nome,
-    CAST(contato.id AS INTEGER) AS id_contato,
-    MAX(data_particao) AS data_update,
-    MIN(data_particao) AS data_optin
-  FROM {{ ref("raw_wetalkie_fluxos_ura") }}
+    contato_nome,
+    CAST(id_contato AS STRING) AS id_contato,
+    data_update,
+    data_optin
+  FROM {{ ref("int_chatbot_base_receptivo_contatos") }}
   
   WHERE
   -- data que migrou para o ambiente de produção, se tirar teremos id_contato desconhecidos "2025-07-09"
-  DATE(data_particao) >= "2025-05-24" AND
-  {% if is_incremental() %}
-    DATE(data_particao) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 5 DAY)
-  {% else %}
-    TRUE
-  {% endif %}
-  GROUP BY 1, 2
+  DATE(data_update) >= "2025-05-24"
+  -- {% if is_incremental() %}
+  --    AND DATE(data_update) >= DATE_SUB(CURRENT_DATE('America/Sao_Paulo'), INTERVAL 5 DAY)
+  -- {% endif %}
 ),
 
 hsm_contacts AS (
   SELECT
-    id_contato,
+    CAST(id_contato AS STRING) AS id_contato,
     contato_telefone,
-    MAX(data_particao) AS data_update,
     MIN(data_particao) AS data_optin,
+    MAX(data_particao) AS data_update,
     MAX(CASE
       WHEN descricao_falha LIKE "%131048%" THEN data_particao ELSE NULL END) AS data_inicio_quarentena
-  FROM {{ ref("int_whatsapp_fluxo_atendimento") }}
+  FROM {{ ref("int_chatbot_base_disparo") }}
 
   WHERE
   -- data que migrou para o ambiente de produção, se tirar teremos id_contato desconhecidos "2025-07-09"
@@ -116,9 +115,9 @@ final AS (
 )
 
 SELECT
-  id_contato,
-  cpf,
-  contato_nome,
+  CAST(id_contato AS STRING) AS id_contato,
+  CAST(cpf AS STRING) AS cpf,
+  {{ proper_br("contato_nome") }} AS contato_nome,
   contato_telefone,
   data_optin,
   data_optout,

@@ -1,12 +1,12 @@
-{{ config(alias="mensagem_ativa", schema="crm_whatsapp", materialized="table") }}
+{{ config(alias="base_mensagem_ativa", schema="crm_whatsapp", materialized="ephemeral") }}
 
 WITH templates AS (
   SELECT templateId
-  FROM UNNEST(GENERATE_ARRAY(1, 150)) AS templateId
+  FROM UNNEST(GENERATE_ARRAY(1, 200)) AS templateId
 
 )
 SELECT 
-templateId AS id_hsm,
+CAST(templateId AS STRING) AS id_hsm,
 CASE
   WHEN templateId = 1 THEN "WebSummit"
   WHEN templateId = 2 THEN "Ouvidores PCRJ"
@@ -58,8 +58,8 @@ CASE
   WHEN templateId in (19, 20) THEN "Autenticação"
   ELSE "Teste"
 END AS orgao,
-NULL as nome_campanha
+CAST(NULL AS STRING) as nome_campanha
 
 
 FROM templates
-ORDER BY id_hsm
+ORDER BY CAST(id_hsm AS INT64)

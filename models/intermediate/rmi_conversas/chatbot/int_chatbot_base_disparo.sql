@@ -7,7 +7,7 @@
         partition_by={
             "field": "data_particao",
             "data_type": "date"
-        },
+        }
     )
 }}
 
@@ -19,7 +19,7 @@ WITH
         SELECT *
         FROM {{ source("brutos_wetalkie_staging", "fluxo_atendimento_*" ) }}
         {% if is_incremental() %}
-          WHERE createDate >= (
+          WHERE DATETIME(createDate, 'America/Sao_Paulo') >= (
             SELECT MAX(criacao_envio_datahora) 
             FROM {{ this }}
           )
@@ -36,19 +36,19 @@ WITH
     telefone_disparado AS (
         SELECT
             DISTINCT
-            account AS id_conta,
-            templateId AS id_hsm,
-            triggerId AS id_disparo,
-            targetExternalId AS id_externo,
-            replyId AS id_sessao,
-            targetId AS id_contato,
-            flatTarget AS contato_telefone,
-            createDate AS criacao_envio_datahora,
-            sendDate AS envio_datahora,
-            deliveryDate AS entrega_datahora,
-            readDate AS leitura_datahora,
-            failedDate AS falha_datahora,
-            replyDate AS resposta_datahora,
+            CAST(account AS STRING) AS id_conta,
+            CAST(templateId AS STRING) AS id_hsm,
+            CAST(triggerId AS STRING) AS id_disparo,
+            CAST(targetExternalId AS STRING) AS id_externo,
+            CAST(replyId AS STRING) AS id_sessao,
+            CAST(targetId AS STRING) AS id_contato,
+            CAST(flatTarget AS STRING) AS contato_telefone,
+            DATETIME(createDate, 'America/Sao_Paulo') AS criacao_envio_datahora,
+            DATETIME(sendDate, 'America/Sao_Paulo') AS envio_datahora,
+            DATETIME(deliveryDate, 'America/Sao_Paulo') AS entrega_datahora,
+            DATETIME(readDate, 'America/Sao_Paulo') AS leitura_datahora,
+            DATETIME(failedDate, 'America/Sao_Paulo') AS falha_datahora,
+            DATETIME(replyDate, 'America/Sao_Paulo') AS resposta_datahora,
             faultDescription AS descricao_falha,
             LOWER(status) AS status_disparo,
             CASE
@@ -58,14 +58,19 @@ WITH
                 WHEN status = "READ" THEN 4
                 WHEN status = "FAILED" THEN 5
             END AS id_status_disparo,
-            datarelay_timestamp AS datarelay_datahora,
+            if(failedDate is not null, true, false) as indicador_falha,
+            DATETIME(datarelay_timestamp, 'America/Sao_Paulo') AS datarelay_datahora,
             CAST(EXTRACT(YEAR FROM DATETIME(sendDate, 'America/Sao_Paulo')) AS STRING) AS ano_particao,
             CAST(EXTRACT(MONTH FROM DATETIME(sendDate, 'America/Sao_Paulo')) AS STRING) AS mes_particao,
             DATE(DATETIME(sendDate, 'America/Sao_Paulo')) AS data_particao,
-            row_number() over (
-                partition by triggerId, templateId, flatTarget 
-                order by datarelay_timestamp desc
-            ) as rn
+            ROW_NUMBER() OVER (
+                PARTITION BY templateId, flatTarget, triggerId, createDate 
+                ORDER BY 
+                    CASE
+                        WHEN faultDescription IS NOT NULL THEN 0
+                        WHEN replyId IS NOT NULL THEN 0 ELSE 1 END, -- Prioriza não-nulos
+                    datarelay_timestamp DESC
+            ) AS rn
         FROM source
     )
 
@@ -88,8 +93,20 @@ select
     td.leitura_datahora,
     td.falha_datahora,
     td.resposta_datahora,
+    (
+        SELECT MAX(datahora)
+        FROM UNNEST([
+        td.criacao_envio_datahora,
+        td.envio_datahora,
+        td.entrega_datahora,
+        td.leitura_datahora,
+        td.falha_datahora,
+        td.resposta_datahora
+        ]) AS datahora
+    ) AS fim_datahora,
     td.datarelay_datahora,
     td.descricao_falha,
+    td.indicador_falha,
     td.id_status_disparo,
     td.status_disparo,
     td.ano_particao,
@@ -97,6 +114,6 @@ select
     td.data_particao
 
 from telefone_disparado td
-left join {{ ref( "dim_whatsapp_mensagem_ativa" ) }} ma
+left join {{ ref( "base_mensagem_ativa" ) }} ma
     on td.id_hsm = ma.id_hsm
 WHERE rn = 1

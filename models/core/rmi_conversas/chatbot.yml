@@ -1,0 +1,159 @@
+version: 2
+
+models:
+  - name: chatbot
+    description: "Modelo final que consolida todas as interações de chatbot (ativas e receptivas), enriquecendo com dados de contato, estatísticas de sessão e classificações de erro."
+    columns:
+      - name: id_interacao
+        description: "Chave primária única da interação, gerada como um hash MD5."
+        tests:
+          - unique
+          - not_null
+
+      - name: id_sessao
+        description: "ID da sessão de conversa (reply ID do Wetalkie). Pode ser nulo se a interação foi um disparo que não gerou conversa."
+
+      - name: id_externo
+        description: "ID externo associado ao contato, vindo da URA."
+
+      - name: protocolo
+        description: "Número de protocolo associado ao atendimento receptivo."
+
+      - name: inicio_datahora
+        description: "Data e hora de início da interação. Para disparos, é a criação do envio; para receptivo, é o início da URA. Fuso horário America/Sao_Paulo."
+
+      - name: fim_datahora
+        description: "Data e hora do último evento registrado na interação. Fuso horário America/Sao_Paulo."
+
+      - name: contato
+        description: "Estrutura com informações consolidadas do contato."
+        columns:
+          - name: id_contato
+            description: "ID do contato na plataforma Wetalkie."
+          - name: contato_telefone
+            description: "Número de telefone do contato."
+          - name: contato_nome
+            description: "Nome do contato."
+          - name: cpf
+            description: "CPF do contato (quando disponível)."
+          - name: data_optin
+            description: "Data de opt-in do contato (quando disponível)."
+          - name: data_optout
+            description: "Data de opt-out do contato (quando disponível)."
+
+      - name: hsm
+        description: "Estrutura com informações do disparo de HSM (mensagem ativa)."
+        columns:
+          - name: indicador
+            description: "Indicador (true/false) se a interação foi iniciada por um HSM."
+          - name: indicador_falha
+            description: "Indicador (true/false) se o envio do HSM falhou."
+          - name: id_hsm
+            description: "ID do template de mensagem (HSM) enviado."
+          - name: id_disparo
+            description: "ID único do disparo."
+          - name: status_disparo
+            description: "Descrição textual do status do disparo (ex: delivered, read, failed)."
+          - name: nome_campanha
+            description: "Nome da campanha associada ao disparo."
+          - name: categoria_hsm
+            description: "Categoria do template de mensagem (HSM)."
+          - name: orgao_responsavel
+            description: "Órgão responsável pela campanha."
+          - name: ambiente
+            description: "Ambiente de onde o disparo foi feito."
+          - name: criacao_envio_datahora
+            description: "Data e hora de criação do envio. Fuso horário America/Sao_Paulo."
+          - name: envio_datahora
+            description: "Data e hora do envio. Fuso horário America/Sao_Paulo."
+          - name: entrega_datahora
+            description: "Data e hora da entrega. Fuso horário America/Sao_Paulo."
+          - name: leitura_datahora
+            description: "Data e hora da leitura. Fuso horário America/Sao_Paulo."
+          - name: resposta_datahora
+            description: "Data e hora da resposta. Fuso horário America/Sao_Paulo."
+          - name: falha_datahora
+            description: "Data e hora da falha. Fuso horário America/Sao_Paulo."
+          - name: descricao_falha
+            description: "Descrição da falha do HSM, caso tenha ocorrido."
+          - name: inicio_datahora_ativo
+            description: "Alias para criacao_envio_datahora. Fuso horário America/Sao_Paulo."
+          - name: fim_datahora_ativo
+            description: "Data e hora do último evento do HSM. Fuso horário America/Sao_Paulo."
+
+      - name: erro_fluxo
+        description: "Estrutura com informações sobre erros identificados no fluxo da conversa."
+        columns:
+          - name: indicador
+            description: "Indicador (true/false) se algum erro foi detectado na sessão."
+          - name: tipo_erro
+            description: "Array com os tipos de erros detectados (ex: fluxo_travado, loop_ura)."
+
+      - name: mensagens
+        description: "Array com o histórico de mensagens da conversa (quando aplicável)."
+
+      - name: busca
+        description: "Estrutura com informações sobre a funcionalidade de busca dentro do chatbot."
+        columns:
+          - name: indicador
+            description: "Indicador (true/false) se a sessão utilizou a funcionalidade de busca."
+          - name: feedback
+            description: "Estrutura com o feedback do usuário sobre a busca."
+
+      - name: ura
+        description: "Estrutura com informações da URA (atendimento receptivo)."
+        columns:
+          - name: indicador
+            description: "Indicador (true/false) se a interação passou pela URA."
+          - name: id
+            description: "ID da URA."
+          - name: nome
+            description: "Nome da URA."
+          - name: inicio_datahora_receptivo
+            description: "Data e hora de início da URA. Fuso horário America/Sao_Paulo."
+          - name: fim_datahora_receptivo
+            description: "Data e hora de fim da URA. Fuso horário America/Sao_Paulo."
+
+      - name: estatisticas
+        description: "Estrutura com métricas e estatísticas calculadas da sessão."
+        columns:
+          - name: total_mensagens
+            description: "Número total de mensagens na conversa."
+          - name: total_mensagens_contato
+            description: "Número de mensagens enviadas pelo contato."
+          - name: total_mensagens_busca
+            description: "Número de mensagens relacionadas à funcionalidade de busca."
+          - name: duracao_sessao_seg
+            description: "Duração total da sessão em segundos."
+          - name: duracao_interacao_seg
+            description: "Duração da interação do cliente em segundos."
+          - name: duracao_ura_seg
+            description: "Duração da URA em segundos."
+          - name: tempo_medio_resposta_cliente_seg
+            description: "Tempo médio de resposta do cliente em segundos."
+
+      - name: operador
+        description: "Nome do operador que atendeu (se aplicável)."
+
+      - name: tabulacao
+        description: "Estrutura com informações de tabulação do atendimento."
+
+      - name: foi_entregue
+        description: "Indicador (true/false) se a mensagem HSM foi entregue."
+
+      - name: foi_lida
+        description: "Indicador (true/false) se a mensagem HSM foi lida."
+
+      - name: foi_respondida
+        description: "Indicador (true/false) se a mensagem HSM foi respondida."
+
+      - name: gerou_conversa
+        description: "Indicador (true/false) se a interação gerou uma sessão de conversa na URA."
+
+      - name: data_particao
+        description: "Data da partição da tabela, baseada na data de início da interação."
+        tests:
+          - not_null
+
+      - name: data_processamento
+        description: "Data e hora em que o registro foi processado pelo dbt. Fuso horário America/Sao_Paulo."
