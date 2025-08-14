@@ -41,12 +41,18 @@ telefones_bcadastro_cnpj as (
     -- BCadastro CNPJ has telefone array with {ddd, telefone} structure
     concat('55', tel.ddd, {{ padronize_telefone('tel.telefone') }}) as telefone_numero_completo,
     'bcadastro' as sistema_nome,
-    'bcadastro_cnpj.contato.telefone[]' as campo_origem,
+    'bcadastro_cnpj.contato.telefone' as campo_origem,
     'EMPRESARIAL' as contexto,
-    cast(null as date) as data_atualizacao  -- Parse timestamp string
+    cast(null as date) as data_atualizacao
   from {{ source('bcadastro', 'cnpj') }} as c,
     unnest(c.contato.telefone) as tel
   where tel.telefone is not null
+),
+
+sms_data_atualizacao as (
+  SELECT cpf, tel.telefone_raw, date(data_ultima_atualizacao_cadastral) as data_atualizacao
+  FROM  {{ source('rj-sms-projeto-whatsapp', 'telefones_validos') }},
+       unnest(telefones) as tel
 ),
 
 -- SAÚDE - Registros SMS
@@ -61,26 +67,37 @@ telefones_sms_cns as (
     'sms' as sistema_nome,
     'sms_paciente.contato.telefone' as campo_origem,
     'SAUDE' as contexto,
-    cast(null as date) as data_atualizacao  -- Use real processed timestamp
+     data_atualizacao
   from {{ source('rj-sms', 'paciente') }} as s,
     unnest(s.cns) as cns_item,
-    unnest(s.contato.telefone) as tel  
+    unnest(s.contato.telefone) as tel
+  left join sms_data_atualizacao validos
+         on validos.cpf = s.cpf and tel.valor = validos.telefone_raw
   where tel.valor is not null and cns_item is not null
 ),
 
+-- telefones_sms_cns_data as (
+--   select telefones_sms_cns.* EXCEPT(data_atualizacao),
+--   date(telefones.data_ultima_atualizacao_cadastral) as data_atualizacao
+--   from telefones_sms_cns
+--   left join sms_data_atualizacao validos
+--          on validos.cpf = telefones_sms_cns.origem_id and validos.telefone_raw = validos.telefone_raw
+-- )
 telefones_sms_cpf as (
   select 
-    cpf as origem_id, 
+    s.cpf as origem_id, 
     'CPF' as origem_tipo,
     -- SMS has telefone array with {ddd, valor, sistema, rank} structure
     concat('55', tel.ddd, {{ padronize_telefone('tel.valor') }}) as telefone_numero_completo,
     'sms' as sistema_nome,
     'sms_paciente.contato.telefone' as campo_origem,
     'SAUDE' as contexto,
-    cast(null as date) as data_atualizacao  -- Use real processed timestamp
+    data_atualizacao
   from {{ source('rj-sms', 'paciente') }} as s,
-    unnest(s.contato.telefone) as tel  
-  where tel.valor is not null and cpf is not null
+    unnest(s.contato.telefone) as tel
+  left join sms_data_atualizacao validos
+         on validos.cpf = s.cpf and tel.valor = validos.telefone_raw
+  where tel.valor is not null and s.cpf is not null
 ),
 
 -- FUNCIONAL - ERGON (servidores públicos) - Celular
