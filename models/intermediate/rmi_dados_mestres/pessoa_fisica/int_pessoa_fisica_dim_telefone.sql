@@ -25,33 +25,35 @@ with
         where origem_tipo = 'CPF'
     ),
 
-    telefone_ranqueado as (
-        select
-            t.*,
-            -- Prioriza fontes de maior confiança e dados mais recentes
-            row_number() over (
-                partition by cpf
-                order by
-                    case
-                        when origem = 'sms' then 1
-                        when origem = 'bcadastro' then 2
-                        when origem = 'ergon' then 3
-                        else 4
-                    end asc,
-                    data_atualizacao desc
-            ) as rank
-        from telefone t
-    ),
-
     telefone_enriquecido as (
         select
-            r.*,
+            t.*,
             tel.telefone_qualidade,
             tel.confianca_propriedade,
             tel.telefone_tipo,
             {{ classify_estrategia_envio('tel.telefone_qualidade', 'tel.confianca_propriedade') }} as estrategia_envio
-        from telefone_ranqueado r
-        left join {{ ref('telefone') }} tel on r.telefone_numero_completo = tel.telefone_numero_completo
+        from telefone t
+        left join {{ ref('telefone') }} tel on t.telefone_numero_completo = tel.telefone_numero_completo
+    ),
+
+    telefone_ranqueado as (
+        select
+            *,
+            row_number() over (
+                partition by cpf
+                order by
+                    case when telefone_tipo = 'CELULAR' then 1 else 2 end asc,
+                    case
+                        when confianca_propriedade = 'CONFIRMADA' then 1
+                        when confianca_propriedade = 'MUITO_PROVAVEL' then 2
+                        when confianca_propriedade = 'PROVAVEL' then 3
+                        when confianca_propriedade = 'POUCO_PROVAVEL' then 4
+                        when confianca_propriedade = 'IMPROVAVEL' then 5
+                        else 6
+                    end asc,
+                    data_atualizacao desc
+            ) as rank
+        from telefone_enriquecido
     ),
 
     telefone_estruturado as (
@@ -71,7 +73,7 @@ with
                 )
                 order by rank asc
             ) as telefone
-        from telefone_enriquecido
+        from telefone_ranqueado
         group by cpf
     ),
 
