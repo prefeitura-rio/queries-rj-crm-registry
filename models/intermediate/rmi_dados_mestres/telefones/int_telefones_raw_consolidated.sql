@@ -26,7 +26,7 @@ telefones_bcadastro_cpf as (
     'bcadastro' as sistema_nome,
     'bcadastro_cpf.contato.telefone' as campo_origem,
     'PESSOAL' as contexto,
-    null as data_atualizacao  -- Use real update date from source
+    atualizacao_data as data_atualizacao
   from {{ source('bcadastro', 'cpf') }} as t
   where t.contato.telefone.numero is not null
 ),
@@ -43,7 +43,7 @@ telefones_bcadastro_cnpj as (
     'bcadastro' as sistema_nome,
     'bcadastro_cnpj.contato.telefone[]' as campo_origem,
     'EMPRESARIAL' as contexto,
-    null as data_atualizacao  -- Parse timestamp string
+    cast(null as date) as data_atualizacao  -- Parse timestamp string
   from {{ source('bcadastro', 'cnpj') }} as c,
     unnest(c.contato.telefone) as tel
   where tel.telefone is not null
@@ -59,9 +59,9 @@ telefones_sms as (
     -- SMS has telefone array with {ddd, valor, sistema, rank} structure
     concat('55', tel.ddd, {{ padronize_telefone('tel.valor') }}) as telefone_numero_completo,
     'sms' as sistema_nome,
-    'sms_paciente.contato.telefone[]' as campo_origem,
+    'sms_paciente.contato.telefone' as campo_origem,
     'SAUDE' as contexto,
-    null as data_atualizacao  -- Use real processed timestamp
+    cast(null as date) as data_atualizacao  -- Use real processed timestamp
   from {{ source('rj-sms', 'paciente') }} as s,
     unnest(s.cns) as cns_item,
     unnest(s.contato.telefone) as tel  
@@ -80,7 +80,7 @@ telefones_ergon_celular as (
     'ergon' as sistema_nome,
     'ergon_funcionario.celular' as campo_origem,
     'FUNCIONAL' as contexto,
-    null as data_atualizacao  -- No timestamp available in ERGON
+    date(updated_at) as data_atualizacao
   from {{ source('rj-smfp', 'funcionario') }} as e
   where e.celular is not null 
     and e.id_cpf is not null
@@ -99,7 +99,7 @@ telefones_ergon_telefone as (
     'ergon' as sistema_nome,
     'ergon_funcionario.telefone' as campo_origem,
     'FUNCIONAL' as contexto,
-    null as data_atualizacao  -- No timestamp available in ERGON
+    date(updated_at) as data_atualizacao
   from {{ source('rj-smfp', 'funcionario') }} as e
   where e.telefone is not null 
     and e.id_cpf is not null
