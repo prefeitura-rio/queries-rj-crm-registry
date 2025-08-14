@@ -6,20 +6,43 @@
         schema="rmi_dados_mestres", 
         materialized="table",
         partition_by={"field": "rmi_data_criacao", "data_type": "datetime"},
-        cluster_by=["telefone_qualidade", "telefone_tipo"],
+        cluster_by=["telefone_qualidade", "telefone_tipo", "confianca_propriedade"],
         unique_key="telefone_numero_completo"
     )
 }}
 
 with telefones_all_sources as (
-  -- Usar fonte padronizada completa com todas as tabelas
-  select 
-    telefone_numero_completo, 
-    cast(origem_id as string) as origem_id,  -- Explicitly cast to STRING
-    cast(origem_tipo as string) as origem_tipo,
-    cast(sistema_nome as string) as sistema_nome, 
-    data_atualizacao
-  from {{ ref('int_telefones_raw_consolidated') }}
+  -- Usar fonte enriquecida com dados de interação
+  select
+    *,
+    {{ classify_confianca_propriedade(
+        'sistema_nome',
+        'data_atualizacao',
+        'ultima_resposta',
+        'indicador_optout',
+        'is_confirmed_by_user'
+    ) }} as confianca_propriedade_source
+  from {{ ref('int_telefones_com_interacao') }}
+),
+
+telefones_confianca as (
+    select
+        telefone_numero_completo,
+        array_agg(
+            struct(confianca_propriedade_source as confianca, sistema_nome, data_atualizacao)
+            order by
+                case
+                    when confianca_propriedade_source = 'CONFIRMADA' then 1
+                    when confianca_propriedade_source = 'MUITO_PROVAVEL' then 2
+                    when confianca_propriedade_source = 'PROVAVEL' then 3
+                    when confianca_propriedade_source = 'POUCO_PROVAVEL' then 4
+                    when confianca_propriedade_source = 'IMPROVAVEL' then 5
+                    else 6
+                end asc,
+                data_atualizacao desc
+        )[offset(0)].confianca as confianca_propriedade
+    from telefones_all_sources
+    group by telefone_numero_completo
 ),
 
 telefones_frequency as (
@@ -30,8 +53,8 @@ telefones_frequency as (
     count(distinct sistema_nome) as telefone_sistemas_quantidade,
     count(*) as telefone_aparicoes_quantidade
   from telefones_all_sources
-  where origem_id is not null  -- Excluir telefones de comunicação sem proprietário
-    and regexp_contains(telefone_numero_completo, r'^[0-9]+$')  -- Only numeric phones
+  where origem_id is not null
+    and regexp_contains(telefone_numero_completo, r'^[0-9]+$')
   group by telefone_numero_completo
 ),
 
@@ -42,14 +65,14 @@ telefones_aparicoes as (
     array_agg(
       struct(
         cast(sistema_nome as string) as sistema_nome,
-        cast(origem_id as string) as proprietario_id,  -- Explicitly cast to STRING
+        cast(origem_id as string) as proprietario_id,
         cast(origem_tipo as string) as proprietario_tipo,
         data_atualizacao as registro_data_atualizacao
       )
     ) as telefone_aparicoes
   from telefones_all_sources
   where origem_id is not null
-    and regexp_contains(telefone_numero_completo, r'^[0-9]+$')  -- Only numeric phones
+    and regexp_contains(telefone_numero_completo, r'^[0-9]+$')
   group by telefone_numero_completo
 ),
 
@@ -75,6 +98,9 @@ telefones_rmi_schema as (
         'freq.telefone_numero_completo', 
         'freq.telefone_proprietarios_quantidade'
     ) }} as telefone_qualidade,
+
+    -- Nova coluna de confiança
+    conf.confianca_propriedade,
     
     -- Metadados de aparição
     aparicoes.telefone_aparicoes,
@@ -90,6 +116,7 @@ telefones_rmi_schema as (
 
   from telefones_frequency freq
   left join telefones_aparicoes aparicoes using (telefone_numero_completo)
+  left join telefones_confianca conf using (telefone_numero_completo)
 )
 
 select *
