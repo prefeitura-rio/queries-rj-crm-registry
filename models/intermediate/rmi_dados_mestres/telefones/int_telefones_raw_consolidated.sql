@@ -52,7 +52,7 @@ telefones_bcadastro_cnpj as (
 -- SAÚDE - Registros SMS
 -- TYPES: origem_id STRING, origem_tipo STRING, telefone_numero_completo STRING, 
 -- sistema_nome STRING, campo_origem STRING, contexto STRING, data_atualizacao DATETIME (cast from TIMESTAMP)
-telefones_sms as (
+telefones_sms_cns as (
   select 
     cns_item as origem_id,  -- Already string from unnest
     'CNS' as origem_tipo,
@@ -66,6 +66,21 @@ telefones_sms as (
     unnest(s.cns) as cns_item,
     unnest(s.contato.telefone) as tel  
   where tel.valor is not null and cns_item is not null
+),
+
+telefones_sms_cpf as (
+  select 
+    cpf as origem_id, 
+    'CPF' as origem_tipo,
+    -- SMS has telefone array with {ddd, valor, sistema, rank} structure
+    concat('55', tel.ddd, {{ padronize_telefone('tel.valor') }}) as telefone_numero_completo,
+    'sms' as sistema_nome,
+    'sms_paciente.contato.telefone' as campo_origem,
+    'SAUDE' as contexto,
+    cast(null as date) as data_atualizacao  -- Use real processed timestamp
+  from {{ source('rj-sms', 'paciente') }} as s,
+    unnest(s.contato.telefone) as tel  
+  where tel.valor is not null and cpf is not null
 ),
 
 -- FUNCIONAL - ERGON (servidores públicos) - Celular
@@ -118,7 +133,11 @@ telefones_all_sources as (
   union all
   
   -- SMS Saúde (Pacientes do sistema de saúde)
-  select * from telefones_sms
+  select * from telefones_sms_cns
+
+  union all
+
+  select * from telefones_sms_cpf
 
   union all
   
