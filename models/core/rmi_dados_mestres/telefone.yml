@@ -58,6 +58,36 @@ models:
         data_type: record[]
         quote: true
         
+      - name: telefone_aparicoes.sistema
+        description: "Sistema onde o telefone aparece"
+        data_type: string
+        quote: true
+        
+      - name: telefone_aparicoes.origem
+        description: "Órgão responsável pelo sistema"
+        data_type: string
+        quote: true
+        
+      - name: telefone_aparicoes.cpf_proprietario
+        description: "CPF do proprietário do telefone no sistema"
+        data_type: string
+        quote: true
+        
+      - name: telefone_aparicoes.nome_proprietario
+        description: "Nome do proprietário do telefone no sistema"
+        data_type: string
+        quote: true
+        
+      - name: telefone_aparicoes.data_primeira_aparicao
+        description: "Data da primeira aparição do telefone no sistema"
+        data_type: timestamp
+        quote: false
+        
+      - name: telefone_aparicoes.data_ultima_aparicao
+        description: "Data da última aparição do telefone no sistema"
+        data_type: timestamp
+        quote: false
+        
       - name: telefone_aparicoes_quantidade
         description: "Número total de aparições do telefone em todos os sistemas"
         data_type: integer
