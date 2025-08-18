@@ -162,11 +162,11 @@ This model is partitioned by CPF for optimal query performance and follows stric
 
 ## Using the Ontology for Intermediate (`int_`) Table Creation
 
-When creating new intermediate (`int_`) models for the facts layer, follow the **Ontology of Citizen-Government Interactions** documented in the `analyses/ontology/` folder. This ontology standardizes how different source systems are transformed into the unified fact table.
+When creating new intermediate (`int_`) models for the facts layer, follow the **Ontology of Citizen-Government Interactions** documented in the `analyses/ontology/rmi_eventos/interacoes_pessoa_fisica_prefeitura/` folder. This ontology standardizes how different source systems are transformed into the unified fact table.
 
 ### Key References:
-- **Ontology Overview**: `analyses/ontology/README.md` - Complete schema and concepts
-- **Schema Definition**: `analyses/ontology/fact_schema.md` - 21-field structure specification
+- **Ontology Overview**: `analyses/ontology/rmi_eventos/interacoes_pessoa_fisica_prefeitura/README.md` - Complete schema and concepts
+- **Schema Definition**: `analyses/ontology/rmi_eventos/interacoes_pessoa_fisica_prefeitura/fact_schema.md` - 21-field structure specification
 - **Implementation Examples**: 
   - `models/intermediate/facts/int_interacoes_1746.sql` - 1746 system mapping
   - `models/intermediate/facts/int_interacoes_sms.sql` - Health system mapping
