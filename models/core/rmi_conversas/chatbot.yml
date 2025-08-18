@@ -2,197 +2,312 @@ version: 2
 
 models:
   - name: chatbot
-    description: |
-      **MODELO COMPLETO** - Todas as interações com cidadãos via WhatsApp, incluindo:
-      - HSMs enviadas sem resposta (falhas de entrega, não lidas, não respondidas)
-      - Conversas completas com URA e atendimento humano
-      - Telefones problemáticos (inválidos, opt-outs)
-      - Tracking completo do funil: disparo → entrega → leitura → resposta → resolução
-      
-      **Cobertura**: 100% das tentativas de interação (11K+ HSMs + conversas)
-      **Granularidade**: Uma linha por tentativa de interação com cidadão
-      **Particionamento**: Por data_particao (diário)
-      **Clustering**: Por cpf_cidadao, tipo_interacao, orgao_responsavel
-    
-    config:
-      materialized: incremental
-      
+    description: "Modelo final que consolida todas as interações de chatbot (ativas e receptivas), enriquecendo com dados de contato, estatísticas de sessão e classificações de erro."
     columns:
       - name: id_interacao
-        description: "UUID único da tentativa de interação (substitui id_conversa)"
-        tests:
-          - unique
-          - not_null
-          
-      - name: id_hsm
-        description: "ID da HSM enviada (chave para linking entre tabelas)"
-        tests:
-          - not_null
-          
-      - name: cpf_cidadao  
-        description: "CPF do cidadão obtido via linkagem telefone-contato (quando disponível)"
-        tests:
-          - relationships:
-              to: ref('pessoa_fisica')
-              field: cpf
-              where: "cpf_cidadao is not null"
-          
-      - name: telefone_contato
-        description: "Telefone usado na interação (sempre presente)"
-        tests:
-          - not_null
-          
-      - name: id_sessao
-        description: "ID da sessão URA (apenas se houve resposta do cidadão)"
-        
-      - name: tipo_interacao
-        description: |
-          **CLASSIFICAÇÃO HIERÁRQUICA DA INTERAÇÃO**:
-          
-          **Problemas Conhecidos:**
-          - PHONE_INVALID: Telefone não registrado no WhatsApp
-          - OPTED_OUT: Usuário solicitou parar de receber mensagens
-          
-          **Falhas Técnicas:**
-          - DELIVERY_FAILED: HSM falhou na entrega (erro conhecido)
-          - SENT_NOT_DELIVERED: HSM enviada mas não entregue
-          
-          **Engajamento Parcial:**
-          - DELIVERED_NOT_READ: HSM entregue mas não lida
-          - READ_NO_RESPONSE: HSM lida mas sem resposta
-          
-          **Conversas Completas:**
-          - CONVERSATION_ABANDONED: Respondeu mas abandonou
-          - CONVERSATION_COMPLETED: Conversa completa
-          - CONVERSATION_ERROR: Erro no fluxo da conversa
-          - RESOLVED_AUTOMATICALLY: Resolvida pelo chatbot
-          - ESCALATED_TO_HUMAN: Transferida para atendimento humano
-          
-          **Outros:**
-          - STATUS_UNKNOWN: Sem informações de tracking
-          - OTHER: Casos não classificados
-        tests:
-          - not_null
-          - accepted_values:
-              values: [
-                'PHONE_INVALID', 'OPTED_OUT', 
-                'DELIVERY_FAILED', 'SENT_NOT_DELIVERED',
-                'DELIVERED_NOT_READ', 'READ_NO_RESPONSE',
-                'CONVERSATION_ABANDONED', 'CONVERSATION_COMPLETED', 'CONVERSATION_ERROR',
-                'RESOLVED_AUTOMATICALLY', 'ESCALATED_TO_HUMAN',
-                'STATUS_UNKNOWN', 'OTHER'
-              ]
-              
-      - name: data_interacao
-        description: "Data da tentativa de interação"
-        tests:
-          - not_null
-          - dbt_utils.accepted_range:
-              min_value: "'2020-01-01'"
-              max_value: "current_date()"
-              
-      - name: disparo_datahora
-        description: "Timestamp de quando a HSM foi disparada"
-        tests:
-          - not_null
-          
-      # Timestamps do funil de entrega
-      - name: envio_datahora
-        description: "Quando foi enviada ao WhatsApp (quando disponível)"
-        
-      - name: entrega_datahora
-        description: "Quando foi entregue ao usuário (quando disponível)"
-        
-      - name: leitura_datahora
-        description: "Quando foi lida pelo usuário (quando disponível)"
-        
-      - name: resposta_datahora
-        description: "Quando o usuário respondeu (quando disponível)"
-        
-      - name: falha_datahora
-        description: "Quando houve falha na entrega (quando disponível)"
-        
-      # Dados da campanha
-      - name: nome_campanha
-        description: "Nome da campanha de comunicação"
-        
-      - name: orgao_responsavel
-        description: "Órgão responsável pelo envio da HSM"
-        
-      - name: categoria_hsm
-        description: "Categoria da HSM (Utilidade, Marketing, etc.)"
-        
-      - name: template_hsm
-        description: "Template/nome da HSM utilizada"
-        
-      # Indicadores booleanos
-      - name: foi_entregue
-        description: "Indica se a HSM foi entregue ao usuário"
-        tests:
-          - not_null
-          
-      - name: foi_lida
-        description: "Indica se a HSM foi lida pelo usuário"
-        tests:
-          - not_null
-          
-      - name: teve_resposta
-        description: "Indica se o usuário respondeu à HSM"
-        tests:
-          - not_null
-          
-      - name: gerou_conversa
-        description: "Indica se a HSM gerou uma sessão de conversa URA"
-        tests:
-          - not_null
-          
-      - name: tem_problema_conhecido
-        description: "Indica se o telefone tem problema conhecido (inválido/opt-out)"
-        tests:
-          - not_null
-          
-      # Descrições de erro
-      - name: descricao_erro
-        description: "Descrição do erro quando houver falha ou problema conhecido"
-        
-      # Métricas calculadas
-      - name: duracao_conversa_seg
-        description: "Duração da conversa em segundos (quando houve conversa)"
-        tests:
-          - dbt_utils.accepted_range:
-              min_value: 0
-              max_value: 86400  # 24 horas
-              where: "duracao_conversa_seg is not null"
-              
-      - name: tempo_resposta_seg
-        description: "Tempo entre leitura e resposta em segundos"
-        tests:
-          - dbt_utils.accepted_range:
-              min_value: 0
-              max_value: 86400  # 24 horas
-              where: "tempo_resposta_seg is not null"
-              
-      # Estruturas aninhadas (quando disponível)
-      - name: mensagens
-        description: "Array com todas as mensagens da conversa (quando houve conversa)"
-        
-      - name: busca
-        description: "Estrutura com detalhes de busca realizada (quando houve)"
-        
-      - name: ura
-        description: "Estrutura com detalhes da URA (quando houve)"
-        
-      - name: estatisticas
-        description: "Estatísticas da conversa (quando houve)"
-        
-      # Metadados
-      - name: data_particao
-        description: "Data de particionamento da tabela (formato DATE)"
-        tests:
-          - not_null
-          
-      - name: data_processamento
-        description: "Timestamp do processamento dbt"
-        tests:
-          - not_null
+        description: "Chave primária única da interação, gerada como um hash MD5."
+        data_type: string
+        quote: true
 
+      - name: id_sessao
+        description: "ID da sessão de conversa (reply ID do Wetalkie). Pode ser nulo se a interação foi um disparo que não gerou conversa."
+        data_type: string
+        quote: true
+
+      - name: id_externo
+        description: "ID externo associado ao contato, vindo da URA."
+        data_type: string
+        quote: true
+
+      - name: protocolo
+        description: "Número de protocolo associado ao atendimento receptivo."
+        data_type: string
+        quote: true
+
+      - name: inicio_datahora
+        description: "Data e hora de início da interação. Para disparos, é a criação do envio; para receptivo, é o início da URA. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+
+      - name: fim_datahora
+        description: "Data e hora do último evento registrado na interação. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+
+      - name: contato
+        description: "Estrutura com informações consolidadas do contato."
+        data_type: record
+        quote: true
+        
+      - name: contato.id_contato
+        description: "ID do contato na plataforma Wetalkie."
+        data_type: string
+        quote: true
+        
+      - name: contato.contato_telefone
+        description: "Número de telefone do contato."
+        data_type: string
+        quote: true
+        
+      - name: contato.contato_nome
+        description: "Nome do contato."
+        data_type: string
+        quote: true
+        
+      - name: contato.cpf
+        description: "CPF do contato (quando disponível)."
+        data_type: string
+        quote: true
+        
+      - name: contato.data_optin
+        description: "Data de opt-in do contato (quando disponível)."
+        data_type: date
+        quote: false
+        
+      - name: contato.data_optout
+        description: "Data de opt-out do contato (quando disponível)."
+        data_type: date
+        quote: false
+
+      - name: hsm
+        description: "Estrutura com informações do disparo de HSM (mensagem ativa)."
+        data_type: record
+        quote: true
+        
+      - name: hsm.indicador
+        description: "Indicador (true/false) se a interação foi iniciada por um HSM."
+        data_type: boolean
+        quote: false
+        
+      - name: hsm.indicador_falha
+        description: "Indicador (true/false) se o envio do HSM falhou."
+        data_type: boolean
+        quote: false
+        
+      - name: hsm.id_hsm
+        description: "ID do template de mensagem (HSM) enviado."
+        data_type: string
+        quote: true
+        
+      - name: hsm.id_disparo
+        description: "ID único do disparo."
+        data_type: string
+        quote: true
+        
+      - name: hsm.status_disparo
+        description: "Descrição textual do status do disparo (ex: delivered, read, failed)."
+        data_type: string
+        quote: true
+        
+      - name: hsm.nome_campanha
+        description: "Nome da campanha associada ao disparo."
+        data_type: string
+        quote: true
+        
+      - name: hsm.categoria_hsm
+        description: "Categoria do template de mensagem (HSM)."
+        data_type: string
+        quote: true
+        
+      - name: hsm.orgao_responsavel
+        description: "Órgão responsável pela campanha."
+        data_type: string
+        quote: true
+        
+      - name: hsm.ambiente
+        description: "Ambiente de onde o disparo foi feito."
+        data_type: string
+        quote: true
+        
+      - name: hsm.criacao_envio_datahora
+        description: "Data e hora de criação do envio. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+        
+      - name: hsm.envio_datahora
+        description: "Data e hora do envio. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+        
+      - name: hsm.entrega_datahora
+        description: "Data e hora da entrega. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+        
+      - name: hsm.leitura_datahora
+        description: "Data e hora da leitura. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+        
+      - name: hsm.resposta_datahora
+        description: "Data e hora da resposta. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+        
+      - name: hsm.falha_datahora
+        description: "Data e hora da falha. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+        
+      - name: hsm.descricao_falha
+        description: "Descrição da falha do HSM, caso tenha ocorrido."
+        data_type: string
+        quote: true
+        
+      - name: hsm.inicio_datahora_ativo
+        description: "Alias para criacao_envio_datahora. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+        
+      - name: hsm.fim_datahora_ativo
+        description: "Data e hora do último evento do HSM. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+
+      - name: erro_fluxo
+        description: "Estrutura com informações sobre erros identificados no fluxo da conversa."
+        data_type: record
+        quote: true
+        
+      - name: erro_fluxo.indicador
+        description: "Indicador (true/false) se algum erro foi detectado na sessão."
+        data_type: boolean
+        quote: false
+        
+      - name: erro_fluxo.tipo_erro
+        description: "Array com os tipos de erros detectados (ex: fluxo_travado, loop_ura)."
+        data_type: string[]
+        quote: true
+
+      - name: mensagens
+        description: "Array com o histórico de mensagens da conversa (quando aplicável)."
+        data_type: record[]
+        quote: true
+
+      - name: busca
+        description: "Estrutura com informações sobre a funcionalidade de busca dentro do chatbot."
+        data_type: record
+        quote: true
+        
+      - name: busca.indicador
+        description: "Indicador (true/false) se a sessão utilizou a funcionalidade de busca."
+        data_type: boolean
+        quote: false
+        
+      - name: busca.feedback
+        description: "Estrutura com o feedback do usuário sobre a busca."
+        data_type: record
+        quote: true
+
+      - name: ura
+        description: "Estrutura com informações da URA (atendimento receptivo)."
+        data_type: record
+        quote: true
+        
+      - name: ura.indicador
+        description: "Indicador (true/false) se a interação passou pela URA."
+        data_type: boolean
+        quote: false
+        
+      - name: ura.id
+        description: "ID da URA."
+        data_type: string
+        quote: true
+        
+      - name: ura.nome
+        description: "Nome da URA."
+        data_type: string
+        quote: true
+        
+      - name: ura.inicio_datahora_receptivo
+        description: "Data e hora de início da URA. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+        
+      - name: ura.fim_datahora_receptivo
+        description: "Data e hora de fim da URA. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false
+
+      - name: estatisticas
+        description: "Estrutura com métricas e estatísticas calculadas da sessão."
+        data_type: record
+        quote: true
+        
+      - name: estatisticas.total_mensagens
+        description: "Número total de mensagens na conversa."
+        data_type: integer
+        quote: false
+        
+      - name: estatisticas.total_mensagens_contato
+        description: "Número de mensagens enviadas pelo contato."
+        data_type: integer
+        quote: false
+        
+      - name: estatisticas.total_mensagens_busca
+        description: "Número de mensagens relacionadas à funcionalidade de busca."
+        data_type: integer
+        quote: false
+        
+      - name: estatisticas.duracao_sessao_seg
+        description: "Duração total da sessão em segundos."
+        data_type: integer
+        quote: false
+        
+      - name: estatisticas.duracao_interacao_seg
+        description: "Duração da interação do cliente em segundos."
+        data_type: integer
+        quote: false
+        
+      - name: estatisticas.duracao_ura_seg
+        description: "Duração da URA em segundos."
+        data_type: integer
+        quote: false
+        
+      - name: estatisticas.tempo_medio_resposta_cliente_seg
+        description: "Tempo médio de resposta do cliente em segundos."
+        data_type: integer
+        quote: false
+
+      - name: operador
+        description: "Nome do operador que atendeu (se aplicável)."
+        data_type: string
+        quote: true
+
+      - name: tabulacao
+        description: "Estrutura com informações de tabulação do atendimento."
+        data_type: record
+        quote: true
+
+      - name: foi_entregue
+        description: "Indicador (true/false) se a mensagem HSM foi entregue."
+        data_type: boolean
+        quote: false
+
+      - name: foi_lida
+        description: "Indicador (true/false) se a mensagem HSM foi lida."
+        data_type: boolean
+        quote: false
+
+      - name: foi_respondida
+        description: "Indicador (true/false) se a mensagem HSM foi respondida."
+        data_type: boolean
+        quote: false
+
+      - name: gerou_conversa
+        description: "Indicador (true/false) se a interação gerou uma sessão de conversa na URA."
+        data_type: boolean
+        quote: false
+
+      - name: data_particao
+        description: "Data da partição da tabela, baseada na data de início da interação."
+        data_type: date
+        quote: false
+        tests:
+          - not_null:
+              name: core_chatbot__data_particao__not_null
+
+      - name: data_processamento
+        description: "Data e hora em que o registro foi processado pelo dbt. Fuso horário America/Sao_Paulo."
+        data_type: timestamp
+        quote: false

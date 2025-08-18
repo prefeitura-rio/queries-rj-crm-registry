@@ -13,18 +13,10 @@
         else
             regexp_replace(
                 regexp_replace(
-                    regexp_replace(
-                        regexp_replace(
-                            trim({{ telefone_column }}), '^0', ''  -- Remove leading 0
-                        ),
-                        '[()]',
-                        ''  -- Remove parentheses
-                    ),
-                    '-',
-                    ''  -- Remove hyphens
+                    trim({{ telefone_column }}), '^0', ''  -- Remove leading 0
                 ),
-                ' ',  -- Remove blank spaces
-                ''
+                '[^0-9]',
+                ''  -- Remove all non-numeric characters
             )
     end
 {% endmacro %}

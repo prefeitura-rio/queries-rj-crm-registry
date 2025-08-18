@@ -1,9 +1,0 @@
-version: 2
-
-models:
-  - name: int_whatsapp_fluxo_atendimento
-    description: Fluxo intermediário de atendimento WhatsApp/Wetalkie
-    config:
-      materialized: ephemeral
-      enabled: false  # Disabled due to missing dataset
-    # Tests disabled until WhatsApp dataset is available

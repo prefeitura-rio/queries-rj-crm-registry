@@ -1,0 +1,409 @@
+procedure_name: "database_schema_discovery"
+version: "1.0.0"
+description: "Systematic procedures for discovering and analyzing database schemas to identify integrable data sources"
+created_date: "2025-01-08"
+based_on_experience: "ERGON telefones discovery and BCadastro/SMS analysis"
+
+# General database exploration framework
+database_exploration:
+  step_1_dataset_discovery:
+    description: "Discover available datasets in BigQuery project"
+    commands:
+      list_datasets: |
+        bq ls {project_id}:
+      
+      list_with_descriptions: |
+        bq query --use_legacy_sql=false --format=prettyjson "
+        SELECT 
+          schema_name as dataset_name,
+          creation_time,
+          location
+        FROM `{project_id}.INFORMATION_SCHEMA.SCHEMATA`
+        ORDER BY creation_time DESC"
+    
+    naming_pattern_analysis:
+      identify_source_systems:
+        - "brutos_*" : "Raw source system data"
+        - "*_staging" : "Staging/processing layer"
+        - "rj-*" : "Rio de Janeiro specific systems"
+        - "*_ergon*" : "ERGON HR system"
+        - "*_sms*" : "Health system data"
+    
+    prioritization_criteria:
+      high_priority: ["brutos_*", "direct project datasets"]
+      medium_priority: ["staging datasets with recent activity"]
+      low_priority: ["logs, tools, temporary datasets"]
+
+  step_2_table_discovery:
+    description: "Discover tables within target datasets"
+    commands:
+      list_tables_in_dataset: |
+        bq ls {project_id}:{dataset_name}
+      
+      table_metadata_query: |
+        bq query --use_legacy_sql=false --format=prettyjson --max_rows=50 "
+        SELECT 
+          table_name,
+          table_type,
+          creation_time,
+          row_count,
+          size_bytes
+        FROM `{project_id}.{dataset_name}.INFORMATION_SCHEMA.TABLES`
+        ORDER BY row_count DESC NULLS LAST"
+    
+    table_filtering_criteria:
+      exclude_patterns:
+        - "_backup"
+        - "_old"
+        - "_temp"
+        - "_test"
+      
+      include_priorities:
+        - tables_with_row_count: "> 1000"
+        - recent_creation: "within last 2 years"
+        - reasonable_size: "not too large for exploration"
+
+  step_3_column_schema_analysis:
+    description: "Analyze column schemas to identify data types and potential integration points"
+    commands:
+      get_table_schema: |
+        bq query --use_legacy_sql=false --format=prettyjson --max_rows=100 "
+        SELECT 
+          column_name,
+          data_type,
+          ordinal_position,
+          is_nullable,
+          is_partitioning_column
+        FROM `{project_id}.{dataset_name}.INFORMATION_SCHEMA.COLUMNS`
+        WHERE table_name = '{table_name}'
+        ORDER BY ordinal_position"
+      
+      search_columns_by_pattern: |
+        bq query --use_legacy_sql=false --format=prettyjson --max_rows=50 "
+        SELECT 
+          table_name,
+          column_name,
+          data_type
+        FROM `{project_id}.{dataset_name}.INFORMATION_SCHEMA.COLUMNS`
+        WHERE LOWER(column_name) LIKE '%{search_pattern}%'
+        ORDER BY table_name, ordinal_position"
+
+# Phone data specific discovery procedures
+phone_data_discovery:
+  search_patterns:
+    primary_patterns:
+      - "telefone"
+      - "phone" 
+      - "celular"
+      - "fone"
+    
+    secondary_patterns:
+      - "contato"
+      - "contact"
+      - "comunicacao"
+    
+    nested_field_indicators:
+      - "RECORD" data_type
+      - "REPEATED" mode
+      - complex JSON structures
+
+  discovery_commands:
+    find_phone_tables: |
+      bq query --use_legacy_sql=false --format=prettyjson --max_rows=50 "
+      SELECT DISTINCT
+        table_name,
+        COUNT(*) as phone_columns,
+        STRING_AGG(column_name, ', ') as column_names
+      FROM `{project_id}.{dataset_name}.INFORMATION_SCHEMA.COLUMNS`
+      WHERE LOWER(column_name) LIKE '%telefone%' 
+         OR LOWER(column_name) LIKE '%phone%'
+         OR LOWER(column_name) LIKE '%celular%'
+         OR LOWER(column_name) LIKE '%fone%'
+      GROUP BY table_name
+      HAVING COUNT(*) > 0
+      ORDER BY phone_columns DESC"
+    
+    analyze_nested_structures: |
+      bq query --use_legacy_sql=false --format=prettyjson --max_rows=20 "
+      SELECT 
+        table_name,
+        column_name,
+        data_type,
+        field_path
+      FROM `{project_id}.{dataset_name}.INFORMATION_SCHEMA.COLUMN_FIELD_PATHS`
+      WHERE table_name = '{table_name}'
+        AND (LOWER(field_path) LIKE '%telefone%' 
+             OR LOWER(field_path) LIKE '%phone%'
+             OR LOWER(field_path) LIKE '%celular%')
+      ORDER BY field_path"
+
+# Person identification discovery procedures
+person_id_discovery:
+  identification_patterns:
+    brazilian_ids:
+      cpf: 
+        patterns: ["cpf", "id_cpf"]
+        expected_format: "11 digit string"
+        validation: "CPF algorithm validation"
+      
+      cnpj:
+        patterns: ["cnpj", "id_cnpj"] 
+        expected_format: "14 digit string"
+        validation: "CNPJ algorithm validation"
+      
+      cns:
+        patterns: ["cns", "cartao_sus", "sus"]
+        expected_format: "15 digit string"
+        context: "health system"
+    
+    other_ids:
+      matricula: 
+        patterns: ["matricula", "employee_id", "funcionario_id"]
+        context: "employee systems"
+      
+      rg:
+        patterns: ["rg", "id_rg", "identidade"]
+        context: "state identification"
+
+  discovery_commands:
+    find_id_columns: |
+      bq query --use_legacy_sql=false --format=prettyjson --max_rows=30 "
+      SELECT 
+        table_name,
+        column_name,
+        data_type,
+        CASE 
+          WHEN LOWER(column_name) LIKE '%cpf%' THEN 'CPF'
+          WHEN LOWER(column_name) LIKE '%cnpj%' THEN 'CNPJ'
+          WHEN LOWER(column_name) LIKE '%cns%' THEN 'CNS'
+          WHEN LOWER(column_name) LIKE '%matricula%' THEN 'MATRICULA'
+          WHEN LOWER(column_name) LIKE '%rg%' THEN 'RG'
+          ELSE 'OTHER_ID'
+        END as id_type
+      FROM `{project_id}.{dataset_name}.INFORMATION_SCHEMA.COLUMNS`
+      WHERE LOWER(column_name) LIKE '%cpf%'
+         OR LOWER(column_name) LIKE '%cnpj%'
+         OR LOWER(column_name) LIKE '%cns%'
+         OR LOWER(column_name) LIKE '%matricula%'
+         OR LOWER(column_name) LIKE '%rg%'
+         OR LOWER(column_name) LIKE '%id%'
+      ORDER BY table_name, id_type"
+
+# Geographic data discovery procedures  
+geographic_discovery:
+  location_patterns:
+    administrative:
+      - "uf" # state
+      - "estado" # state
+      - "municipio" # municipality
+      - "cidade" # city
+      
+    address_components:
+      - "endereco" # address
+      - "logradouro" # street
+      - "cep" # postal code
+      - "bairro" # neighborhood
+    
+    geographic_context:
+      - "nascimento" # birth location
+      - "moradia" # residence
+      - "trabalho" # work location
+
+  discovery_commands:
+    find_geographic_columns: |
+      bq query --use_legacy_sql=false --format=prettyjson --max_rows=30 "
+      SELECT 
+        table_name,
+        column_name,
+        data_type,
+        CASE 
+          WHEN LOWER(column_name) LIKE '%uf%' THEN 'STATE'
+          WHEN LOWER(column_name) LIKE '%municipio%' OR LOWER(column_name) LIKE '%cidade%' THEN 'CITY'
+          WHEN LOWER(column_name) LIKE '%cep%' THEN 'POSTAL_CODE'
+          WHEN LOWER(column_name) LIKE '%endereco%' OR LOWER(column_name) LIKE '%logradouro%' THEN 'ADDRESS'
+          ELSE 'OTHER_GEO'
+        END as geo_type
+      FROM `{project_id}.{dataset_name}.INFORMATION_SCHEMA.COLUMNS`
+      WHERE LOWER(column_name) LIKE '%uf%'
+         OR LOWER(column_name) LIKE '%estado%'
+         OR LOWER(column_name) LIKE '%municipio%'
+         OR LOWER(column_name) LIKE '%cidade%'
+         OR LOWER(column_name) LIKE '%endereco%'
+         OR LOWER(column_name) LIKE '%cep%'
+         OR LOWER(column_name) LIKE '%logradouro%'
+      ORDER BY table_name, geo_type"
+
+# Data quality preliminary assessment
+data_quality_assessment:
+  basic_quality_checks:
+    record_count: |
+      bq query --use_legacy_sql=false --format=prettyjson "
+      SELECT COUNT(*) as total_records
+      FROM `{project_id}.{dataset_name}.{table_name}`"
+    
+    null_analysis: |
+      bq query --use_legacy_sql=false --format=prettyjson "
+      SELECT 
+        COUNT(*) as total_records,
+        COUNT({id_column}) as id_not_null,
+        COUNT({phone_column}) as phone_not_null,
+        ROUND(COUNT({id_column}) * 100.0 / COUNT(*), 2) as id_fill_rate,
+        ROUND(COUNT({phone_column}) * 100.0 / COUNT(*), 2) as phone_fill_rate
+      FROM `{project_id}.{dataset_name}.{table_name}`"
+    
+    data_sampling: |
+      bq query --use_legacy_sql=false --format=prettyjson --max_rows=5 "
+      SELECT {relevant_columns}
+      FROM `{project_id}.{dataset_name}.{table_name}`
+      WHERE {phone_column} IS NOT NULL
+        AND {id_column} IS NOT NULL
+      LIMIT 5"
+
+  integration_feasibility:
+    minimum_requirements:
+      record_count: "> 1000 usable records"
+      id_fill_rate: "> 80%"
+      phone_fill_rate: "> 30%"
+    
+    quality_indicators:
+      excellent: "id_fill_rate > 95% AND phone_fill_rate > 70%"
+      good: "id_fill_rate > 90% AND phone_fill_rate > 50%"
+      fair: "id_fill_rate > 80% AND phone_fill_rate > 30%"
+      poor: "below fair thresholds"
+
+# Source system identification and categorization
+source_system_analysis:
+  system_identification:
+    by_dataset_naming:
+      government_systems:
+        - "bcadastro": "Federal Revenue citizen registry"
+        - "ergon": "Municipal HR system"
+        - "1746": "Municipal 311 system"
+      
+      health_systems:
+        - "sms": "Municipal health system"
+        - "sus": "National health system"
+        - "saude": "Health-related data"
+      
+      communication_systems:
+        - "wetalkie": "Communication platform"
+        - "whatsapp": "WhatsApp integration"
+    
+    by_table_patterns:
+      person_tables: ["funcionario", "pessoa", "paciente", "cidadao"]
+      contact_tables: ["contato", "comunicacao", "telefone"]
+      administrative_tables: ["vinculo", "provimento", "cargo"]
+
+  context_determination:
+    context_mapping:
+      PESSOAL: "individual citizen data (BCadastro CPF)"
+      EMPRESARIAL: "business data (BCadastro CNPJ)"
+      FUNCIONAL: "employee data (ERGON, HR systems)"
+      SAUDE: "healthcare data (SMS, patient systems)"
+      COMUNICACAO: "communication platform data"
+    
+    context_inference_rules:
+      if_cpf_individual: "PESSOAL"
+      if_cnpj: "EMPRESARIAL" 
+      if_employee_system: "FUNCIONAL"
+      if_health_system: "SAUDE"
+      if_communication_platform: "COMUNICACAO"
+
+# Integration readiness assessment
+integration_readiness:
+  readiness_checklist:
+    data_access:
+      - source_permissions_confirmed: true
+      - source_in_dbt_sources_yml: true
+      - table_accessible_via_bigquery: true
+    
+    data_structure:
+      - phone_columns_identified: true
+      - id_columns_identified: true  
+      - data_types_compatible: true
+      - nested_structures_understood: true
+    
+    data_quality:
+      - sufficient_record_volume: true
+      - acceptable_null_rates: true
+      - phone_format_analyzed: true
+      - quality_expectations_set: true
+
+  integration_priority_scoring:
+    high_priority_criteria:
+      - record_count: "> 100K"
+      - phone_fill_rate: "> 60%"
+      - unique_source_context: true
+      - strategic_business_value: true
+    
+    medium_priority_criteria:
+      - record_count: "10K-100K"
+      - phone_fill_rate: "30-60%"
+      - complements_existing_data: true
+    
+    low_priority_criteria:
+      - record_count: "< 10K"
+      - phone_fill_rate: "< 30%"
+      - overlaps_with_existing_sources: true
+
+# Discovery automation templates
+automation_templates:
+  comprehensive_dataset_scan: |
+    -- Automated discovery script for phone data across dataset
+    WITH phone_tables AS (
+      SELECT DISTINCT
+        table_name,
+        COUNT(*) as phone_columns,
+        STRING_AGG(column_name, ', ') as phone_column_names
+      FROM `{project_id}.{dataset_name}.INFORMATION_SCHEMA.COLUMNS`
+      WHERE LOWER(column_name) LIKE '%telefone%' 
+         OR LOWER(column_name) LIKE '%phone%'
+         OR LOWER(column_name) LIKE '%celular%'
+      GROUP BY table_name
+    ),
+    id_tables AS (
+      SELECT DISTINCT
+        table_name,
+        COUNT(*) as id_columns,
+        STRING_AGG(column_name, ', ') as id_column_names
+      FROM `{project_id}.{dataset_name}.INFORMATION_SCHEMA.COLUMNS`
+      WHERE LOWER(column_name) LIKE '%cpf%'
+         OR LOWER(column_name) LIKE '%cnpj%'
+         OR LOWER(column_name) LIKE '%cns%'
+         OR LOWER(column_name) LIKE '%matricula%'
+      GROUP BY table_name
+    )
+    SELECT 
+      COALESCE(p.table_name, i.table_name) as table_name,
+      p.phone_columns,
+      p.phone_column_names,
+      i.id_columns,
+      i.id_column_names,
+      CASE 
+        WHEN p.phone_columns > 0 AND i.id_columns > 0 THEN 'HIGH_POTENTIAL'
+        WHEN p.phone_columns > 0 THEN 'PHONE_ONLY'
+        WHEN i.id_columns > 0 THEN 'ID_ONLY'
+        ELSE 'NO_INTEGRATION_VALUE'
+      END as integration_potential
+    FROM phone_tables p
+    FULL OUTER JOIN id_tables i USING (table_name)
+    ORDER BY integration_potential, p.phone_columns DESC, i.id_columns DESC
+
+# AI decision matrix for discovery automation
+ai_automation:
+  discovery_decision_tree:
+    step_1: "IF dataset_name LIKE 'brutos_%' THEN explore_priority = HIGH"
+    step_2: "IF phone_columns > 0 AND id_columns > 0 THEN integration_potential = HIGH"
+    step_3: "IF record_count > 100K AND phone_fill_rate > 50% THEN business_value = HIGH"
+    step_4: "IF source_not_in_existing_integration THEN uniqueness_value = HIGH"
+  
+  automation_criteria:
+    auto_investigate: "integration_potential = HIGH AND business_value = HIGH"
+    manual_review: "integration_potential = MEDIUM OR data_quality_concerns"
+    skip: "integration_potential = LOW AND business_value = LOW"
+  
+  success_metrics:
+    discovery_completeness: "all relevant datasets scanned"
+    integration_candidates: "list of prioritized sources identified"
+    feasibility_assessment: "integration effort and value estimated"
+    next_steps_clear: "specific investigation tasks defined"
