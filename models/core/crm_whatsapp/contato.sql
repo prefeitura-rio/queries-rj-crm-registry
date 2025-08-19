@@ -3,7 +3,7 @@
     alias="contato",
     schema="crm_whatsapp", 
     materialized='incremental',
-    tags=["hourly"],
+    tags=["quarter_hourly"],
     unique_key='id_contato',
     incremental_strategy='merge',
     partition_by={

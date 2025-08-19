@@ -5,7 +5,13 @@ sources:
     database: basedosdados
     schema: br_bd_diretorios_brasil
     tables:
-    - name: municipio
-    - name: cep
+      - name: municipio
+        meta:
+          docs:
+            show: false
+      - name: cep
+        meta:
+          docs:
+            show: false
 
 

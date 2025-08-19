@@ -9,7 +9,8 @@
             "field": "data_particao",
             "data_type": "date"
         },
-        on_schema_change="sync_all_columns"
+        on_schema_change="sync_all_columns",
+        tags=["quarter_hourly"]
     )
 }}
 
