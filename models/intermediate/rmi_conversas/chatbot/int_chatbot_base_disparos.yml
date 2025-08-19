@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: int_chatbot_base_disparos
+    description: "Base deduplicated de disparos de HSM - primeira etapa do pipeline chatbot"
+    
+    columns:
+      - name: chave_unica
+        description: "Chave única: id_hsm + telefone + external_id"
+        tests:
+          - unique
+          - not_null
+          
+      - name: id_hsm
+        description: "ID da HSM enviada"
+        tests:
+          - not_null
+          
+      - name: telefone_contato
+        description: "Telefone de destino"
+        tests:
+          - not_null
+          
+      - name: data_interacao
+        description: "Data do disparo"
+        tests:
+          - not_null
+          
+      - name: disparo_datahora
+        description: "Timestamp do disparo"
+        tests:
+          - not_null
+
+    tests:
+      # Test de volume: July 8 deve ter ~8K records, não milhões
+      - dbt_utils.expression_is_true:
+          expression: "
+            (select count(*) from {{ this }} where data_interacao = '2025-07-08') <= 10000
+          "
+          config:
+            error_if: ">= 1"
+      
+      # Test de consistência: não deve ter duplicatas na chave única        
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - id_hsm
+            - telefone_contato  
+            - id_externo
