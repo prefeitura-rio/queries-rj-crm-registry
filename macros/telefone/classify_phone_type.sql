@@ -2,6 +2,7 @@
   {% set config = var('phone_validation') %}
   {% set brasil = config.countries.brasil %}
   case
+    when {{ ddi }} is null then null
     when {{ ddi }} = '{{ brasil.ddi }}' 
          and length({{ numero }}) = {{ brasil.celular_length }}
          and starts_with({{ numero }}, '{{ brasil.celular_prefix }}')

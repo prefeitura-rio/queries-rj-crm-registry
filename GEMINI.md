@@ -142,12 +142,13 @@ Every model should have:
 
 ## Development Guidelines
 
-1. **SQL Style**: Use CTEs with descriptive Portuguese names, 2-4 space indentation
-2. **Comments**: Write comments in Brazilian Portuguese only
-3. **Sources**: Use `{{ source() }}` for raw tables, `{{ ref() }}` for models
-4. **Configuration**: Always include config blocks with alias and schema
-5. **Documentation**: Each model should have a corresponding YAML file with column descriptions
-6. **BigQuery Specific**: Use BigQuery-compatible functions only, consider JSON handling patterns
+1. **SQL Style**: Use CTEs with descriptive Portuguese names, 2-4 space indentation. All models should end with a `final` CTE, followed by `select * from final`.
+2. **Naming Consistency**: Do not change existing column, variable, or CTE names. Maintaining established names is crucial for stability and to avoid breaking downstream dependencies.
+3. **Comments**: Write comments in Brazilian Portuguese only
+4. **Sources**: Use `{{ source() }}` for raw tables, `{{ ref() }}` for models
+5. **Configuration**: Always include config blocks with alias and schema
+6. **Documentation**: Each model should have a corresponding YAML file with column descriptions
+7. **BigQuery Specific**: Use BigQuery-compatible functions only, consider JSON handling patterns
 
 ## Person Data Model (Core Entity)
 

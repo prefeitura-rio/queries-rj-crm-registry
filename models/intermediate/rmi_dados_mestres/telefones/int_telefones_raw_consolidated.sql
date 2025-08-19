@@ -26,7 +26,7 @@ telefones_bcadastro_cpf as (
     'bcadastro' as sistema_nome,
     'bcadastro_cpf.contato.telefone' as campo_origem,
     'PESSOAL' as contexto,
-    null as data_atualizacao  -- Use real update date from source
+    atualizacao_data as data_atualizacao
   from {{ source('bcadastro', 'cpf') }} as t
   where t.contato.telefone.numero is not null
 ),
@@ -41,31 +41,63 @@ telefones_bcadastro_cnpj as (
     -- BCadastro CNPJ has telefone array with {ddd, telefone} structure
     concat('55', tel.ddd, {{ padronize_telefone('tel.telefone') }}) as telefone_numero_completo,
     'bcadastro' as sistema_nome,
-    'bcadastro_cnpj.contato.telefone[]' as campo_origem,
+    'bcadastro_cnpj.contato.telefone' as campo_origem,
     'EMPRESARIAL' as contexto,
-    null as data_atualizacao  -- Parse timestamp string
+    cast(null as date) as data_atualizacao
   from {{ source('bcadastro', 'cnpj') }} as c,
     unnest(c.contato.telefone) as tel
   where tel.telefone is not null
 ),
 
+sms_data_atualizacao as (
+  SELECT cpf, tel.telefone_raw, date(data_ultima_atualizacao_cadastral) as data_atualizacao
+  FROM  {{ source('rj-sms-projeto-whatsapp', 'telefones_validos') }},
+       unnest(telefones) as tel
+),
+
 -- SAÚDE - Registros SMS
 -- TYPES: origem_id STRING, origem_tipo STRING, telefone_numero_completo STRING, 
 -- sistema_nome STRING, campo_origem STRING, contexto STRING, data_atualizacao DATETIME (cast from TIMESTAMP)
-telefones_sms as (
+telefones_sms_cns as (
   select 
     cns_item as origem_id,  -- Already string from unnest
     'CNS' as origem_tipo,
     -- SMS has telefone array with {ddd, valor, sistema, rank} structure
     concat('55', tel.ddd, {{ padronize_telefone('tel.valor') }}) as telefone_numero_completo,
     'sms' as sistema_nome,
-    'sms_paciente.contato.telefone[]' as campo_origem,
+    'sms_paciente.contato.telefone' as campo_origem,
     'SAUDE' as contexto,
-    null as data_atualizacao  -- Use real processed timestamp
+     data_atualizacao
   from {{ source('rj-sms', 'paciente') }} as s,
     unnest(s.cns) as cns_item,
-    unnest(s.contato.telefone) as tel  
+    unnest(s.contato.telefone) as tel
+  left join sms_data_atualizacao validos
+         on validos.cpf = s.cpf and tel.valor = validos.telefone_raw
   where tel.valor is not null and cns_item is not null
+),
+
+-- telefones_sms_cns_data as (
+--   select telefones_sms_cns.* EXCEPT(data_atualizacao),
+--   date(telefones.data_ultima_atualizacao_cadastral) as data_atualizacao
+--   from telefones_sms_cns
+--   left join sms_data_atualizacao validos
+--          on validos.cpf = telefones_sms_cns.origem_id and validos.telefone_raw = validos.telefone_raw
+-- )
+telefones_sms_cpf as (
+  select 
+    s.cpf as origem_id, 
+    'CPF' as origem_tipo,
+    -- SMS has telefone array with {ddd, valor, sistema, rank} structure
+    concat('55', tel.ddd, {{ padronize_telefone('tel.valor') }}) as telefone_numero_completo,
+    'sms' as sistema_nome,
+    'sms_paciente.contato.telefone' as campo_origem,
+    'SAUDE' as contexto,
+    data_atualizacao
+  from {{ source('rj-sms', 'paciente') }} as s,
+    unnest(s.contato.telefone) as tel
+  left join sms_data_atualizacao validos
+         on validos.cpf = s.cpf and tel.valor = validos.telefone_raw
+  where tel.valor is not null and s.cpf is not null
 ),
 
 -- FUNCIONAL - ERGON (servidores públicos) - Celular
@@ -80,7 +112,7 @@ telefones_ergon_celular as (
     'ergon' as sistema_nome,
     'ergon_funcionario.celular' as campo_origem,
     'FUNCIONAL' as contexto,
-    null as data_atualizacao  -- No timestamp available in ERGON
+    date(updated_at) as data_atualizacao
   from {{ source('rj-smfp', 'funcionario') }} as e
   where e.celular is not null 
     and e.id_cpf is not null
@@ -99,7 +131,7 @@ telefones_ergon_telefone as (
     'ergon' as sistema_nome,
     'ergon_funcionario.telefone' as campo_origem,
     'FUNCIONAL' as contexto,
-    null as data_atualizacao  -- No timestamp available in ERGON
+    date(updated_at) as data_atualizacao
   from {{ source('rj-smfp', 'funcionario') }} as e
   where e.telefone is not null 
     and e.id_cpf is not null
@@ -118,7 +150,11 @@ telefones_all_sources as (
   union all
   
   -- SMS Saúde (Pacientes do sistema de saúde)
-  select * from telefones_sms
+  select * from telefones_sms_cns
+
+  union all
+
+  select * from telefones_sms_cpf
 
   union all
   

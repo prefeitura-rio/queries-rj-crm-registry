@@ -2,7 +2,7 @@
     config(
         materialized="incremental",
         schema="intermediario_rmi_conversas",
-        tags=["hourly"],
+        tags=["quarter_hourly"],
         unique_key=["id_hsm", "id_disparo", "contato_telefone", "criacao_envio_datahora"],
         partition_by={
             "field": "data_particao",

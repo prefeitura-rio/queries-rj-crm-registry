@@ -43,9 +43,9 @@ CASE
   ELSE NULL
 END AS ambiente,
 CASE
-  WHEN templateId IN (14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 31, 59, 100, 101, 113) THEN "Utilidade"
+  WHEN templateId IN (14, 16, 17, 18, 21, 22, 23, 24, 31, 59, 100, 101, 113) THEN "Utilidade"
   WHEN templateId IN (1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 15) THEN "Marketing"
-  WHEN templateId IN (20) THEN "Autenticação"
+  WHEN templateId IN (19, 20) THEN "Autenticação"
   ELSE NULL
 END AS categoria,
 CASE

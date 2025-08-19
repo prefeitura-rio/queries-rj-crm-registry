@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: base_rj-smfp_provimento
+    description: "Modelo base que extrai e renomeia as colunas da fonte `provimento` do `rj-smfp`, contendo informações sobre o provimento de cargos de funcionários públicos."
+    columns:
+      - name: id_funcionario
+        description: "Identificador do funcionário."
+      - name: id_vinculo
+        description: "Identificador do vínculo do funcionário."
+      - name: data_inicio
+        description: "Data de início do provimento."
+      - name: data_fim
+        description: "Data de fim do provimento."
+      - name: id_setor
+        description: "Identificador do setor."
+      - name: id_cargo
+        description: "Identificador do cargo."
+      - name: id_referencia
+        description: "Identificador de referência."
+      - name: id_jornada
+        description: "Identificador da jornada de trabalho."
+      - name: forma
+        description: "Forma de provimento."
+      - name: observacoes
+        description: "Observações sobre o provimento."
+      - name: regime_horas
+        description: "Regime de horas de trabalho."
+      - name: empresa_vinculo
+        description: "Empresa do vínculo."
+      - name: ponto_lei
+        description: "Ponto da lei."
+      - name: ponto_publicacao
+        description: "Ponto da publicação."
+      - name: horario_trabalho
+        description: "Horário de trabalho."
+      - name: numero_vaga
+        description: "Número da vaga."
+      - name: flex_campo_04
+        description: "Campo flexível 04."
+      - name: flex_campo_05
+        description: "Campo flexível 05."
+      - name: flex_campo_20
+        description: "Campo flexível 20."
+      - name: updated_at
+        description: "Data da última atualização do registro."

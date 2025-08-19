@@ -12,69 +12,66 @@
 with
     all_cpf as (select cpf, cpf_particao from {{ ref("int_pessoa_fisica_all_cpf") }}),
 
-    source_bcadastro as (
-        select b.*
-        from all_cpf a
-        inner join {{ source("bcadastro", "cpf") }} b using (cpf_particao)
-    ),
-
-    source_sms as (
-        select b.*
-        from all_cpf a
-        inner join {{ source("rj-sms", "paciente") }} b using (cpf_particao)
-    ),
-
     -- CONTATO - TELEFONE
+    -- Telefones consolidados e limpos da tabela intermediária
     telefone as (
         select
-            cpf,
-            null as ddi,
-            telefone.ddd as ddd,
-            telefone.valor as valor,
-            telefone.rank,
-            'sms' as origem,
-            telefone.sistema
-        from source_sms, unnest(contato.telefone) as telefone
-        union all
-        select
-            cpf,
-            contato.telefone.ddi as ddi,
-            contato.telefone.ddd as ddd,
-            contato.telefone.numero as valor,
-            1 as rank,
-            'receita_federal' as origem,
-            'bcadastro' as sistema
-        from source_bcadastro
-        where contato.telefone.numero is not null
+            origem_id as cpf,
+            telefone_numero_completo, -- Manter o número completo para o join
+            sistema_nome as origem,
+            sistema_nome as sistema,
+            data_atualizacao
+        from {{ ref('int_telefones_raw_consolidated') }}
+        where origem_tipo = 'CPF'
     ),
 
-    telefone_corrigido as (
+    telefone_enriquecido as (
         select
-            cpf,
-            if(ddi is null and ddd is not null, '55', ddi) as ddi,
-            {{ clean_numeric_string("ddd") }} as ddd,
-            {{ clean_numeric_string("valor") }} as valor,
-            rank,
-            origem,
-            sistema,
-        from telefone
+            t.*,
+            tel.telefone_qualidade,
+            tel.confianca_propriedade,
+            tel.telefone_tipo,
+            {{ classify_estrategia_envio('tel.telefone_qualidade', 'tel.confianca_propriedade') }} as estrategia_envio
+        from telefone t
+        left join {{ ref('telefone') }} tel on t.telefone_numero_completo = tel.telefone_numero_completo
     ),
 
     telefone_ranqueado as (
         select
             *,
-            case
-                when origem = 'sms' then 1 when origem = 'receita_federal' then 2 else 3
-            end as rank_origem
-        from telefone_corrigido
+            row_number() over (
+                partition by cpf
+                order by
+                    case when telefone_tipo = 'CELULAR' then 1 else 2 end asc,
+                    case
+                        when confianca_propriedade = 'CONFIRMADA' then 1
+                        when confianca_propriedade = 'MUITO_PROVAVEL' then 2
+                        when confianca_propriedade = 'PROVAVEL' then 3
+                        when confianca_propriedade = 'POUCO_PROVAVEL' then 4
+                        when confianca_propriedade = 'IMPROVAVEL' then 5
+                        else 6
+                    end asc,
+                    data_atualizacao desc
+            ) as rank
+        from telefone_enriquecido
     ),
 
     telefone_estruturado as (
         select
             cpf,
             array_agg(
-                struct(origem, sistema, ddi, ddd, valor)
-                order by rank_origem asc, rank asc
+                struct(
+                    origem,
+                    sistema,
+                    {{ extract_ddi('telefone_numero_completo') }} as ddi,
+                    {{ extract_ddd('telefone_numero_completo') }} as ddd,
+                    {{ extract_numero('telefone_numero_completo') }} as valor,
+                    telefone_qualidade as qualidade,
+                    confianca_propriedade as confianca,
+                    telefone_tipo as tipo,
+                    estrategia_envio
+                )
+                order by rank asc
             ) as telefone
         from telefone_ranqueado
         group by cpf
@@ -96,14 +93,14 @@ with
 
     dim_telefone as (
         select
-            cpf,
+            a.cpf,
             struct(
-                if(principal is not null, true, false) as indicador,
-                principal,
-                alternativo
+                if(t.principal is not null, true, false) as indicador,
+                t.principal,
+                t.alternativo
             ) as telefone
-        from all_cpf
-        left join telefone_principal_alternativo using (cpf)
+        from all_cpf a
+        left join telefone_principal_alternativo t using (cpf)
     )
 
 select *

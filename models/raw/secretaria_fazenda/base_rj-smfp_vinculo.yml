@@ -1,0 +1,184 @@
+version: 2
+
+models:
+  - name: base_rj-smfp_vinculo
+    description: "Modelo base que extrai e renomeia as colunas da fonte `vinculo` do `rj-smfp`, contendo informações detalhadas sobre os vínculos empregatícios de funcionários públicos."
+    columns:
+      - name: id_funcionario
+        description: "Identificador do funcionário."
+      - name: id_vinculo
+        description: "Identificador do vínculo."
+      - name: tipo
+        description: "Tipo de vínculo."
+      - name: data_nomeacao
+        description: "Data de nomeação."
+      - name: data_posse
+        description: "Data de posse."
+      - name: data_exercicio
+        description: "Data de exercício."
+      - name: regime_juridico
+        description: "Regime jurídico."
+      - name: categoria
+        description: "Categoria do vínculo."
+      - name: desconta_ir
+        description: "Indica se desconta Imposto de Renda."
+      - name: descricao_provimento
+        description: "Descrição do provimento."
+      - name: classificacao_concurso
+        description: "Classificação do concurso."
+      - name: data_inicio_cessao
+        description: "Data de início da cessão."
+      - name: data_fim_cessao
+        description: "Data de fim da cessão."
+      - name: data_concurso
+        description: "Data do concurso."
+      - name: data_fgts
+        description: "Data do FGTS."
+      - name: data_inicio_contrato
+        description: "Data de início do contrato."
+      - name: data_fim_contrato
+        description: "Data de fim do contrato."
+      - name: data_prorrogacao_contrato
+        description: "Data de prorrogação do contrato."
+      - name: data_aposentadoria
+        description: "Data de aposentadoria."
+      - name: tipo_aposentadoria
+        description: "Tipo de aposentadoria."
+      - name: data_vacancia
+        description: "Data de vacância."
+      - name: id_vacancia
+        description: "Identificador de vacância."
+      - name: id_vinculo_anterior
+        description: "Identificador do vínculo anterior."
+      - name: id_vinculo_posterior
+        description: "Identificador do vínculo posterior."
+      - name: tipo_orgao_origem
+        description: "Tipo de órgão de origem."
+      - name: funcao_origem_requisicao
+        description: "Função de origem da requisição."
+      - name: telefone_requisicao
+        description: "Telefone de requisição."
+      - name: motivo_vacancia
+        description: "Motivo da vacância."
+      - name: id_matricula_vinculo
+        description: "Identificador da matrícula do vínculo."
+      - name: orgao_origem_requisicao
+        description: "Órgão de origem da requisição."
+      - name: tipo_onus_requisicao
+        description: "Tipo de ônus da requisição."
+      - name: tipo_ressarcimento_requisicao
+        description: "Tipo de ressarcimento da requisição."
+      - name: tipo_requisicao
+        description: "Tipo de requisição."
+      - name: data_pagamento_requisicao
+        description: "Data de pagamento da requisição."
+      - name: origem_servidor_cedido
+        description: "Origem do servidor cedido."
+      - name: id_processo_origem
+        description: "Identificador do processo de origem."
+      - name: contrato_suspenso
+        description: "Indica se o contrato está suspenso."
+      - name: professor
+        description: "Indica se é professor."
+      - name: cota
+        description: "Cota."
+      - name: id_empresa
+        description: "Identificador da empresa."
+      - name: data_homologacao_aposentadoria
+        description: "Data de homologação da aposentadoria."
+      - name: updated_at
+        description: "Data da última atualização do registro."
+      - name: banco
+        description: "Banco."
+      - name: conta
+        description: "Conta."
+      - name: id_reg
+        description: "Identificador de registro."
+      - name: agencia
+        description: "Agência."
+      - name: correio
+        description: "Correio."
+      - name: pontlei
+        description: "Ponto da lei."
+      - name: tipopag
+        description: "Tipo de pagamento."
+      - name: pontproc
+        description: "Ponto do processo."
+      - name: pontpubl
+        description: "Ponto da publicação."
+      - name: bancofgts
+        description: "Banco FGTS."
+      - name: contafgts
+        description: "Conta FGTS."
+      - name: matricula
+        description: "Matrícula."
+      - name: orgao_req
+        description: "Órgão de requisição."
+      - name: dtadm_rais
+        description: "Data de admissão RAIS."
+      - name: dtfimexerc
+        description: "Data de fim de exercício."
+      - name: dtiniexerc
+        description: "Data de início de exercício."
+      - name: dtretrfgts
+        description: "Data de retorno FGTS."
+      - name: matricula1
+        description: "Matrícula 1."
+      - name: matricula2
+        description: "Matrícula 2."
+      - name: matricula3
+        description: "Matrícula 3."
+      - name: agenciafgts
+        description: "Agência FGTS."
+      - name: dtfimclasse
+        description: "Data de fim de classe."
+      - name: dtiniclasse
+        description: "Data de início de classe."
+      - name: id_ingresso
+        description: "Identificador de ingresso."
+      - name: dt_saldo_fgts
+        description: "Data de saldo FGTS."
+      - name: flex_campo_02
+        description: "Campo flexível 02."
+      - name: flex_campo_03
+        description: "Campo flexível 03."
+      - name: flex_campo_04
+        description: "Campo flexível 04."
+      - name: flex_campo_06
+        description: "Campo flexível 06."
+      - name: flex_campo_07
+        description: "Campo flexível 07."
+      - name: flex_campo_08
+        description: "Campo flexível 08."
+      - name: flex_campo_10
+        description: "Campo flexível 10."
+      - name: flex_campo_11
+        description: "Campo flexível 11."
+      - name: flex_campo_12
+        description: "Campo flexível 12."
+      - name: flex_campo_13
+        description: "Campo flexível 13."
+      - name: flex_campo_14
+        description: "Campo flexível 14."
+      - name: flex_campo_15
+        description: "Campo flexível 15."
+      - name: flex_campo_16
+        description: "Campo flexível 16."
+      - name: flex_campo_19
+        description: "Campo flexível 19."
+      - name: flex_campo_20
+        description: "Campo flexível 20."
+      - name: valor_dep_fgts
+        description: "Valor de depósito FGTS."
+      - name: numero_permut_1
+        description: "Número de permuta 1."
+      - name: numero_permut_2
+        description: "Número de permuta 2."
+      - name: numfunc_permut_1
+        description: "Número de função de permuta 1."
+      - name: numfunc_permut_2
+        description: "Número de função de permuta 2."
+      - name: projeto_atividade
+        description: "Projeto de atividade."
+      - name: fator_proporc_aposent
+        description: "Fator proporcional de aposentadoria."
