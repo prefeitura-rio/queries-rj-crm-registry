@@ -34,8 +34,15 @@ with
 
     dim_assistencia_social as (
         select
+
             all_cpf.cpf,
+
             struct(
+
+                -- CRAS
+                struct("" as id, "" as nome) as cras,  -- TODO: adicionar dados do CRAS
+
+                -- Cadunico
                 struct(
                     if(cras_struct.data_cadastro is not null, true, false) as indicador,
                     cras_struct.data_cadastro,
@@ -44,7 +51,14 @@ with
                     cras_struct.status_cadastral
                 ) as cadunico,
 
-                struct("" as id, "" as nome) as cras -- TODO: adicionar dados do CRAS
+                -- Programas
+                struct(
+                    struct(
+                        true as indicador,
+                        "ativo" as situacao,
+                        "750" as faixa_beneficio
+                    ) as bolsa_familia
+                ) as programa
 
             ) as assistencia_social
         from all_cpf
