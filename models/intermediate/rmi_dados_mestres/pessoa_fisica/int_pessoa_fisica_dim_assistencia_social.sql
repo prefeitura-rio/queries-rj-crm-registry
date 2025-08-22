@@ -42,7 +42,10 @@ with
                     cras_struct.data_ultima_atualizacao,
                     cras_struct.data_limite_cadastro_atual,
                     cras_struct.status_cadastral
-                ) as cadunico
+                ) as cadunico,
+
+                struct("" as id, "" as nome) as cras -- TODO: adicionar dados do CRAS
+
             ) as assistencia_social
         from all_cpf
         left join cras_struct using (cpf)
