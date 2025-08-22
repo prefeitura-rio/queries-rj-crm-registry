@@ -5,11 +5,18 @@
     config(
         alias="all_cpfs",
         schema="intermediario_dados_mestres",
-        materialized=('table' if target.name == 'dev' else 'ephemeral'),
+        materialized=("table" if target.name == "dev" else "ephemeral"),
     )
 }}
 
 with
+    -- sources
+    educacao as (
+        select distinct cpf, 'educacao' as origem
+        from {{ source("rj-sme-brutos_gestao_escolar", "vw_bi_aluno") }}
+        where cpf <> "0"
+    ),
+
     saude as (
         select distinct cpf, 'saude' as origem from {{ source("rj-sms", "paciente") }}
     ),
@@ -38,13 +45,16 @@ with
 
     all_cpfs as (
         select *
-        from saude
+        from educacao
         union all
         select *
         from cadunico
         union all
         select *
         from chamados
+        union all
+        select *
+        from saude
         union all
         select *
         from transporte

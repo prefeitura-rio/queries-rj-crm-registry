@@ -36,8 +36,8 @@ with
         select
             all_cpf.cpf,
             struct(
-                if(cras_struct.data_cadastro is not null, true, false) as indicador,
                 struct(
+                    if(cras_struct.data_cadastro is not null, true, false) as indicador,
                     cras_struct.data_cadastro,
                     cras_struct.data_ultima_atualizacao,
                     cras_struct.data_limite_cadastro_atual,

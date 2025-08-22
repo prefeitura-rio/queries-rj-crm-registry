@@ -83,9 +83,12 @@ with
 
     dim_telefone as (select * from {{ ref("int_pessoa_fisica_dim_telefone") }}),
 
-
     -- - Orgaos
-    dim_assistencia_social as (select * from {{ ref("int_pessoa_fisica_dim_assistencia_social") }}),
+    dim_assistencia_social as (
+        select * from {{ ref("int_pessoa_fisica_dim_assistencia_social") }}
+    ),
+
+    dim_educacao as (select * from {{ ref("int_pessoa_fisica_dim_educacao") }}),
 
     dim_saude as (select * from {{ ref("int_pessoa_fisica_dim_saude") }}),
 
@@ -139,9 +142,8 @@ with
 
             -- Órgão da prefeitura
             dim_assistencia_social.assistencia_social,
+            dim_educacao.educacao,
             dim_saude.saude,
-            -- struct(dim_saude.clinica_familia, dim_saude.equipe_saude_familia) as saude,
-
             dim_ocupacao.ocupacao,
 
             -- Sócio-econômicos
@@ -154,6 +156,7 @@ with
         inner join source_bcadastro as bcadastro using (cpf)
         left join dim_assistencia_social using (cpf)
         left join dim_documentos using (cpf)
+        left join dim_educacao using (cpf)
         left join dim_email using (cpf)
         left join dim_endereco using (cpf)
         left join dim_mae using (cpf)
@@ -164,8 +167,7 @@ with
         left join source_saude as saude using (cpf)
         left join source_cadunico as cadunico using (cpf)
 
-
     )
 
-select * from final
-
+select *
+from final
