@@ -383,6 +383,142 @@ models:
         description: Nome do enfermeiro
         data_type: string
         quote: true
+      - name: assistencia_social
+        description: Estrutura com informações de assistência social do indivíduo
+        data_type: record
+        quote: true
+      - name: assistencia_social.cras
+        description: Estrutura com informações do CRAS vinculado
+        data_type: record
+        quote: true
+      - name: assistencia_social.cras.id
+        description: Identificador do CRAS
+        data_type: string
+        quote: true
+      - name: assistencia_social.cras.nome
+        description: Nome do CRAS
+        data_type: string
+        quote: true
+      - name: assistencia_social.cadunico
+        description: Estrutura com informações do CadÚnico
+        data_type: record
+        quote: true
+      - name: assistencia_social.cadunico.indicador
+        description: Indicador se está cadastrado no CadÚnico
+        data_type: boolean
+        quote: false
+      - name: assistencia_social.cadunico.data_cadastro
+        description: Data de cadastro no CadÚnico
+        data_type: date
+        quote: false
+      - name: assistencia_social.cadunico.data_ultima_atualizacao
+        description: Data da última atualização no CadÚnico
+        data_type: date
+        quote: false
+      - name: assistencia_social.cadunico.data_limite_cadastro_atual
+        description: Data limite para renovação do cadastro atual
+        data_type: date
+        quote: false
+      - name: assistencia_social.cadunico.status_cadastral
+        description: Status atual do cadastro no CadÚnico
+        data_type: string
+        quote: true
+      - name: assistencia_social.programa
+        description: Estrutura com informações de programas sociais
+        data_type: record
+        quote: true
+      - name: assistencia_social.programa.bolsa_familia
+        description: Estrutura com informações do programa Bolsa Família
+        data_type: record
+        quote: true
+      - name: assistencia_social.programa.bolsa_familia.indicador
+        description: Indicador se recebe Bolsa Família
+        data_type: boolean
+        quote: false
+      - name: assistencia_social.programa.bolsa_familia.situacao
+        description: Situação atual no programa Bolsa Família
+        data_type: string
+        quote: true
+      - name: assistencia_social.programa.bolsa_familia.faixa_beneficio
+        description: Faixa de benefício do programa Bolsa Família
+        data_type: string
+        quote: true
+      - name: educacao
+        description: Estrutura com informações de educação do indivíduo
+        data_type: record
+        quote: true
+      - name: educacao.indicador
+        description: Indicador se está matriculado na rede de ensino
+        data_type: boolean
+        quote: false
+      - name: educacao.matricula
+        description: Estrutura com informações da matrícula
+        data_type: record
+        quote: true
+      - name: educacao.matricula.id
+        description: Identificador da matrícula
+        data_type: string
+        quote: true
+      - name: educacao.matricula.situacao
+        description: Situação da matrícula (ativa, inativa)
+        data_type: string
+        quote: true
+      - name: educacao.turma
+        description: Estrutura com informações da turma
+        data_type: record
+        quote: true
+      - name: educacao.turma.id
+        description: Identificador da turma
+        data_type: string
+        quote: true
+      - name: educacao.turma.nivel_ensino
+        description: Nível de ensino da turma
+        data_type: string
+        quote: true
+      - name: educacao.turma.grupamento
+        description: Grupamento da turma
+        data_type: string
+        quote: true
+      - name: educacao.turma.turno
+        description: Turno da turma
+        data_type: string
+        quote: true
+      - name: educacao.escola
+        description: Estrutura com informações da escola
+        data_type: record
+        quote: true
+      - name: educacao.escola.id
+        description: Identificador da escola
+        data_type: string
+        quote: true
+      - name: educacao.escola.nome
+        description: Nome da escola
+        data_type: string
+        quote: true
+      - name: educacao.escola.id_cre
+        description: Identificador da CRE (Coordenadoria Regional de Educação)
+        data_type: string
+        quote: true
+      - name: educacao.escola.id_inep
+        description: Código INEP da escola
+        data_type: string
+        quote: true
+      - name: ocupacao
+        description: Estrutura com informações de ocupação/trabalho do indivíduo
+        data_type: record
+        quote: true
+      - name: ocupacao.trabalha_prefeitura
+        description: Estrutura com informações sobre trabalho na prefeitura
+        data_type: record
+        quote: true
+      - name: ocupacao.trabalha_prefeitura.indicador
+        description: Indicador se trabalha na prefeitura
+        data_type: boolean
+        quote: false
+      - name: ocupacao.trabalha_prefeitura.vinculo_ativo
+        description: Indicador se o vínculo está ativo
+        data_type: boolean
+        quote: false
       - name: datalake
         description: Estrutura com metadados do data lake
         data_type: record
