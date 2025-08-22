@@ -315,6 +315,50 @@ models:
         description: Número do telefone alternativo
         data_type: string
         quote: true
+      - name: assistencia_social
+        description: Estrutura com informações de assistência social do indivíduo
+        data_type: record
+        quote: true
+      - name: assistencia_social.indicador
+        description: Indicador se possui cadastro em assistência social
+        data_type: boolean
+        quote: false
+      - name: assistencia_social.cadunico
+        description: Estrutura com informações do CadÚnico (assistência social)
+        data_type: record
+        quote: true
+      - name: assistencia_social.cadunico.data_cadastro
+        description: Data de cadastro no CadÚnico
+        data_type: date
+        quote: false
+      - name: assistencia_social.cadunico.data_ultima_atualizacao
+        description: Data da última atualização no CadÚnico
+        data_type: date
+        quote: false
+      - name: assistencia_social.cadunico.data_limite_cadastro_atual
+        description: Data limite do cadastro atual da família no CadÚnico
+        data_type: date
+        quote: false
+      - name: assistencia_social.cadunico.status_cadastral
+        description: Status cadastral no CadÚnico
+        data_type: string
+        quote: true
+      - name: ocupacao
+        description: Estrutura com informações de ocupação/trabalho do indivíduo
+        data_type: record
+        quote: true
+      - name: ocupacao.trabalha_prefeitura
+        description: Estrutura com informações sobre trabalho na prefeitura
+        data_type: record
+        quote: true
+      - name: ocupacao.trabalha_prefeitura.indicador
+        description: Indicador se trabalha na prefeitura
+        data_type: boolean
+        quote: false
+      - name: ocupacao.trabalha_prefeitura.vinculo_ativo
+        description: Indicador se possui vínculo ativo na prefeitura
+        data_type: boolean
+        quote: false
       - name: saude
         description: Estrutura com informações de saúde do indivíduo
         data_type: record
