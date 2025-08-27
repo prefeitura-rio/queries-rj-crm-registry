@@ -33,7 +33,7 @@ with
             tel.telefone_tipo,
             {{ classify_estrategia_envio('tel.telefone_qualidade', 'tel.confianca_propriedade') }} as estrategia_envio
         from telefone t
-        left join {{ ref('telefone') }} tel on t.telefone_numero_completo = tel.telefone_numero_completo
+        left join {{ ref('int_telefones') }} tel on t.telefone_numero_completo = tel.telefone_numero_completo
     ),
 
     telefone_ranqueado as (

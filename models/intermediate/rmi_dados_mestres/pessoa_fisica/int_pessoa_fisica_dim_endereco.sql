@@ -40,13 +40,14 @@ with
 
     source_georreferenciamento as (
         select
+            DISTINCT
             logradouro_tratado,
             numero_porta,
             bairro,
             latitude,
             longitude,
             pluscode
-        from  {{ ref("enderecos") }}
+        from {{ source("rj-crm-registy-intermediario-dados-mestres-staging", "enderecos_geolocalizados") }}
     ),
 
     -- ENDEREÇOS

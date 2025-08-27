@@ -43,6 +43,11 @@ with
         where b.endereco.municipio = 'Rio de Janeiro'
     ),
 
+    ergon as (
+        select distinct lpad(id_cpf, 11, '0') as cpf, 'ergon' as origem
+        from {{ source("rj-smfp", "funcionario") }}
+    ),
+
     all_cpfs as (
         select *
         from educacao
@@ -61,6 +66,9 @@ with
         union all
         select *
         from bcadastro
+        union all
+        select *
+        from ergon
     ),
 
     final_tb as (
@@ -70,6 +78,8 @@ with
             count(*) as origens_count,
             cast(cpf as int64) as cpf_particao
         from all_cpfs
+        -- # TODO: remover esse filtro e ver pq temos nulos no cpf
+        WHERE cpf IS NOT NULL
         group by cpf
     )
 

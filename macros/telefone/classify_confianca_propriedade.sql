@@ -18,7 +18,7 @@ case
     when {{ last_reply_date }} >= date_sub(current_date(), interval 6 month) then 'MUITO_PROVAVEL'
 
     -- PROVAVEL: Atualização recente (últimos 6 meses) em uma fonte de alta confiança.
-    when {{ source_of_data }} in ('sms', 'bcadastro') and {{ last_update_date }} >= date_sub(current_date(), interval 6 month) then 'PROVAVEL'
+    when {{ source_of_data }} in ('agendamento_cadunico', 'sms', 'bcadastro') and {{ last_update_date }} >= date_sub(current_date(), interval 6 month) then 'PROVAVEL'
 
     -- POUCO_PROVAVEL: Atualização nos últimos 2 anos em qualquer sistema oficial, ou sem data de atualização.
     when {{ last_update_date }} >= date_sub(current_date(), interval 2 year) then 'POUCO_PROVAVEL'
