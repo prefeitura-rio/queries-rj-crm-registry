@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: telefone
+  - name: int_telefones
     description: "Dimensão principal de telefones RMI - Registro Mestre de Informações consolidado"
     
     columns:
@@ -121,8 +121,13 @@ models:
               name: core_telefone__telefone_sistemas_quantidade__range
               min_value: 1
         
+      - name: data_particao
+        description: "Data de atualização do registro no RMI"
+        data_type: date
+        quote: false
+        
       - name: rmi_data_atualizacao
-        description: "Data da última atualização do registro no RMI"
+        description: "Data e hora da última atualização do registro no RMI"
         data_type: timestamp
         quote: false
         
