@@ -116,7 +116,7 @@ OR
 | **MUITO_PROVAVEL** | 🟢 **ENVIAR** <br> (85-95% sucesso) | 🟡 **TESTAR** <br> (65-80% sucesso) | 🔴 **NÃO ENVIAR** <br> (0-10% sucesso) |
 | **PROVAVEL** | 🟡 **TESTAR** <br> (75-90% sucesso) | 🟠 **EVITAR** <br> (50-70% sucesso) | 🔴 **NÃO ENVIAR** <br> (0-10% sucesso) |
 | **POUCO_PROVAVEL** | 🟠 **EVITAR** <br> (50-70% sucesso) | 🟠 **EVITAR** <br> (30-50% sucesso) | 🔴 **NÃO ENVIAR** <br> (0-10% sucesso) |
-| **IMPROVAVEL** | 🔴 **EVITAR** <br> (10-30% sucesso) | 🔴 **EVITAR** <br> (5-20% sucesso) | 🔴 **NÃO ENVIAR** <br> (0-5% sucesso) |
+| **IMPROVAVEL** | 🔴 **NÃO ENVIAR** <br> (10-30% sucesso) | 🔴 **NÃO ENVIAR** <br> (5-20% sucesso) | 🔴 **NÃO ENVIAR** <br> (0-5% sucesso) |
 
 ### Lógica de Ranqueamento de Telefones
 
