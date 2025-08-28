@@ -1,8 +1,9 @@
 version: 2
 
 sources:
-  - name: brutos_escritorio_dados
-    database: rj-escritorio-dev
+  - name: brutos_escritorio_dados 
+
+    database: rj-escritorio
     schema: dados_mestres
     tables:
     - name: bairro

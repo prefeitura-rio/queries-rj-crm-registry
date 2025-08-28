@@ -13,7 +13,7 @@ with areas_planejamento_geometria as (
         ST_UNION_AGG(geometry) as geometry_uniao,
         SUM(ST_AREA(geometry)) as area_total_m2,
         COUNT(*) as total_bairros
-    from {{ ref('raw_dados_mestres_bairro') }}
+    from {{ source('brutos_escritorio_dados', 'bairro') }}
     where geometry is not null
     group by id_area_planejamento
 )
@@ -49,6 +49,6 @@ select
     )) as metadados_fonte,
     true as ativo,
     current_timestamp() as data_atualizacao,
-    'rj-escritorio-dev.dados_mestres.bairro' as fonte_dados,
+    'rj-escritorio.dados_mestres.bairro' as fonte_dados,
     '1.0' as versao_schema
 from areas_planejamento_geometria

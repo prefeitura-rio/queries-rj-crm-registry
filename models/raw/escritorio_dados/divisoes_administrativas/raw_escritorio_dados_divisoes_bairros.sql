@@ -40,6 +40,6 @@ select
     )) as metadados_fonte,
     true as ativo,
     current_timestamp() as data_atualizacao,
-    'rj-escritorio-dev.dados_mestres.bairro' as fonte_dados,
+    'rj-escritorio.dados_mestres.bairro' as fonte_dados,
     '1.0' as versao_schema
-from {{ ref('raw_dados_mestres_bairro') }}
+from {{ source('brutos_escritorio_dados', 'bairro') }}

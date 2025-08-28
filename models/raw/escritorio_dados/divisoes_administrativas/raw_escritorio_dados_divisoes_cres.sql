@@ -38,6 +38,6 @@ select
     )) as metadados_fonte,
     true as ativo,
     current_timestamp() as data_atualizacao,
-    'rj-escritorio-dev.dados_mestres.cres' as fonte_dados,
+    'rj-escritorio.dados_mestres.cres' as fonte_dados,
     '1.0' as versao_schema
 from source

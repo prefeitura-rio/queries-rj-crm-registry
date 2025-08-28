@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: int_divisoes_cres
+  - name: raw_escritorio_dados_divisoes_cres
     description: |
       Coordenadorias Regionais de Educação (CREs) transformadas em divisões administrativas.
       Divisões especializadas para gestão educacional no município.
@@ -12,30 +12,30 @@ models:
         description: "Identificador único da CRE (formato: cre_{id})"
         tests:
           - unique:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__id_divisao__unique
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__id_divisao__unique
           - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__id_divisao__not_null
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__id_divisao__not_null
 
       - name: tipo_divisao
         description: Tipo da divisão (sempre 'CRE')
         tests:
           - accepted_values:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__tipo_divisao__accepted_values
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__tipo_divisao__accepted_values
               values: ['CRE']
           - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__tipo_divisao__not_null
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__tipo_divisao__not_null
 
       - name: codigo_original
         description: ID original da CRE na fonte
         tests:
           - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__codigo_original__not_null
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__codigo_original__not_null
 
       - name: nome
         description: Nome da CRE
         tests:
           - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__nome__not_null
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__nome__not_null
 
       - name: nome_abreviado
         description: "Nome abreviado da CRE (formato: CRE {numero})"
@@ -44,7 +44,7 @@ models:
         description: Órgão responsável (sempre 'SME' - Secretaria Municipal de Educação)
         tests:
           - accepted_values:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__orgao_responsavel__accepted_values
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__orgao_responsavel__accepted_values
               values: ['SME']
 
       - name: competencias
@@ -96,22 +96,22 @@ models:
         description: Indicador se a divisão está ativa (sempre true)
         tests:
           - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__ativo__not_null
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__ativo__not_null
 
       - name: data_atualizacao
         description: Data da última atualização
         tests:
           - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__data_atualizacao__not_null
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__data_atualizacao__not_null
 
       - name: fonte_dados
         description: Fonte original dos dados
         tests:
           - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__fonte_dados__not_null
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__fonte_dados__not_null
 
       - name: versao_schema
         description: Versão do schema utilizada
         tests:
           - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_cres__versao_schema__not_null
+              name: intermediate_rmi_dados_mestre_raw_escritorio_dados_divisoes_cres__versao_schema__not_null

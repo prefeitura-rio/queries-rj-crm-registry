@@ -7,7 +7,7 @@
 -- Subprefeituras como divisões administrativas independentes
 
 select
-    concat('subpref_', regexp_replace(lower(subprefeitura), r'[^a-z0-9]', '_')) as id_divisao,
+    concat('subpref_', regexp_replace(lower(sub.subprefeitura), r'[^a-z0-9]', '_')) as id_divisao,
     'SUBPREFEITURA' as tipo_divisao,
     cast(subprefeitura as string) as codigo_original,
     subprefeitura as nome,
@@ -37,6 +37,6 @@ select
     )) as metadados_fonte,
     true as ativo,
     current_timestamp() as data_atualizacao,
-    'rj-escritorio-dev.dados_mestres.subprefeitura' as fonte_dados,
+    'rj-escritorio.dados_mestres.subprefeitura' as fonte_dados,
     '1.0' as versao_schema
-from {{ ref('raw_dados_mestres_subprefeitura') }}
+from {{ source('brutos_escritorio_dados', 'subprefeitura') }} as sub
