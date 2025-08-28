@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: brutos_dados_enriquecidos
+    database: rj-crm-registry
+    schema: brutos_dados_enriquecidos
+    tables:
+    - name: enderecos_geolocalizados

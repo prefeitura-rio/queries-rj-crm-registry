@@ -6,6 +6,8 @@
 
 -- Coordenadorias Regionais de Educação como divisões especializadas
 
+with source as (select * from {{ source('brutos_escritorio_dados', 'cres') }})
+
 select
     concat('cre_', id) as id_divisao,
     'CRE' as tipo_divisao,
@@ -38,4 +40,4 @@ select
     current_timestamp() as data_atualizacao,
     'rj-escritorio-dev.dados_mestres.cres' as fonte_dados,
     '1.0' as versao_schema
-from {{ ref('raw_dados_mestres_cres') }}
+from source

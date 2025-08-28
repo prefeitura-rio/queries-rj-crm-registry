@@ -3,10 +3,15 @@
         alias="enderecos",
         schema="crm_dados_mestres",
         materialized="table",
-        tags=["daily"]
+        tags=["daily"],
     )
 }}
 
-select
-    DISTINCT *
-from {{ source("rj-crm-registy-intermediario-dados-mestres-staging", "enderecos_geolocalizados") }}
+with
+    source as (
+        select *
+        from {{ source("brutos_dados_enriquecidos", "enderecos_geolocalizados") }}
+    )
+
+select distinct *
+from source
