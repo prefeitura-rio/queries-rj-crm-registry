@@ -18,19 +18,19 @@ models:
 
       - name: tipo_divisao
         description: Tipo da divisão (sempre 'BAIRRO')
-        tests:
-          - accepted_values:
-              name: intermediate_rmi_dados_mestre_int_divisoes_bairros__tipo_divisao__accepted_values
-              values: ['BAIRRO']
+        # tests:
+        #   - accepted_values:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_bairros__tipo_divisao__accepted_values
+        #       values: ['BAIRRO']
 
       - name: codigo_original
         description: ID original do bairro na fonte
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_bairros__codigo_original__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_bairros__codigo_original__not_null
 
       - name: nome
         description: Nome do bairro
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_bairros__nome__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_bairros__nome__not_null

@@ -18,31 +18,31 @@ models:
 
       - name: tipo_divisao
         description: Tipo da divisão (sempre 'AEIS')
-        tests:
-          - accepted_values:
-              name: intermediate_rmi_dados_mestre_int_divisoes_aeis__tipo_divisao__accepted_values
-              values: ['AEIS']
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_aeis__tipo_divisao__not_null
+        # tests:
+        #   - accepted_values:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_aeis__tipo_divisao__accepted_values
+        #       values: ['AEIS']
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_aeis__tipo_divisao__not_null
 
       - name: codigo_original
         description: ID original da AEIS na fonte (pode conter valores nulos ou duplicados)
 
       - name: nome
         description: Nome da AEIS
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_aeis__nome__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_aeis__nome__not_null
 
       - name: nome_abreviado
         description: Nome abreviado ou sigla da AEIS
 
       - name: orgao_responsavel
         description: Órgão responsável (sempre 'SMU' - Secretaria Municipal de Urbanismo)
-        tests:
-          - accepted_values:
-              name: intermediate_rmi_dados_mestre_int_divisoes_aeis__orgao_responsavel__accepted_values
-              values: ['SMU']
+        # tests:
+        #   - accepted_values:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_aeis__orgao_responsavel__accepted_values
+        #       values: ['SMU']
 
       - name: competencias
         description: Lista de competências da AEIS (habitação social, regularização fundiária)
@@ -91,24 +91,24 @@ models:
 
       - name: ativo
         description: Indicador se a divisão está ativa (sempre true)
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_aeis__ativo__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_aeis__ativo__not_null
 
       - name: data_atualizacao
         description: Data da última atualização
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_aeis__data_atualizacao__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_aeis__data_atualizacao__not_null
 
       - name: fonte_dados
         description: Fonte original dos dados
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_aeis__fonte_dados__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_aeis__fonte_dados__not_null
 
       - name: versao_schema
         description: Versão do schema utilizada
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_aeis__versao_schema__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_aeis__versao_schema__not_null

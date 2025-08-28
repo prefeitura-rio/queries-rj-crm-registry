@@ -42,7 +42,7 @@ models:
       - name: sistema_nome
         description: >
           Nome do sistema de origem do telefone.
-          Valores: bcadastro, sms, wetalkie, ergon.
+          Valores: bcadastro, sms, wetalkie, ergon, agendamento_cadunico.
         data_tests:
           - not_null:
               name: intermediario_telefones_raw_consolidated__sistema_nome__not_null

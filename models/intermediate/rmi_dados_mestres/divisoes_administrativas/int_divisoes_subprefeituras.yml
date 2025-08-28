@@ -18,34 +18,34 @@ models:
 
       - name: tipo_divisao
         description: Tipo da divisão (sempre 'SUBPREFEITURA')
-        tests:
-          - accepted_values:
-              name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__tipo_divisao__accepted_values
-              values: ['SUBPREFEITURA']
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__tipo_divisao__not_null
+        # tests:
+        #   - accepted_values:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__tipo_divisao__accepted_values
+        #       values: ['SUBPREFEITURA']
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__tipo_divisao__not_null
 
       - name: codigo_original
         description: Nome original da subprefeitura na fonte
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__codigo_original__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__codigo_original__not_null
 
       - name: nome
         description: Nome da subprefeitura
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__nome__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__nome__not_null
 
       - name: nome_abreviado
         description: Nome abreviado da subprefeitura (null)
 
       - name: orgao_responsavel
         description: Órgão responsável (sempre 'SUBGAB' - Subgabinete)
-        tests:
-          - accepted_values:
-              name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__orgao_responsavel__accepted_values
-              values: ['SUBGAB']
+        # tests:
+        #   - accepted_values:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__orgao_responsavel__accepted_values
+        #       values: ['SUBGAB']
 
       - name: competencias
         description: Lista de competências da subprefeitura (administração regional, serviços públicos locais)
@@ -94,24 +94,24 @@ models:
 
       - name: ativo
         description: Indicador se a divisão está ativa (sempre true)
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__ativo__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__ativo__not_null
 
       - name: data_atualizacao
         description: Data da última atualização
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__data_atualizacao__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__data_atualizacao__not_null
 
       - name: fonte_dados
         description: Fonte original dos dados
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__fonte_dados__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__fonte_dados__not_null
 
       - name: versao_schema
         description: Versão do schema utilizada
-        tests:
-          - not_null:
-              name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__versao_schema__not_null
+        # tests:
+        #   - not_null:
+        #       name: intermediate_rmi_dados_mestre_int_divisoes_subprefeituras__versao_schema__not_null

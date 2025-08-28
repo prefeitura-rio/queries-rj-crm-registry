@@ -17,6 +17,7 @@ SELECT
 --   reason as razao_bloqueio,
 --   DATE(date_time) as data_particao
 -- TODO: mudar a origem do dado
-FROM `rj-crm-registry-dev.patricia___brutos_wetalkie.blocklist`
+FROM `rj-crm-registry.brutos_wetalkie.blocklist`
 WHERE contato_telefone IS NOT NULL AND data_bloqueio IS NOT NULL
 -- WHERE phone IS NOT NULL AND date_time IS NOT NULL
+--

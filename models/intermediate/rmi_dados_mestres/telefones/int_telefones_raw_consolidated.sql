@@ -193,14 +193,15 @@ telefones_all_sources as (
 )
 
 select 
-  distinct
   origem_id,
   origem_tipo,
   telefone_numero_completo,
   sistema_nome,
   campo_origem,
   contexto,
-  data_atualizacao
+  MAX(data_atualizacao) AS data_atualizacao
 from telefones_all_sources
 where telefone_numero_completo is not null
   and length(telefone_numero_completo) >= 10
+group by 1, 2, 3, 4, 5, 6
+-- Keeping data_atualizacao as the most recent date from any source

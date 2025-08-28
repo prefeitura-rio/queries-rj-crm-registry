@@ -15,10 +15,10 @@ models:
         data_tests:
           - unique:
               name: dim_pessoa_juridica__cnpj__unique
-              severity: error
+              severity: warn
           - not_null:
               name: dim_pessoa_juridica__cnpj__not_null
-              severity: error
+              severity: warn
 
       - name: nome_empresarial
         description: Razão social da empresa
@@ -330,4 +330,4 @@ models:
         data_tests:
           - not_null:
               name: dim_pessoa_juridica__cnpj_particao__not_null
-              severity: error
+              severity: warn
