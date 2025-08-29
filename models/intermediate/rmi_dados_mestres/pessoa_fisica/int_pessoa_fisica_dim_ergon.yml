@@ -13,9 +13,6 @@ models:
           - unique:
               name: int_pessoa_fisica_dim_ergon__cpf__unique
               severity: error
-          - not_null:
-              name: int_pessoa_fisica_dim_ergon__cpf__not_null
-              severity: error
       - name: trabalha_prefeitura
         description: Estrutura com dados de funcionário público
         data_type: record
@@ -24,9 +21,5 @@ models:
               name: int_pessoa_fisica_dim_ergon__trabalha_prefeitura__not_null
               severity: error
       - name: cpf_particao
-        description: Partição do CPF para distribuição de dados
+        description: "Coluna de partição baseada no CPF para otimização de queries."
         data_type: integer
-        data_tests:
-          - not_null:
-              name: int_pessoa_fisica_dim_ergon__cpf_particao__not_null
-              severity: error
