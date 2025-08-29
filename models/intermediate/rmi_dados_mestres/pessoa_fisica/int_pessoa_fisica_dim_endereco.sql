@@ -16,7 +16,7 @@ with
     source_cep as (select * from {{ source("br_bd_diretorios_brasil", "cep") }}),
 
     all_prefeitura as (
-         select cpf, cpf_particao from {{ ref("int_pessoa_fisica_all_cpf") }}
+        select cpf, cpf_particao from {{ ref("int_pessoa_fisica_all_cpf") }}
     ),
 
     source_bcadastro as (
@@ -37,17 +37,10 @@ with
         inner join {{ source("rj-smas", "cadastros") }} b using (cpf_particao)
     ),
 
-
     source_georreferenciamento as (
-        select
-            DISTINCT
-            logradouro_tratado,
-            numero_porta,
-            bairro,
-            latitude,
-            longitude,
-            pluscode
-        from {{ source("rj-crm-registy-intermediario-dados-mestres-staging", "enderecos_geolocalizados") }}
+        select distinct
+            logradouro_tratado, numero_porta, bairro, latitude, longitude, pluscode
+        from {{ source("brutos_dados_enriquecidos", "enderecos_geolocalizados") }}
     ),
 
     -- ENDEREÇOS
@@ -143,9 +136,13 @@ with
     tratar_endereco_corrigido as (
         select
             *,
-            LOWER(REGEXP_REPLACE({{ proper_br("logradouro") }}, r'[^a-zA-Z0-9 ]', '')) AS logradouro_geo,
-            LOWER(REGEXP_REPLACE(numero, r'[^a-zA-Z0-9 ]', '')) AS numero_porta_geo,
-            LOWER(REGEXP_REPLACE({{ proper_br("bairro") }}, r'[^a-zA-Z0-9 ]', '')) AS bairro_geo
+            lower(
+                regexp_replace({{ proper_br("logradouro") }}, r'[^a-zA-Z0-9 ]', '')
+            ) as logradouro_geo,
+            lower(regexp_replace(numero, r'[^a-zA-Z0-9 ]', '')) as numero_porta_geo,
+            lower(
+                regexp_replace({{ proper_br("bairro") }}, r'[^a-zA-Z0-9 ]', '')
+            ) as bairro_geo
         from endereco_corrigido
 
     ),
@@ -169,7 +166,8 @@ with
             geo.longitude,
             geo.pluscode
         from tratar_endereco_corrigido endereco
-        left join source_georreferenciamento geo
+        left join
+            source_georreferenciamento geo
             on endereco.logradouro_geo = geo.logradouro_tratado
             and endereco.numero_porta_geo = geo.numero_porta
             and endereco.bairro_geo = geo.bairro
@@ -224,7 +222,8 @@ with
             array(
                 select as struct * except (pos)
                 from unnest(endereco)
-                with offset pos
+                with
+                offset pos
                 where pos > 0
             ) as alternativo
         from endereco_ordernado_agrupado

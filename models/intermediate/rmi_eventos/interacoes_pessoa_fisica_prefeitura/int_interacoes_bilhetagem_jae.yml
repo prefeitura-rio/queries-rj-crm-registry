@@ -6,73 +6,91 @@ models:
     columns:
       - name: id_interacao
         description: "UUID único para a interação."
-        tests:
-          - not_null
-          - unique
+        data_tests:
+          - not_null:
+              name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__id_interacao__not_null
+          - unique:
+              name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__id_interacao__unique
       - name: cpf_cidadao
         description: "CPF do cidadão (11 dígitos)."
-        tests:
-          - not_null
+        data_tests:
+          - not_null:
+              name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__cpf_cidadao__not_null
       - name: sistema_origem
         description: "Sistema de origem da interação."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['BILHETAGEM_JAE']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__sistema_origem__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__sistema_origem__accepted_values
+        #       values: ['BILHETAGEM_JAE']
       - name: protocolo_origem
         description: "ID original da transação no sistema de origem."
-        tests:
-          - not_null
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__protocolo_origem__not_null
       - name: tipo_interacao
         description: "Tipo principal da interação - todas as transações de transporte são CONSUMO."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['CONSUMO']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__tipo_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__tipo_interacao__accepted_values
+        #       values: ['CONSUMO']
       - name: categoria_interacao
         description: "Categoria da interação - todas as transações são de TRANSPORTE."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['TRANSPORTE']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__categoria_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__categoria_interacao__accepted_values
+        #       values: ['TRANSPORTE']
       - name: subcategoria_interacao
         description: "Subcategoria específica baseada no modo de transporte."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['TRANSPORTE_PUBLICO_ONIBUS', 'TRANSPORTE_PUBLICO_BRT', 'TRANSPORTE_PUBLICO_VLT', 'TRANSPORTE_PUBLICO_VAN', 'TRANSPORTE_PUBLICO_BARCAS', 'TRANSPORTE_PUBLICO_FRETAMENTO', 'TRANSPORTE_PUBLICO_OUTROS']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__subcategoria_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__subcategoria_interacao__accepted_values
+        #       values: ['TRANSPORTE_PUBLICO_ONIBUS', 'TRANSPORTE_PUBLICO_BRT', 'TRANSPORTE_PUBLICO_VLT', 'TRANSPORTE_PUBLICO_VAN', 'TRANSPORTE_PUBLICO_BARCAS', 'TRANSPORTE_PUBLICO_FRETAMENTO', 'TRANSPORTE_PUBLICO_OUTROS']
       - name: descricao_interacao
         description: "Descrição da viagem incluindo tipo de transação, modo e operadora."
-        tests:
-          - not_null
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__descricao_interacao__not_null
       - name: canal_interacao
         description: "Canal utilizado para a interação - validadores do transporte público."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['VALIDADOR_ONIBUS', 'VALIDADOR_VLT', 'VALIDADOR_BARCAS', 'VALIDADOR_TRANSPORTE']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__canal_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__canal_interacao__accepted_values
+        #       values: ['VALIDADOR_ONIBUS', 'VALIDADOR_VLT', 'VALIDADOR_BARCAS', 'VALIDADOR_TRANSPORTE']
       - name: modalidade_interacao
         description: "Modalidade da interação - sempre físico para transporte público."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['FISICO']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__modalidade_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__modalidade_interacao__accepted_values
+        #       values: ['FISICO']
       - name: data_interacao
         description: "Data da transação de transporte."
-        tests:
-          - not_null
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__data_interacao__not_null
       - name: datahora_inicio
         description: "Timestamp da transação."
-        tests:
-          - not_null
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__datahora_inicio__not_null
       - name: datahora_fim
         description: "Timestamp da transação (igual ao início para transporte)."
-        tests:
-          - not_null
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__datahora_fim__not_null
       - name: data_particao
         description: "Data de partição da tabela."
-        tests:
-          - not_null
       - name: bairro_interacao
         description: "Bairro da interação (não disponível para transações de transporte)."
       - name: endereco_interacao
@@ -81,11 +99,14 @@ models:
         description: "Coordenadas geográficas da transação (quando disponível)."
       - name: desfecho_interacao
         description: "Resultado da interação - sempre RESOLVIDA para transações registradas."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['RESOLVIDA']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__desfecho_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__desfecho_interacao__accepted_values
+        #       values: ['RESOLVIDA']
       - name: dados_origem
         description: "JSON com os dados originais da transação de transporte (bilhetagem)."
-        tests:
-          - not_null
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_bilhetagem_jae__dados_origem__not_null

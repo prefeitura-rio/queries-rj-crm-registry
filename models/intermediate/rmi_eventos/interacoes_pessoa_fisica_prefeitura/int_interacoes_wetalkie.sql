@@ -29,7 +29,7 @@ pessoa_fisica_phones as (
             coalesce(telefone.principal.ddd, ''),
             telefone.principal.valor
         ) as telefone_completo
-    from {{ ref("pessoa_fisica") }}
+    from {{ ref("dim_pessoa_fisica") }}
     where telefone.indicador = true 
       and telefone.principal.valor is not null
     
@@ -42,7 +42,7 @@ pessoa_fisica_phones as (
             coalesce(alt.ddd, ''),
             alt.valor
         ) as telefone_completo
-    from {{ ref("pessoa_fisica") }},
+    from {{ ref("dim_pessoa_fisica") }},
     unnest(telefone.alternativo) as alt
     where telefone.indicador = true 
       and alt.valor is not null

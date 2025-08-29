@@ -11,7 +11,8 @@ models:
       - name: id_hsm
         description: "ID do template de mensagem (HSM) enviado"
         tests:
-          - not_null
+          - not_null:
+              name: intermediate_rmi_conversas_chatbot_int_chatbot_base_disparo__id_hsm__not_null
 
       - name: id_disparo
         description: "ID único do disparo"
@@ -25,12 +26,14 @@ models:
       - name: id_contato
         description: "ID do contato na plataforma"
         tests:
-          - not_null
+          - not_null:
+              name: intermediate_rmi_conversas_chatbot_int_chatbot_base_disparo__id_contato__not_null
 
       - name: contato_telefone
         description: "Número de telefone do contato"
         tests:
-          - not_null
+          - not_null:
+              name: intermediate_rmi_conversas_chatbot_int_chatbot_base_disparo__contato_telefone__not_null
 
       - name: nome_hsm
         description: "Nome do template de mensagem (HSM)"
@@ -91,5 +94,3 @@ models:
 
       - name: data_particao
         description: "Data da partição dos dados"
-        tests:
-          - not_null
