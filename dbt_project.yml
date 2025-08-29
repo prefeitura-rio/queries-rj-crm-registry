@@ -70,6 +70,9 @@ models:
     core:
       +materialized: table
 
+data_tests:
+  +store_failures: true
+  +schema: gerenciamento_dbt_testes
 
 seeds:
   +schema: brutos_seeds
