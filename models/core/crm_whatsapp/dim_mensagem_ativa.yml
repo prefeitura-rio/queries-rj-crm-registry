@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: mensagem_ativa
+  - name: dim_mensagem_ativa
     description: "Modelo que lista as mensagens ativas (HSM) utilizadas no CRM WhatsApp, com seus IDs, nomes, ambientes, categorias e órgãos responsáveis."
     columns:
       - name: id_hsm

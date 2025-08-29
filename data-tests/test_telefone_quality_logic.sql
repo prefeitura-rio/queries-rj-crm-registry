@@ -12,7 +12,7 @@ select
          then 'ERRO: Alta frequência deveria ser INVALIDO'
     else null
   end as erro_classificacao
-from {{ ref('int_rmi_telefones_consolidated') }}
+from {{ ref('dim_telefone') }}
 where case 
     when telefone_proprietarios_quantidade <= 5 and telefone_qualidade != 'VALIDO' 
          and telefone_qualidade != 'SUSPEITO' then true

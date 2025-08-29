@@ -12,7 +12,7 @@ select
         when st_area(geometry) = 0 then 'EMPTY_GEOMETRY'
         else 'VALID'
     end as geometry_status
-from {{ ref('divisoes_administrativas') }}
+from {{ ref('dim_divisoes_administrativas') }}
 where case
     when geometry is null then false  -- NULL geometries are allowed for some division types
     when st_area(geometry) = 0 and tipo_divisao in ('BAIRRO', 'AEIS', 'CRE', 'SUBPREFEITURA') then true  -- These should have area

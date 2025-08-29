@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: interacoes_pessoa_fisica_prefeitura
+  - name: fct_interacoes_pessoa_fisica_prefeitura
     description: |
       Interações Cidadão-Prefeitura Unificada
       

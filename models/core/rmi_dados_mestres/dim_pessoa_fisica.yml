@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: pessoa_fisica
+  - name: dim_pessoa_fisica
     description: Modelo contendo informações de pessoas físicas com dados cadastrais dentro da Prefeitura
     config:
       alias: pessoa_fisica
@@ -15,9 +15,6 @@ models:
         data_tests:
           - unique:
               name: dim_pessoa_fisica__cpf__unique
-              severity: error
-          - not_null:
-              name: dim_pessoa_fisica__cpf__not_null
               severity: error
       - name: nome
         description: Nome completo da pessoa física

@@ -213,7 +213,7 @@ with
                     partition by contato_telefone
                     order by data_particao desc
                 ) as rn
-            from {{ ref('contato') }}
+            from {{ ref('dim_contato') }}
             where contato_telefone is not null
         )
         where rn = 1

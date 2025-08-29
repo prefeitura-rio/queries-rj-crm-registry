@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: enderecos
+  - name: dim_enderecos
     description: "Modelo que consolida informações de endereços geolocalizados, servindo como uma dimensão mestre de endereços. As colunas foram inferidas e podem precisar de revisão manual."
     columns:
       - name: id_endereco

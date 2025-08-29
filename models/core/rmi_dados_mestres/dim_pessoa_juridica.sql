@@ -1,7 +1,7 @@
 {{
     config(
         alias="pessoa_juridica",
-        schema="rmi_crm_dados_mestres",
+        schema="rmi_dados_mestres",
         materialized="table",
         partition_by={
             "field": "cnpj_particao",

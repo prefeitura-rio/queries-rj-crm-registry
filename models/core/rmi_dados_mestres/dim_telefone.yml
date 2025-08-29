@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: telefone
+  - name: dim_telefone
     description: "Dimensão principal de telefones RMI - Registro Mestre de Informações consolidado"
     
     columns:

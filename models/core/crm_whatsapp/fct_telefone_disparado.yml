@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: telefone_disparado
+  - name: fct_telefone_disparado
     description: "Modelo que registra os telefones para os quais foram feitos disparos de mensagens (HSM) via CRM WhatsApp, incluindo o status de falha."
     columns:
       - name: id_hsm

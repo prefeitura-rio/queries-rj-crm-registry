@@ -64,23 +64,23 @@ municipio as (
 ),
 
 bairros as (
-    select * from {{ ref('int_divisoes_bairros') }}
+    select * from {{ ref('raw_escritorio_dados_divisoes_bairros') }}
 ),
 
 areas_planejamento as (
-    select * from {{ ref('int_divisoes_areas_planejamento') }}
+    select * from {{ ref('raw_escritorio_dados_divisoes_areas_planejamento') }}
 ),
 
 subprefeituras as (
-    select * from {{ ref('int_divisoes_subprefeituras') }}
+    select * from {{ ref('raw_escritorio_dados_divisoes_subprefeituras') }}
 ),
 
 cres as (
-    select * from {{ ref('int_divisoes_cres') }}
+    select * from {{ ref('raw_escritorio_dados_divisoes_cres') }}
 ),
 
 aeis as (
-    select * from {{ ref('int_divisoes_aeis') }}
+    select * from {{ ref('raw_escritorio_dados_divisoes_aeis') }}
 )
 
 select * from municipio

@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: chatbot
+  - name: fct_chatbot
     description: "Modelo final que consolida todas as interações de chatbot (ativas e receptivas), enriquecendo com dados de contato, estatísticas de sessão e classificações de erro."
     columns:
       - name: id_interacao

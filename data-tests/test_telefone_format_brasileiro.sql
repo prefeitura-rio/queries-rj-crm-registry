@@ -22,7 +22,7 @@ select
          then 'ERRO: Fixo brasileiro deve ter 8 dígitos'
     else null
   end as erro_formato
-from {{ ref('int_rmi_telefones_consolidated') }}
+from {{ ref('dim_telefone') }}
 where telefone_ddi = '55'
   and (
     telefone_ddd is null 

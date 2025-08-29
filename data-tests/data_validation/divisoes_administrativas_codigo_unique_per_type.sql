@@ -7,7 +7,7 @@ select
     tipo_divisao,
     codigo_original,
     count(*) as duplicata_count
-from {{ ref('divisoes_administrativas') }}
+from {{ ref('dim_divisoes_administrativas') }}
 where codigo_original is not null
 group by tipo_divisao, codigo_original
 having count(*) > 1

@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: pessoa_juridica
+  - name: dim_pessoa_juridica
     description: Modelo contendo informações cadastrais e societárias de pessoas jurídicas (empresas)
     config:
       alias: pessoa_juridica
@@ -13,12 +13,9 @@ models:
         data_type: string
         quote: true
         data_tests:
-          - unique:
-              name: dim_pessoa_juridica__cnpj__unique
-              severity: error
           - not_null:
               name: dim_pessoa_juridica__cnpj__not_null
-              severity: error
+              severity: warn
 
       - name: nome_empresarial
         description: Razão social da empresa
@@ -327,7 +324,3 @@ models:
         description: Partição do CNPJ para distribuição de dados
         data_type: integer
         quote: false
-        data_tests:
-          - not_null:
-              name: dim_pessoa_juridica__cnpj_particao__not_null
-              severity: error

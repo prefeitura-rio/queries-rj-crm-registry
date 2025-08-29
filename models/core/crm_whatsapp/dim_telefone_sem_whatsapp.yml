@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: telefone_sem_whatsapp
+  - name: dim_telefone_sem_whatsapp
     description: "Modelo que identifica telefones que não possuem WhatsApp, com base em falhas de entrega de mensagens."
     columns:
       - name: contato_telefone

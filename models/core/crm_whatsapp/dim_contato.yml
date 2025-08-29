@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: contato
+  - name: dim_contato
     description: "Modelo que consolida informações de contato do CRM WhatsApp, incluindo dados de opt-in/out e quarentena."
     columns:
       - name: id_contato

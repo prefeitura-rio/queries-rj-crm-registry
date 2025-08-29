@@ -12,7 +12,7 @@
 with source_smtr as (
     -- Seleciona e filtra os dados da fonte
     select *
-    from {{ ref('base_rj-smtr_transacao_cpf') }}
+    from {{ source('rj-smtr', 'transacao_cpf') }}
     where cpf_cliente is not null
       and cpf_cliente != ''
       and regexp_contains(cpf_cliente, r'^\d{11}$')  -- CPF válido
