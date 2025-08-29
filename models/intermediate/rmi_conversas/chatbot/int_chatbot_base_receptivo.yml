@@ -7,7 +7,8 @@ models:
       - name: id_sessao
         description: "Identificador único da sessão de atendimento (reply ID)."
         tests:
-          - not_null
+          - not_null:
+              name: intermediate_rmi_conversas_chatbot_int_chatbot_base_receptivo__id_sessao__not_null
 
       - name: protocolo
         description: "Número de protocolo associado ao atendimento."
@@ -134,5 +135,3 @@ models:
 
       - name: data_particao
         description: "Data de início do atendimento, usada como campo de particionamento principal da tabela."
-        tests:
-          - not_null

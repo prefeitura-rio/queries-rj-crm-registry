@@ -10,7 +10,7 @@ crm:
       method: service-account
       priority: interactive
       project: rj-crm-registry-dev
-      threads: 1
+      threads: 20
       type: bigquery
     staging:
       dataset: dbt
@@ -21,7 +21,7 @@ crm:
       method: service-account
       priority: interactive
       project: rj-crm-registry-dev
-      threads: 1
+      threads: 20
       type: bigquery
     prod:
       dataset: dbt
@@ -32,5 +32,5 @@ crm:
       method: service-account
       priority: interactive
       project: rj-crm-registry
-      threads: 1
+      threads: 20
       type: bigquery

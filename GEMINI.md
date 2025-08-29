@@ -64,7 +64,7 @@ source ~/.zshrc && source .venv/bin/activate && sqlfmt --jinja models/ macros/
 
 ### Directory Structure
 - `models/raw/` - Raw data models that reference source tables
-- `models/intermediate/` - Intermediate models for data transformations (materialized as ephemeral)
+- `models/intermediate/` - Intermediate models for data transformations (materialized as ephemeral), used as a way to build the CTEs that are going to be used on models/core/
 - `models/core/` - Core business entities (dimensions and facts, materialized as tables)
 - `models/marts/` - Business-specific data marts
 - `macros/` - Reusable SQL functions and utilities
@@ -114,13 +114,17 @@ The project includes several custom macros in the `macros/` directory:
 ### Test Naming Convention
 All tests follow: `{layer}_{dataset}_{table}__{column}__{test_name}`
 
+For all tests you have to follow the next pattern `<core/intermedoate/raw/mart>_<schema>_<nome_arquivo>__<coluna>__<informacao_teste>`. For example: `core_crm_whatsapp_dim_contato__id_contato__unique`.
+
+On tests that considerer "accepted_values" do not add on test name these values
+
 Example:
 ```yaml
 data_tests:
   - unique:
-      name: dim_pessoa_fisica__cpf__unique
+      name: core_rmi_dados_mestres_dim_pessoa_fisica__cpf__unique
   - not_null:
-      name: dim_pessoa_fisica__cpf__not_null
+      name: core_rmi_dados_mestres_dim_pessoa_fisica__cpf__not_null
 ```
 
 ### Required Tests
@@ -128,6 +132,8 @@ Every model should have:
 1. Primary key tests (unique + not_null)
 2. Foreign key relationship tests where applicable
 3. Business logic validation tests
+
+**Attention**: Do not add tests on columns that contains `_particao` on name.
 
 ## Configuration Details
 

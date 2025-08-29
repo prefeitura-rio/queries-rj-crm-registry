@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: brutos_escritorio_dados 
+
+    database: rj-escritorio
+    schema: dados_mestres
+    tables:
+    - name: bairro
+      description: "Bairros do Rio de Janeiro com informações administrativas e geográficas"
+    - name: subprefeitura
+      description: "Subprefeituras para descentralização administrativa"
+    - name: cres
+      description: "Coordenadorias Regionais de Educação"
+    - name: aeis
+      description: "Áreas de Especial Interesse Social"

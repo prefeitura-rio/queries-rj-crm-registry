@@ -150,7 +150,7 @@ telefones_agendamento_cadunico as (
     'smas_brutos_datametrica.telefone' as campo_origem,
     'PESSOAL' as contexto,
     DATE(data_particao) as data_atualizacao
-  from {{ ref('raw_cadunico_agendamentos') }} as t
+  from {{ ref('raw_smas_cadunico_agendamentos') }} as t
   where telefone is not null
 ),
 
@@ -192,15 +192,16 @@ telefones_all_sources as (
   -- sistema_nome STRING, campo_origem STRING, contexto STRING, data_atualizacao DATETIME
 )
 
-select 
-  distinct
+select
   origem_id,
   origem_tipo,
   telefone_numero_completo,
   sistema_nome,
   campo_origem,
   contexto,
-  data_atualizacao
+  MAX(data_atualizacao) as data_atualizacao
 from telefones_all_sources
 where telefone_numero_completo is not null
   and length(telefone_numero_completo) >= 10
+group by 1, 2, 3, 4, 5, 6
+-- keep only last update date per source
