@@ -10,8 +10,33 @@ sources:
           docs:
             show: false
       - name: cep
-        meta:
-          docs:
-            show: false
+        description: Tabela de CEPs do Brasil.
+        external_location: "basedosdados.br_bd_diretorios_brasil.cep"
+        loaded_at_field: data_particao
+        columns:
+          - name: cep
+            description: Código de Endereçamento Postal.
+          - name: logradouro
+            description: Nome do logradouro.
+          - name: complemento
+            description: Complemento do logradouro.
+          - name: bairro
+            description: Nome do bairro.
+          - name: municipio
+            description: Nome do município.
+          - name: uf
+            description: Sigla da Unidade da Federação.
+          - name: tipo_logradouro
+            description: Tipo de logradouro.
+          - name: id_municipio
+            description: ID do município.
+          - name: id_municipio_6
+            description: ID do município (6 dígitos).
+          - name: id_municipio_7
+            description: ID do município (7 dígitos).
+          - name: data_particao
+            description: Data de particionamento da tabela.
+        config:
+          enabled: true
 
 
