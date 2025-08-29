@@ -11,7 +11,8 @@ models:
       - name: id_contato
         description: "ID único do contato na plataforma Wetalkie."
         tests:
-          - not_null
+          - not_null:
+              name: intermediate_rmi_conversas_chatbot_int_chatbot_base_receptivo_contatos__id_contato__not_null
 
       - name: data_update
         description: "Data da última interação registrada do contato. Fuso horário America/Sao_Paulo."

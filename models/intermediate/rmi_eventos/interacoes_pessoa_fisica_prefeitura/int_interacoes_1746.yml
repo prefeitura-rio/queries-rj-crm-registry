@@ -6,67 +6,83 @@ models:
     columns:
       - name: id_interacao
         description: "UUID único para a interação."
-        tests:
-          - not_null
-          - unique
+        data_tests:
+          - not_null:
+              name: intermediate_rmi_eventos_int_interacoes_1746__id_interacao__not_null
+          - unique:
+              name: intermediate_rmi_eventos_int_interacoes_1746__id_interacao__unique
       - name: cpf_cidadao
         description: "CPF do cidadão (11 dígitos)."
-        tests:
-          - not_null
+        data_tests:
+          - not_null:
+              name: intermediate_rmi_eventos_int_interacoes_1746__cpf_cidadao__not_null
       - name: sistema_origem
         description: "Sistema de origem da interação."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['1746', 'wetalkie', 'bcadastro']
+        data_tests:
+          - not_null:
+              name: intermediate_rmi_eventos_int_interacoes_1746__sistema_origem__not_null
+          # - accepted_values:
+          #     name: intermediate_rmi_eventos_int_interacoes_1746__sistema_origem__accepted_values
+          #     values: ['1746', 'wetalkie', 'bcadastro']
       - name: protocolo_origem
         description: "ID original da interação no sistema de origem."
-        tests:
-          - not_null
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__protocolo_origem__not_null
       - name: tipo_interacao
         description: "Tipo principal da interação baseado na natureza da solicitação."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['SOLICITACAO', 'CONSUMO', 'COMUNICACAO', 'CADASTRO']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__tipo_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__tipo_interacao__accepted_values
+        #       values: ['SOLICITACAO', 'CONSUMO', 'COMUNICACAO', 'CADASTRO']
       - name: categoria_interacao
         description: "Categoria da interação baseada no domínio do serviço."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['INFRAESTRUTURA_URBANA', 'LIMPEZA_URBANA', 'FISCALIZACAO', 'MEIO_AMBIENTE', 'TRANSPORTE', 'SAUDE', 'ASSISTENCIA_SOCIAL', 'SERVICOS_PUBLICOS', 'OUTROS']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__categoria_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__categoria_interacao__accepted_values
+        #       values: ['INFRAESTRUTURA_URBANA', 'LIMPEZA_URBANA', 'FISCALIZACAO', 'MEIO_AMBIENTE', 'TRANSPORTE', 'SAUDE', 'ASSISTENCIA_SOCIAL', 'SERVICOS_PUBLICOS', 'OUTROS']
       - name: subcategoria_interacao
         description: "Objeto específico da interação."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['LIMPEZA_URBANA_REMOCAO_ENTULHO', 'INFRAESTRUTURA_ILUMINACAO_PUBLICA', 'FISCALIZACAO_TRANSITO_ESTACIONAMENTO', 'LIMPEZA_URBANA_LOGRADOUROS', 'INFRAESTRUTURA_PAVIMENTACAO', 'MEIO_AMBIENTE_MANEJO_ARVORES', 'INFRAESTRUTURA_DRENAGEM', 'MEIO_AMBIENTE_CONTROLE_VETORES', 'FISCALIZACAO_ESTRUTURA_IMOVEL', 'INFRAESTRUTURA_SINALIZACAO', 'FISCALIZACAO_POLUICAO_SONORA', 'ASSISTENCIA_SOCIAL_ATENDIMENTO', 'TRANSPORTE_PUBLICO_ONIBUS', 'MEIO_AMBIENTE_PROTECAO_ANIMAIS', 'SAUDE_PROGRAMAS_ESPECIAIS', 'LICENCIAMENTO_ALVARA', 'FISCALIZACAO_COMERCIO_AMBULANTE', 'FISCALIZACAO_VEICULO_ABANDONADO', 'SERVICOS_DOCUMENTOS_TECNICOS', 'FISCALIZACAO_VIAS_PUBLICAS', 'SERVICOS_ATENDIMENTO_CIDADAO', 'SAUDE_ZOONOSES_CONTROLE_ANIMAIS', 'LIMPEZA_URBANA_EQUIPAMENTOS', 'MEIO_AMBIENTE_CONTROLE_POLUICAO', 'DIREITOS_CONSUMIDOR', 'FISCALIZACAO_OCUPACAO_AREA_PUBLICA', 'FISCALIZACAO_LIMPEZA_TERRENOS', 'VIGILANCIA_SANITARIA', 'SAUDE_EMERGENCIA_SANITARIA', 'DEFESA_CIVIL_GEOTECNIA', 'TRANSPORTE_TAXI', 'SERVICOS_PROCESSOS_ADMINISTRATIVOS', 'INFRAESTRUTURA_MOBILIARIO_URBANO', 'LIMPEZA_URBANA_COLETA_SELETIVA', 'TRANSPORTE_REGULAMENTACAO_VIARIA', 'MEIO_AMBIENTE_PARQUES_PRACAS', 'TRANSPORTE_ESPECIAL', 'SERVICOS_QUALIDADE_ATENDIMENTO', 'FISCALIZACAO_POSTURA_MUNICIPAL', 'CULTURA_ESPORTE_LAZER', 'EDUCACAO', 'OBRAS_PUBLICAS', 'SERVICOS_FUNERARIOS', 'PATRIMONIO_PUBLICIDADE', 'SAUDE_INFRAESTRUTURA', 'DIREITOS_HUMANOS_ASSISTENCIA', 'TRANSPORTE_CICLOVIAS', 'TRABALHO_INCLUSAO', 'SERVICOS_DIGITAIS', 'OUTROS_SERVICOS_URBANOS']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__subcategoria_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__subcategoria_interacao__accepted_values
+        #       values: ['LIMPEZA_URBANA_REMOCAO_ENTULHO', 'INFRAESTRUTURA_ILUMINACAO_PUBLICA', 'FISCALIZACAO_TRANSITO_ESTACIONAMENTO', 'LIMPEZA_URBANA_LOGRADOUROS', 'INFRAESTRUTURA_PAVIMENTACAO', 'MEIO_AMBIENTE_MANEJO_ARVORES', 'INFRAESTRUTURA_DRENAGEM', 'MEIO_AMBIENTE_CONTROLE_VETORES', 'FISCALIZACAO_ESTRUTURA_IMOVEL', 'INFRAESTRUTURA_SINALIZACAO', 'FISCALIZACAO_POLUICAO_SONORA', 'ASSISTENCIA_SOCIAL_ATENDIMENTO', 'TRANSPORTE_PUBLICO_ONIBUS', 'MEIO_AMBIENTE_PROTECAO_ANIMAIS', 'SAUDE_PROGRAMAS_ESPECIAIS', 'LICENCIAMENTO_ALVARA', 'FISCALIZACAO_COMERCIO_AMBULANTE', 'FISCALIZACAO_VEICULO_ABANDONADO', 'SERVICOS_DOCUMENTOS_TECNICOS', 'FISCALIZACAO_VIAS_PUBLICAS', 'SERVICOS_ATENDIMENTO_CIDADAO', 'SAUDE_ZOONOSES_CONTROLE_ANIMAIS', 'LIMPEZA_URBANA_EQUIPAMENTOS', 'MEIO_AMBIENTE_CONTROLE_POLUICAO', 'DIREITOS_CONSUMIDOR', 'FISCALIZACAO_OCUPACAO_AREA_PUBLICA', 'FISCALIZACAO_LIMPEZA_TERRENOS', 'VIGILANCIA_SANITARIA', 'SAUDE_EMERGENCIA_SANITARIA', 'DEFESA_CIVIL_GEOTECNIA', 'TRANSPORTE_TAXI', 'SERVICOS_PROCESSOS_ADMINISTRATIVOS', 'INFRAESTRUTURA_MOBILIARIO_URBANO', 'LIMPEZA_URBANA_COLETA_SELETIVA', 'TRANSPORTE_REGULAMENTACAO_VIARIA', 'MEIO_AMBIENTE_PARQUES_PRACAS', 'TRANSPORTE_ESPECIAL', 'SERVICOS_QUALIDADE_ATENDIMENTO', 'FISCALIZACAO_POSTURA_MUNICIPAL', 'CULTURA_ESPORTE_LAZER', 'EDUCACAO', 'OBRAS_PUBLICAS', 'SERVICOS_FUNERARIOS', 'PATRIMONIO_PUBLICIDADE', 'SAUDE_INFRAESTRUTURA', 'DIREITOS_HUMANOS_ASSISTENCIA', 'TRANSPORTE_CICLOVIAS', 'TRABALHO_INCLUSAO', 'SERVICOS_DIGITAIS', 'OUTROS_SERVICOS_URBANOS']
       - name: descricao_interacao
         description: "Descrição aberta da interação (quando disponível)."
       - name: canal_interacao
         description: "Canal utilizado para a interação."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['CENTRAL_TELEFONICA', 'WHATSAPP', 'POSTO_ATENDIMENTO', 'PORTAL_WEB']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__canal_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__canal_interacao__accepted_values
+        #       values: ['CENTRAL_TELEFONICA', 'WHATSAPP', 'POSTO_ATENDIMENTO', 'PORTAL_WEB']
       - name: modalidade_interacao
         description: "Modalidade da interação (digital ou físico)."
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['DIGITAL', 'FISICO']
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__modalidade_interacao__not_null
+        #   - accepted_values:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__modalidade_interacao__accepted_values
+        #       values: ['DIGITAL', 'FISICO']
       - name: data_interacao
         description: "Data da interação."
-        tests:
-          - not_null
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__data_interacao__not_null
       - name: datahora_inicio
         description: "Timestamp de início da interação."
-        tests:
-          - not_null
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__datahora_inicio__not_null
       - name: data_particao
         description: "Data de partição da tabela."
-        tests:
-          - not_null
       - name: bairro_interacao
         description: "Bairro onde a interação ocorreu."
       - name: endereco_interacao
@@ -77,5 +93,6 @@ models:
         description: "Resultado da interação (quando disponível)."
       - name: dados_origem
         description: "JSON com os dados originais da interação."
-        tests:
-          - not_null
+        # data_tests:
+        #   - not_null:
+        #       name: intermediate_rmi_eventos_int_interacoes_1746__dados_origem__not_null

@@ -6,5 +6,13 @@ models:
     columns:
       - name: contato_telefone
         description: "Número de telefone que não possui WhatsApp."
+        data_tests:
+          - not_null:
+              name: core_crm_whatsapp_dim_telefone_sem_whatsapp__contato_telefone__not_null
+              severity: error
       - name: data_atualizacao
         description: "Data da última atualização/verificação do status do telefone."
+        data_tests:
+          - not_null:
+              name: core_crm_whatsapp_dim_telefone_sem_whatsapp__contato_telefone__not_null
+              severity: error

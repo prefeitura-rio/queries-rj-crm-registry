@@ -6,13 +6,40 @@ models:
     columns:
       - name: id_hsm
         description: "Identificador único do template de mensagem (HSM)."
+        data_tests:
+          - unique:
+              name: core_crm_whatsapp_dim_mensagem_ativa__id_hsm__unique
+              severity: error
+          - not_null:
+              name: core_crm_whatsapp_dim_mensagem_ativa__id_hsm__not_null
+              severity: error
       - name: nome_hsm
         description: "Nome do template de mensagem (HSM)."
+        data_tests:
+          - not_null:
+              name: core_crm_whatsapp_dim_mensagem_ativa__nome_hsm__not_null
+              severity: error
       - name: ambiente
         description: "Ambiente do template (ex: hom, prod)."
+        # data_tests:
+        #   - not_null:
+        #       name: core_crm_whatsapp_dim_mensagem_ativa__ambiente__not_null
+        #       severity: error
       - name: categoria
         description: "Categoria do template (ex: Utilidade, Marketing, Autenticação)."
+        # data_tests:
+        #   - not_null:
+        #       name: core_crm_whatsapp_dim_mensagem_ativa__categoria__not_null
+        #       severity: error
       - name: orgao
         description: "Órgão responsável pelo template (ex: IPLAN, SME, SMS)."
+        data_tests:
+          - not_null:
+              name: core_crm_whatsapp_dim_mensagem_ativa__orgao__not_null
+              severity: warn
       - name: nome_campanha
         description: "Nome da campanha associada ao template (pode ser nulo)."
+        # data_tests:
+        #   - not_null:
+        #       name: core_crm_whatsapp_dim_mensagem_ativa__nome_campanha__not_null
+        #       severity: warn

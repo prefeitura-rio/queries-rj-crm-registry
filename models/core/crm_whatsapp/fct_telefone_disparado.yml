@@ -6,14 +6,26 @@ models:
     columns:
       - name: id_hsm
         description: "Identificador único do template de mensagem (HSM) disparado."
+        data_tests:
+          - not_null:
+              name: core_crm_whatsapp_fct_telefone_disparado__id_hsm__not_null
+              severity: error
       - name: id_disparo
         description: "Identificador único do disparo específico."
+        data_tests:
+          - not_null:
+              name: core_crm_whatsapp_fct_telefone_disparado__id_disparo__not_null
+              severity: error
       - name: id_contato
         description: "Identificador único do contato que recebeu o disparo."
       - name: data_disparo
         description: "Data em que o disparo foi criado/enviado."
       - name: contato_telefone
         description: "Número de telefone do contato que recebeu o disparo."
+        data_tests:
+          - not_null:
+              name: core_crm_whatsapp_fct_telefone_disparado__contato_telefone__not_null
+              severity: error
       - name: descricao_falha
         description: "Descrição da falha no disparo, se houver."
       - name: data_particao

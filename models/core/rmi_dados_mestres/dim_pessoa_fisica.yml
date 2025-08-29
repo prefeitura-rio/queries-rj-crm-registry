@@ -5,7 +5,7 @@ models:
     description: Modelo contendo informações de pessoas físicas com dados cadastrais dentro da Prefeitura
     config:
       alias: pessoa_fisica
-      schema: crm_dados_mestres
+      schema: rmi_dados_mestres
       materialized: table
     columns:
       - name: cpf
@@ -14,7 +14,7 @@ models:
         quote: true
         data_tests:
           - unique:
-              name: dim_pessoa_fisica__cpf__unique
+              name: core_rmi_dados_mestres_dim_pessoa_fisica__cpf__unique
               severity: error
       - name: nome
         description: Nome completo da pessoa física

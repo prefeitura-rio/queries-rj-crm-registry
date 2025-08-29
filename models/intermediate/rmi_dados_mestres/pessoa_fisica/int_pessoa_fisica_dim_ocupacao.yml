@@ -11,14 +11,14 @@ models:
         data_type: string
         data_tests:
           - unique:
-              name: int_pessoa_fisica_dim_ocupacao__cpf__unique
+              name: intermediate_rmi_dados_mestres_int_pessoa_fisica_dim_ocupacao__cpf__unique
               severity: error
       - name: ocupacao
         description: Estrutura com dados de ocupação
         data_type: record
         data_tests:
           - not_null:
-              name: int_pessoa_fisica_dim_ocupacao__ocupacao__not_null
+              name: intermediate_rmi_dados_mestres_int_pessoa_fisica_dim_ocupacao__ocupacao__not_null
               severity: error
       - name: cpf_particao
         description: "Coluna de partição baseada no CPF para otimização de queries."

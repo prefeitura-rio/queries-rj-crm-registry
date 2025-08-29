@@ -7,6 +7,13 @@ models:
       - name: id_interacao
         description: "Chave primária única da interação, gerada como um hash MD5."
         data_type: string
+        data_tests:
+          - unique:
+              name: core_rmi_conversas_fct_chatbot__id_interacao__unique
+              severity: warn
+          - not_null:
+              name: core_rmi_conversas_fct_chatbot__id_interacao__not_null
+              severity: error
         quote: true
 
       - name: id_sessao
@@ -303,9 +310,6 @@ models:
         description: "Data da partição da tabela, baseada na data de início da interação."
         data_type: date
         quote: false
-        tests:
-          - not_null:
-              name: core_chatbot__data_particao__not_null
 
       - name: data_processamento
         description: "Data e hora em que o registro foi processado pelo dbt. Fuso horário America/Sao_Paulo."

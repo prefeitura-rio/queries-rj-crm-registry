@@ -11,15 +11,15 @@ models:
         data_type: string
         data_tests:
           - unique:
-              name: int_pessoa_fisica_dim_endereco__cpf__unique
+              name: intermediate_rmi_dados_mestres_int_pessoa_fisica_dim_endereco__cpf__unique
               severity: error
           - not_null:
-              name: int_pessoa_fisica_dim_endereco__cpf__not_null
+              name: intermediate_rmi_dados_mestres_int_pessoa_fisica_dim_endereco__cpf__not_null
               severity: error
       - name: endereco
         description: Estrutura completa com endereços (indicador, principal, alternativo)
         data_type: record
         data_tests:
           - not_null:
-              name: int_pessoa_fisica_dim_endereco__endereco__not_null
+              name: intermediate_rmi_dados_mestres_int_pessoa_fisica_dim_endereco__endereco__not_null
               severity: error

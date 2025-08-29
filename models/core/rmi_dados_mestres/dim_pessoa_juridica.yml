@@ -5,7 +5,7 @@ models:
     description: Modelo contendo informações cadastrais e societárias de pessoas jurídicas (empresas)
     config:
       alias: pessoa_juridica
-      schema: crm_dados_mestres
+      schema: rmi_dados_mestres
       materialized: table
     columns:
       - name: cnpj
@@ -14,9 +14,8 @@ models:
         quote: true
         data_tests:
           - not_null:
-              name: dim_pessoa_juridica__cnpj__not_null
+              name: core_rmi_dados_mestres_dim_pessoa_juridica__cnpj__not_null
               severity: warn
-
       - name: nome_empresarial
         description: Razão social da empresa
         data_type: string

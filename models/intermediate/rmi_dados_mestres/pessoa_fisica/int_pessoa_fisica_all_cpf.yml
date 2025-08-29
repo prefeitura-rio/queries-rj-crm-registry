@@ -11,7 +11,7 @@ models:
         data_type: string
         data_tests:
           - unique:
-              name: int_pessoa_fisica_all_cpf__cpf__unique
+              name: intermediate_rmi_dados_mestres_int_pessoa_fisica_all_cpf__cpf__unique
               severity: error
           # Remove malformed test for now
       - name: origens
@@ -19,14 +19,14 @@ models:
         data_type: string[]
         data_tests:
           - not_null:
-              name: int_pessoa_fisica_all_cpf__origens__not_null
+              name: intermediate_rmi_dados_mestres_int_pessoa_fisica_all_cpf__origens__not_null
               severity: error
       - name: origens_count
         description: Quantidade de sistemas que forneceram o CPF
         data_type: integer
         data_tests:
           - not_null:
-              name: int_pessoa_fisica_all_cpf__origens_count__not_null
+              name: intermediate_rmi_dados_mestres_int_pessoa_fisica_all_cpf__origens_count__not_null
               severity: error
       - name: cpf_particao
         description: Coluna de partição baseada no CPF para otimização de queries.
