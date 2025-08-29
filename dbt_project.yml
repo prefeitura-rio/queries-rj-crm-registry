@@ -65,27 +65,10 @@ models:
   queries:
     raw:
       +materialized: table
-      wetalkie:
-        +schema: brutos_wetalkie
     intermediate:
       +materialized: ephemeral
     core:
       +materialized: table
-      +schema: dados_mestres
-      facts:
-        +materialized: table
-        +schema: crm_eventos
-        +partition_by:
-          field: data_particao
-          data_type: date
-  data_tests:
-      +schema: crm_testes
-      +materialized: table
-
-tests:
-  queries:
-    dev_validation:
-      +enabled: "{{ target.name == 'dev' }}"
 
 
 seeds:
