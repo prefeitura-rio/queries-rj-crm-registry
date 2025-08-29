@@ -150,7 +150,7 @@ telefones_agendamento_cadunico as (
     'smas_brutos_datametrica.telefone' as campo_origem,
     'PESSOAL' as contexto,
     DATE(data_particao) as data_atualizacao
-  from {{ ref('raw_cadunico_agendamentos') }} as t
+  from {{ ref('raw_smas_cadunico_agendamentos') }} as t
   where telefone is not null
 ),
 
